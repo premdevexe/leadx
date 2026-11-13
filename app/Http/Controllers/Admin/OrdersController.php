@@ -150,6 +150,81 @@ class OrdersController extends Controller
     }
 
     /**
+     * GET /admin/orders/{order}/edit
+     */
+    public function edit(SalesOrder $order): View
+    {
+        $order->loadMissing(['team', 'assignedEmployee', 'product']);
+
+        $activeProducts = $this->orders->activeProducts();
+        if ($order->product && ! $activeProducts->contains('id', $order->product_id)) {
+            $activeProducts->push($order->product);
+        }
+
+        return view('admin.orders.edit', [
+            'order' => $order,
+            'employees' => User::where('role', 'employee')->orderBy('username')->get(['id', 'username', 'name', 'team_id']),
+            'products' => $activeProducts,
+            'orderStatuses' => SalesOrder::STATUSES,
+            'paymentStatuses' => SalesOrder::PAYMENT_STATUSES,
+        ]);
+    }
+
+    /**
+     * PUT /admin/orders/{order}
+     */
+    public function update(Request $request, SalesOrder $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'assigned_employee_id' => ['nullable', 'integer', 'exists:users,id'],
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:30'],
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'product_name' => ['nullable', 'string', 'max:255'],
+            'subscription_plan' => ['nullable', 'string', 'max:50'],
+            'duration' => ['required', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
+            'product_value' => ['nullable', 'numeric', 'min:0'],
+            'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'closing_value' => ['nullable', 'numeric', 'min:0'],
+            'amount_received' => ['nullable', 'numeric', 'min:0'],
+            'payment_status' => ['required', 'in:'.implode(',', SalesOrder::PAYMENT_STATUSES)],
+            'order_status' => ['required', 'in:'.implode(',', SalesOrder::STATUSES)],
+        ]);
+
+        $productId = ! empty($data['product_id']) ? (int) $data['product_id'] : null;
+        if ($productId) {
+            $catalogProduct = Product::find($productId);
+            if ($catalogProduct) {
+                $data['product_id'] = $catalogProduct->id;
+                $data['product_name_snapshot'] = $catalogProduct->name;
+                $data['product_price_snapshot'] = $catalogProduct->price;
+                $data['product_duration_snapshot'] = $catalogProduct->duration;
+                $data['product_name'] = $catalogProduct->name;
+                $data['product_value'] = $catalogProduct->price;
+                $data['duration'] = $catalogProduct->duration;
+            }
+        } else {
+            $data['product_id'] = null;
+            $data['product_name_snapshot'] = $data['product_name'] ?? null;
+            $data['product_price_snapshot'] = $data['product_value'] ?? 0;
+            $data['product_duration_snapshot'] = $data['duration'] ?? '1y';
+        }
+
+        $productVal = (float) ($data['product_value'] ?? $order->product_value ?? 0);
+        $discountVal = (float) ($data['discount_amount'] ?? $order->discount_amount ?? 0);
+        if (! isset($data['closing_value']) || $data['closing_value'] === null || $data['closing_value'] === '') {
+            $data['closing_value'] = max(0, $productVal - $discountVal);
+        }
+
+        $order->update($data);
+
+        return redirect()
+            ->route('admin.orders.show', $order)
+            ->with('status', 'Order '.$order->order_number.' updated successfully.');
+    }
+
+    /**
      * POST /admin/orders/{order}/payments
      */
     public function recordPayment(Request $request, SalesOrder $order): RedirectResponse

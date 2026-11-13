@@ -68,6 +68,8 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/orders/create', [OrdersController::class, 'create'])->name('admin.orders.create');
     Route::post('/admin/orders', [OrdersController::class, 'store'])->name('admin.orders.store');
     Route::get('/admin/orders/{order}', [OrdersController::class, 'show'])->name('admin.orders.show');
+    Route::get('/admin/orders/{order}/edit', [OrdersController::class, 'edit'])->name('admin.orders.edit');
+    Route::put('/admin/orders/{order}', [OrdersController::class, 'update'])->name('admin.orders.update');
     Route::put('/admin/orders/{order}/activate', [OrdersController::class, 'activate'])->name('admin.orders.activate');
     Route::post('/admin/orders/{order}/whatsapp-share-log', [OrdersController::class, 'recordWhatsappShareLog'])->name('admin.orders.whatsapp-log');
     Route::post('/admin/orders/{order}/payments', [OrdersController::class, 'recordPayment'])->name('admin.orders.payments.store');

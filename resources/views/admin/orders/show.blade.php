@@ -22,7 +22,12 @@
                 Team {{ $order->team_code_snapshot }} · created {{ $order->created_at->format('M d, Y H:i') }}
             </p>
         </div>
-        <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-600 hover:text-neutral-900">← All orders</a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('admin.orders.edit', $order) }}" class="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-sm hover:bg-neutral-50 transition">
+                Edit Order
+            </a>
+            <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-600 hover:text-neutral-900">← All orders</a>
+        </div>
     </div>
 
     @if (session('status'))

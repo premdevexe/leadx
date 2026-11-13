@@ -98,6 +98,7 @@
                     <th class="px-4 py-3 text-right">Closing</th>
                     <th class="px-4 py-3">Order</th>
                     <th class="px-4 py-3">Payment</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -129,10 +130,17 @@
                                 {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
                             </span>
                         </td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="inline-flex items-center gap-2">
+                                <a href="{{ route('admin.orders.show', $order) }}" class="text-xs font-medium text-neutral-600 hover:text-neutral-900 underline">View</a>
+                                <span class="text-neutral-300">·</span>
+                                <a href="{{ route('admin.orders.edit', $order) }}" class="text-xs font-medium text-neutral-900 hover:text-neutral-600 underline">Edit</a>
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-neutral-400">
+                        <td colspan="8" class="px-4 py-8 text-center text-neutral-400">
                             No orders found{{ $orders->total() > 0 ? '' : '' }}. <a href="{{ route('admin.orders.create') }}" class="text-neutral-600 underline">Create one</a>
                         </td>
                     </tr>
