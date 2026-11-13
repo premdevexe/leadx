@@ -1,0 +1,25 @@
+{
+    "name": "LeadX — Admin",
+    "short_name": "LeadX",
+    "description": "LeadX admin dashboard — manage teams and employees.",
+    "start_url": "/admin/dashboard",
+    "scope": "/admin",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#f9fafb",
+    "theme_color": "#171717",
+    "icons": [
+        {
+            "src": "/icons/leadx-192.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/leadx-512.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ]
+}
