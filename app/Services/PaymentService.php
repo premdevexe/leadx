@@ -219,6 +219,8 @@ class PaymentService
         $order->amount_received = $order->verifiedPaymentTotal();
         $order->payment_status = $this->orderPaymentStatusFor($order);
         $order->save();
+
+        SalesAnalyticsService::invalidateCache();
     }
 
     protected function orderPaymentStatusFor(SalesOrder $order): string

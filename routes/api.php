@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\V1\Admin\AnalyticsController;
 use App\Http\Controllers\Api\V1\Admin\AuthenticationController as AdminAuth;
 use App\Http\Controllers\Api\V1\Admin\EmployeesController;
 use App\Http\Controllers\Api\V1\Admin\PaymentsController;
+use App\Http\Controllers\Api\V1\Admin\ReportsController;
 use App\Http\Controllers\Api\V1\Admin\TeamsController;
+use App\Http\Controllers\Api\V1\Employee\AnalyticsController as EmployeeAnalytics;
 use App\Http\Controllers\Api\V1\Employee\AuthenticationController as EmployeeAuth;
 use App\Http\Controllers\Api\V1\Employee\GoogleCalendarController;
 use App\Http\Controllers\Api\V1\FollowUpsController;
@@ -12,6 +14,7 @@ use App\Http\Controllers\Api\V1\GatewayWebhookController;
 use App\Http\Controllers\Api\V1\OrdersController;
 use App\Http\Controllers\Api\V1\ProductsController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
+use App\Http\Controllers\Api\V1\Team\AnalyticsController as TeamAnalytics;
 use App\Http\Controllers\Api\V1\Team\AuthenticationController as TeamAuth;
 use Illuminate\Support\Facades\Route;
 
@@ -46,10 +49,18 @@ Route::prefix('v1')->group(function () {
         Route::post('admin/payments/{payment}/verify', [PaymentsController::class, 'verify']);
         Route::post('admin/payments/{payment}/reject', [PaymentsController::class, 'reject']);
 
-        // Product analytics (catalog-driven: new products appear
-        // automatically, see AnalyticsController)
+        // Sales Analytics & Reports (Phase 10)
+        Route::get('admin/analytics/overview', [AnalyticsController::class, 'overview']);
+        Route::get('admin/analytics/revenue', [AnalyticsController::class, 'revenue']);
         Route::get('admin/analytics/products', [AnalyticsController::class, 'productReport']);
+        Route::get('admin/analytics/employees', [AnalyticsController::class, 'employees']);
+        Route::get('admin/analytics/teams', [AnalyticsController::class, 'teams']);
+        Route::get('admin/analytics/monthly', [AnalyticsController::class, 'monthly']);
         Route::get('admin/analytics/summary', [AnalyticsController::class, 'summary']);
+
+        Route::get('admin/reports/orders', [ReportsController::class, 'orders']);
+        Route::get('admin/reports/payments', [ReportsController::class, 'payments']);
+        Route::get('admin/reports/subscriptions', [ReportsController::class, 'subscriptions']);
     });
 
     // ---- Team ----
@@ -58,6 +69,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'ensure-role-active:team'])->group(function () {
         Route::get('team/profile', [TeamAuth::class, 'profile']);
         Route::get('team/members', [TeamAuth::class, 'members']);
+        Route::get('team/analytics', [TeamAnalytics::class, 'index']);
         Route::post('team/logout', [TeamAuth::class, 'logout']);
     });
 
@@ -66,6 +78,7 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware(['auth:sanctum', 'ensure-role-active:employee'])->group(function () {
         Route::get('employee/profile', [EmployeeAuth::class, 'profile']);
+        Route::get('employee/analytics', [EmployeeAnalytics::class, 'index']);
         Route::post('employee/logout', [EmployeeAuth::class, 'logout']);
 
         // Phase 08, Module 2: personal Google Calendar OAuth (employee only).

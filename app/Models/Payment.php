@@ -84,6 +84,12 @@ class Payment extends Model
         return $this->belongsTo(SalesOrder::class, 'order_id');
     }
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => \App\Services\SalesAnalyticsService::invalidateCache());
+        static::deleted(fn () => \App\Services\SalesAnalyticsService::invalidateCache());
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);

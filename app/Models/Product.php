@@ -48,4 +48,10 @@ class Product extends Model
     {
         return $this->hasMany(SalesOrder::class);
     }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => \App\Services\SalesAnalyticsService::invalidateCache());
+        static::deleted(fn () => \App\Services\SalesAnalyticsService::invalidateCache());
+    }
 }

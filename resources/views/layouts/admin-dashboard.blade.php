@@ -24,6 +24,7 @@
                 @php
                     $menuItems = [
                         ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'match' => 'admin.dashboard'],
+                        ['route' => 'admin.reports.index', 'label' => 'Reports & Analytics', 'match' => 'admin.reports*'],
                         ['route' => 'admin.teams', 'label' => 'Teams', 'match' => 'admin.teams*'],
                         ['route' => 'admin.orders', 'label' => 'Orders', 'match' => 'admin.orders*'],
                         ['route' => 'admin.products', 'label' => 'Products', 'match' => 'admin.products*'],

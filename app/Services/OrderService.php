@@ -67,6 +67,10 @@ class OrderService
                 'payment_status' => $data['payment_status'] ?? 'pending',
                 'order_status' => $data['order_status'] ?? 'pending',
             ]);
+
+            SalesAnalyticsService::invalidateCache();
+
+            return $order;
         });
     }
 

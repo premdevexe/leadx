@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\EmployeesController;
 use App\Http\Controllers\Admin\NotificationsController;
 use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\ProductsController;
+use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TeamsController;
 use App\Http\Controllers\Auth\LoginController;
@@ -45,6 +46,7 @@ Route::middleware('admin')->group(function () {
     })->name('admin');
 
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/reports', [ReportsController::class, 'index'])->name('admin.reports.index');
 
     // Team management
     Route::get('/admin/teams', [TeamsController::class, 'index'])->name('admin.teams');

@@ -5,18 +5,13 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\SalesAnalyticsService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
- * Admin-only product analytics.
+ * Super Admin Analytics API endpoints.
  *
- * The report is catalog-driven: every product in the database gets a row,
- * so a product an admin creates today appears here with zero values and
- * fills in as orders, payments and subscriptions attach to it. No report
- * configuration is required for new products.
- *
- * Access is enforced two ways (defense in depth): the route runs behind
- * `auth:sanctum` + `ensure-role-active:admin`, and this controller is only
- * wired into that group.
+ * Provides global sales, revenue, product, employee, and team intelligence.
+ * Protected by auth:sanctum + ensure-role-active:admin.
  */
 class AnalyticsController extends Controller
 {
@@ -25,27 +20,100 @@ class AnalyticsController extends Controller
     }
 
     /**
+     * GET /api/v1/admin/analytics/overview
+     *
+     * High-level KPI overview across all orders, products, and revenue.
+     */
+    public function overview(Request $request): JsonResponse
+    {
+        $filters = $request->only([
+            'range', 'start_date', 'end_date', 'from_date', 'to_date',
+            'product_id', 'employee_id', 'team_id', 'payment_status', 'order_status',
+        ]);
+
+        return response()->json($this->analytics->overview($filters));
+    }
+
+    /**
+     * GET /api/v1/admin/analytics/revenue
+     *
+     * Financial report distinguishing product value, closing value,
+     * actual verified collections, pending amount, discounts, and refunds.
+     */
+    public function revenue(Request $request): JsonResponse
+    {
+        $filters = $request->only([
+            'range', 'start_date', 'end_date', 'from_date', 'to_date',
+            'product_id', 'employee_id', 'team_id', 'payment_status', 'order_status',
+        ]);
+
+        return response()->json($this->analytics->revenueBreakdown($filters));
+    }
+
+    /**
      * GET /api/v1/admin/analytics/products
      *
-     * Per-product figures, all computed only from verified money:
-     *   orders               orders created from that catalog product
-     *   collected_revenue    verified payments attributed to it
-     *   active_subscriptions active subscriptions for that product
-     *   active_customers     distinct paying customers behind those
-     *   pending_collection   closing value not yet covered by verified payments
-     *
-     * A trailing "Uncataloged" bucket covers legacy orders that only carry
-     * a product name (product_id null), so the report stays complete.
+     * Catalog-driven per-product figures, all computed only from verified money.
      */
-    public function productReport(): JsonResponse
+    public function productReport(Request $request): JsonResponse
     {
-        return response()->json($this->analytics->productReport());
+        $filters = $request->only([
+            'range', 'start_date', 'end_date', 'from_date', 'to_date',
+            'employee_id', 'team_id', 'payment_status',
+        ]);
+
+        return response()->json($this->analytics->productReport($filters));
+    }
+
+    /**
+     * GET /api/v1/admin/analytics/employees
+     *
+     * Employee-wise sales performance comparison.
+     */
+    public function employees(Request $request): JsonResponse
+    {
+        $filters = $request->only([
+            'range', 'start_date', 'end_date', 'from_date', 'to_date',
+            'team_id', 'employee_id', 'payment_status',
+        ]);
+
+        return response()->json($this->analytics->employeeReport($filters));
+    }
+
+    /**
+     * GET /api/v1/admin/analytics/teams
+     *
+     * Team-wise revenue, collections, member performance, and subscription totals.
+     */
+    public function teams(Request $request): JsonResponse
+    {
+        $filters = $request->only([
+            'range', 'start_date', 'end_date', 'from_date', 'to_date',
+            'team_id', 'payment_status',
+        ]);
+
+        return response()->json($this->analytics->teamReport($filters));
+    }
+
+    /**
+     * GET /api/v1/admin/analytics/monthly
+     *
+     * Monthly trend series for revenue, order volume, and subscriptions.
+     */
+    public function monthly(Request $request): JsonResponse
+    {
+        $months = max(1, min(24, (int) $request->input('months', 12)));
+        $filters = $request->only([
+            'product_id', 'employee_id', 'team_id', 'payment_status',
+        ]);
+
+        return response()->json($this->analytics->monthlyReport($months, $filters));
     }
 
     /**
      * GET /api/v1/admin/analytics/summary
      *
-     * Headline revenue figures, verified money only.
+     * Backward-compatible summary endpoint.
      */
     public function summary(): JsonResponse
     {

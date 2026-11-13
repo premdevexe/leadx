@@ -118,6 +118,12 @@ class SalesOrder extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => \App\Services\SalesAnalyticsService::invalidateCache());
+        static::deleted(fn () => \App\Services\SalesAnalyticsService::invalidateCache());
+    }
+
     /**
      * The team the order was issued for, snapshotted at creation time.
      */
@@ -167,6 +173,26 @@ class SalesOrder extends Model
     public function verifiedPaymentTotal(): string
     {
         $staleAfterDays = (int) config('leadx.payments.stale_after_days', 90);
+
+        if ($this->relationLoaded('payments')) {
+            $cutoff = now()->subDays($staleAfterDays);
+            $totalCents = 0;
+            foreach ($this->payments as $payment) {
+                $isVerified = $payment->verified_by_admin_id !== null || $payment->verification_source === 'gateway';
+                if (! $isVerified) {
+                    continue;
+                }
+                if (in_array($payment->payment_status, ['failed', 'refunded'], true)) {
+                    continue;
+                }
+                if ($payment->verified_at !== null && $payment->verified_at < $cutoff) {
+                    continue;
+                }
+                $totalCents += \App\Support\Money::toCents($payment->amount);
+            }
+
+            return \App\Support\Money::format($totalCents);
+        }
 
         return (string) $this->payments()
             ->where(fn ($q) => $q->whereNotNull('verified_by_admin_id')
