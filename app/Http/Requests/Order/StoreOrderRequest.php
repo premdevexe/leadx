@@ -28,6 +28,7 @@ class StoreOrderRequest extends FormRequest
         $rules = [
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['sometimes', 'nullable', 'string', 'max:30'],
+            'customer_email' => ['sometimes', 'nullable', 'string', 'max:255'],
             'product_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'subscription_plan' => ['sometimes', 'nullable', 'string', 'max:50'],
             'duration' => ['sometimes', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
@@ -37,6 +38,12 @@ class StoreOrderRequest extends FormRequest
             'amount_received' => ['sometimes', 'numeric', 'min:0'],
             'payment_status' => ['sometimes', 'in:'.implode(',', SalesOrder::PAYMENT_STATUSES)],
             'order_status' => ['sometimes', 'in:'.implode(',', SalesOrder::STATUSES)],
+            // The catalog product reference. Only the id is accepted from
+            // the client: price, duration and name are re-read from the
+            // database (OrderService::resolveProduct) and any submitted
+            // values for those fields are ignored when a product is chosen.
+            // Unknown or inactive products are rejected with a 422.
+            'product_id' => ['sometimes', 'nullable', 'integer', 'exists:products,id'],
         ];
 
         // Admins create orders on behalf of a specific team; teams and

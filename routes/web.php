@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\AdminLoginController;
+use App\Http\Controllers\Admin\CustomersController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmployeesController;
 use App\Http\Controllers\Admin\NotificationsController;
@@ -59,6 +60,7 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/products', [ProductsController::class, 'store'])->name('admin.products.store');
     Route::get('/admin/products/{product}/edit', [ProductsController::class, 'edit'])->name('admin.products.edit');
     Route::put('/admin/products/{product}', [ProductsController::class, 'update'])->name('admin.products.update');
+    Route::patch('/admin/products/{product}/toggle-status', [ProductsController::class, 'toggleStatus'])->name('admin.products.toggle-status');
     Route::delete('/admin/products/{product}', [ProductsController::class, 'destroy'])->name('admin.products.destroy');
 
     // Order management
@@ -68,6 +70,9 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/orders/{order}', [OrdersController::class, 'show'])->name('admin.orders.show');
     Route::put('/admin/orders/{order}/activate', [OrdersController::class, 'activate'])->name('admin.orders.activate');
     Route::post('/admin/orders/{order}/whatsapp-share-log', [OrdersController::class, 'recordWhatsappShareLog'])->name('admin.orders.whatsapp-log');
+    Route::post('/admin/orders/{order}/payments', [OrdersController::class, 'recordPayment'])->name('admin.orders.payments.store');
+    Route::post('/admin/orders/{order}/payments/{payment}/verify', [OrdersController::class, 'verifyPayment'])->name('admin.orders.payments.verify');
+    Route::post('/admin/orders/{order}/payments/{payment}/reject', [OrdersController::class, 'rejectPayment'])->name('admin.orders.payments.reject');
 
     // Settings (payment methods, …)
     Route::get('/admin/settings', [SettingsController::class, 'index'])->name('admin.settings');
@@ -80,6 +85,10 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/employees/{employee}/edit', [EmployeesController::class, 'edit'])->name('admin.employees.edit');
     Route::put('/admin/employees/{employee}', [EmployeesController::class, 'update'])->name('admin.employees.update');
     Route::delete('/admin/employees/{employee}', [EmployeesController::class, 'destroy'])->name('admin.employees.destroy');
+
+    // Customer management (CRM)
+    Route::get('/admin/customers', [CustomersController::class, 'index'])->name('admin.customers');
+    Route::get('/admin/customers/{customer}', [CustomersController::class, 'show'])->name('admin.customers.show');
 
     // Notification sending (Pusher Beams web push)
     Route::get('/admin/notifications', [NotificationsController::class, 'index'])->name('admin.notifications');

@@ -92,7 +92,6 @@ class FollowUpService
         }
 
         if ($actor instanceof User) {
-            fwrite(STDERR, "DBG-MANAGE: fu=".($followUp->id).' assigned='.var_export($followUp->assigned_employee_id, true).' actorId='.var_export($actor->id, true).' actorName='.($actor->name ?? '?')."\n");
             if ((int) $followUp->assigned_employee_id !== (int) $actor->id) {
                 $this->deny('You may only manage follow-ups assigned to you.');
             }

@@ -27,6 +27,7 @@
                         ['route' => 'admin.teams', 'label' => 'Teams', 'match' => 'admin.teams*'],
                         ['route' => 'admin.orders', 'label' => 'Orders', 'match' => 'admin.orders*'],
                         ['route' => 'admin.products', 'label' => 'Products', 'match' => 'admin.products*'],
+                        ['route' => 'admin.customers', 'label' => 'Customers (CRM)', 'match' => 'admin.customers*'],
                         ['route' => 'admin.employees', 'label' => 'Employees', 'match' => 'admin.employees*'],
                         ['route' => 'admin.notifications', 'label' => 'Send Notification', 'match' => 'admin.notifications*'],
                         ['route' => 'admin.settings', 'label' => 'Settings', 'match' => 'admin.settings*'],

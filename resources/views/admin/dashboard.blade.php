@@ -39,6 +39,41 @@
 
     <div class="mt-8">
         <div class="mb-3 flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-neutral-500">Dynamic Product Analytics</h2>
+            <a href="{{ route('admin.products') }}" class="text-sm text-neutral-600 hover:text-neutral-900">Manage products →</a>
+        </div>
+        <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
+                        <th class="px-4 py-3">Product</th>
+                        <th class="px-4 py-3 text-right">Orders</th>
+                        <th class="px-4 py-3 text-right">Collected Revenue</th>
+                        <th class="px-4 py-3 text-right">Active Subs</th>
+                        <th class="px-4 py-3 text-right">Active Customers</th>
+                        <th class="px-4 py-3 text-right">Pending Collection</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($productReport as $row)
+                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                            <td class="px-4 py-3 font-medium text-neutral-900">{{ $row['product'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $row['orders'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">${{ $row['collected_revenue'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-700">{{ $row['active_subscriptions'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-700">{{ $row['active_customers'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-500">${{ $row['pending_collection'] }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="px-4 py-6 text-center text-neutral-400">No products configured yet</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-8">
+        <div class="mb-3 flex items-center justify-between">
             <h2 class="text-sm font-semibold text-neutral-500">Recent orders</h2>
             <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-600 hover:text-neutral-900">View all →</a>
         </div>

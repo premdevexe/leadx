@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Admin;
+use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\Team;
 use App\Models\User;
@@ -12,7 +13,13 @@ use Illuminate\Validation\ValidationException;
 /**
  * Creates sales orders, wiring the atomic order number from
  * {@see OrderNumberService} into the same transaction that persists the
- * order itself — so a failure to claim the number never orphans a record.
+ * order itself, so a failure to claim the number never orphans a record.
+ *
+ * Catalog products are the single source of truth for a new order: when the
+ * request carries a product_id, the order's name / price / duration
+ * snapshots are read from the catalog row (current database values) and any
+ * client-submitted price or duration is ignored. Only *active* products may
+ * back a new order.
  */
 class OrderService
 {
@@ -27,8 +34,16 @@ class OrderService
      */
     public function createForTeam(Team $team, ?User $employee, array $data): SalesOrder
     {
-        return DB::transaction(function () use ($team, $employee, $data) {
+        // Resolve the catalog product *before* claiming a sequence value,
+        // so an unknown or inactive product never burns an order number.
+        $product = $this->resolveProduct($data['product_id'] ?? null);
+
+        return DB::transaction(function () use ($team, $employee, $data, $product) {
             $orderNumber = $this->numbers->next($team);
+
+            $productName = $product ? $product->name : ($data['product_name'] ?? null);
+            $productPrice = $product ? $product->price : ($data['product_value'] ?? 0);
+            $productDuration = $product ? (string) $product->duration : ($data['duration'] ?? '1y');
 
             return SalesOrder::create([
                 'order_number' => $orderNumber,
@@ -37,11 +52,15 @@ class OrderService
                 'assigned_employee_id' => $employee?->id,
                 'customer_name' => $data['customer_name'],
                 'customer_phone' => $data['customer_phone'] ?? null,
-                'product_id' => $data['product_id'] ?? null,
-                'product_name' => $data['product_name'] ?? null,
+                'customer_email' => $data['customer_email'] ?? null,
+                'product_id' => $product?->id,
+                'product_name' => $productName,
+                'product_name_snapshot' => $productName,
+                'product_price_snapshot' => $productPrice,
+                'product_duration_snapshot' => $productDuration,
                 'subscription_plan' => $data['subscription_plan'] ?? null,
-                'duration' => $data['duration'] ?? '1y',
-                'product_value' => $data['product_value'] ?? 0,
+                'duration' => $productDuration,
+                'product_value' => $productPrice,
                 'discount_amount' => $data['discount_amount'] ?? 0,
                 'closing_value' => $data['closing_value'] ?? 0,
                 'amount_received' => $data['amount_received'] ?? 0,
@@ -49,6 +68,51 @@ class OrderService
                 'order_status' => $data['order_status'] ?? 'pending',
             ]);
         });
+    }
+
+    /**
+     * Resolve the submitted catalog product for a new order.
+     *
+     * Only *active* products may be selected; an unknown or inactive product
+     * is rejected (422) so retired catalog entries can never flow into the
+     * payment and subscription pipeline. The returned row is the
+     * authoritative source for the order's name / price / duration
+     * snapshots, which are frozen at creation so later catalog edits never
+     * rewrite existing orders.
+     *
+     * @throws ValidationException
+     */
+    public function resolveProduct(?int $productId): ?Product
+    {
+        if ($productId === null) {
+            return null;
+        }
+
+        $product = Product::find($productId);
+
+        if ($product === null) {
+            throw ValidationException::withMessages([
+                'product_id' => 'The selected product does not exist.',
+            ]);
+        }
+
+        if ($product->status !== 'active') {
+            throw ValidationException::withMessages([
+                'product_id' => 'Only active products can be used for a new order.',
+            ]);
+        }
+
+        return $product;
+    }
+
+    /**
+     * The active catalog products available for order selection, by name.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Product>
+     */
+    public function activeProducts(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Product::where('status', 'active')->orderBy('name')->get();
     }
 
     /**

@@ -53,8 +53,9 @@ class GoogleCalendarController extends Controller
      * what makes it structurally impossible for a team's shared login to
      * connect a personal Google calendar.
      */
-    public function callback(Request $request, ?string $code = null, ?string $state = null, ?string $error = null): JsonResponse
+    public function callback(Request $request): JsonResponse
     {
+        $error = $request->input('error');
         // Google sends `error` (e.g. access_denied) instead of a code.
         if ($error !== null) {
             return $this->callbackFailure('Google returned an error: '.$error);
@@ -64,8 +65,8 @@ class GoogleCalendarController extends Controller
 
         // The callback may arrive as a query string (browser redirect) or a
         // form body; accept both.
-        $code ??= $request->input('code');
-        $state ??= $request->input('state');
+        $code = $request->input('code');
+        $state = $request->input('state');
 
         $result = $this->oauth->completeFromCallback($code, $state, $error);
 
@@ -73,7 +74,9 @@ class GoogleCalendarController extends Controller
         return response()->json([
             'message' => 'Google account connected.',
             'employee_id' => $result['employee']->id,
-            'connection' => new EmployeeGoogleConnectionResource($result['connection']),
+            'data' => [
+                'connection' => new EmployeeGoogleConnectionResource($result['connection']),
+            ],
         ]);
     }
 
@@ -88,8 +91,10 @@ class GoogleCalendarController extends Controller
         $connection = $employee->googleCalendarConnection()->first();
 
         return response()->json([
-            'connected' => $connection !== null && $connection->status === 'connected',
-            'connection' => new EmployeeGoogleConnectionResource($connection),
+            'data' => [
+                'connected' => $connection !== null && $connection->status === 'connected',
+                'connection' => new EmployeeGoogleConnectionResource($connection),
+            ],
         ]);
     }
 
@@ -109,7 +114,9 @@ class GoogleCalendarController extends Controller
 
         return response()->json([
             'message' => 'Google account disconnected.',
-            'connection' => new EmployeeGoogleConnectionResource($employee->googleCalendarConnection()->first()),
+            'data' => [
+                'connection' => new EmployeeGoogleConnectionResource($employee->googleCalendarConnection()->first()),
+            ],
         ]);
     }
 

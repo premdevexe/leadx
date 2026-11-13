@@ -52,7 +52,7 @@ class GatewayWebhookTest extends TestCase
                 [],
                 [],
                 [],
-                ['CONTENT_TYPE' => 'application/json', 'X_SIGNATURE' => $signed['signature']],
+                ['CONTENT_TYPE' => 'application/json', 'HTTP_X_SIGNATURE' => $signed['signature']],
                 $signed['body']
             );
         }
@@ -63,7 +63,7 @@ class GatewayWebhookTest extends TestCase
             [],
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json', 'X_SIGNATURE' => $signature],
+            ['CONTENT_TYPE' => 'application/json', 'HTTP_X_SIGNATURE' => $signature],
             json_encode($payload)
         );
     }
@@ -127,7 +127,11 @@ class GatewayWebhookTest extends TestCase
             'amount' => '100.00',
         ], 'wrong-signature')->assertStatus(401);
 
-        $this->assertNull($order->fresh()->subscription);
+        // A pending placeholder row may exist; a failed payment must never activate it.
+
+        $sub = $order->fresh()->subscription;
+        $this->assertTrue($sub === null || $sub->status !== 'active');
+        $this->assertNotSame('active', $order->fresh()->order_status);
         $this->assertSame(0, Payment::where('order_id', $order->id)->count());
     }
 
@@ -157,6 +161,10 @@ class GatewayWebhookTest extends TestCase
         ])->assertStatus(201);
 
         $this->assertSame('failed', $order->fresh()->payment_status);
-        $this->assertNull($order->fresh()->subscription);
+        // A pending placeholder row may exist; a failed payment must never activate it.
+
+        $sub = $order->fresh()->subscription;
+        $this->assertTrue($sub === null || $sub->status !== 'active');
+        $this->assertNotSame('active', $order->fresh()->order_status);
     }
 }

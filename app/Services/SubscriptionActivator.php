@@ -15,13 +15,19 @@ use Illuminate\Support\Str;
  *
  * A subscription is created/activated ONLY when the order's verified
  * payment total satisfies the configured payment policy:
- *   - `activate_on: paid`    → verified total must reach the amount due
- *   - `activate_on: partial` → verified total may be below the due, but
+ *   - `activate_on: paid`    - verified total must reach the amount due
+ *   - `activate_on: partial` - verified total may be below the due, but
  *                              only if it meets `minimum_verified_percent`
  *
  * Pending and failed payments are never counted. The decision is
  * idempotent: re-running against the same order converges on a single
- * subscription row (keyed by order_id, which is unique).
+ * subscription row (keyed by order_id, which is unique), so repeated
+ * verifies and repeated gateway webhooks can never duplicate an
+ * activation.
+ *
+ * History is preserved on the subscription row: the price/plan snapshots
+ * and the billing dates are frozen from the order's stored values at
+ * activation time, so later catalog edits never rewrite what was sold.
  */
 class SubscriptionActivator
 {
@@ -113,8 +119,8 @@ class SubscriptionActivator
 
     /**
      * Flip a subscription to active, freezing plan/price snapshots and the
-     * billing-cycle-derived dates. Idempotent: re-activating an already
-     * active subscription is a no-op on the dates.
+     * duration-derived dates. Idempotent: re-activating an already active
+     * subscription keeps its start and recomputes nothing destructive.
      */
     protected function activate(Subscription $subscription, SalesOrder $order, ?Customer $customer, ?int $adminId): void
     {
@@ -122,10 +128,20 @@ class SubscriptionActivator
 
         $cycle = $this->billing->cycleFor($order, $plan);
         $start = $subscription->started_at ?? now();
+        // Expiry is derived from the order's stored duration snapshot (or
+        // the plan's explicit duration override) - never from live catalog
+        // values - so historical subscriptions keep their sold horizon.
         $expiry = $this->billing->expiry($order, $plan, $start);
         $renewal = $this->billing->renewalDate($expiry);
 
-        $priceSnapshot = $plan?->price ?? $order->closing_value;
+        // Price snapshot: the order's frozen product value when no plan
+        // price applies (falls back to the closing value for manual orders
+        // whose product value is zero).
+        $priceSnapshot = $plan?->price ?? $order->product_value;
+
+        if ((float) $priceSnapshot <= 0 && (float) $order->closing_value > 0) {
+            $priceSnapshot = $order->closing_value;
+        }
 
         $subscription->forceFill([
             'customer_id' => $customer?->id ?? $subscription->customer_id,

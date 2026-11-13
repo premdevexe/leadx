@@ -86,7 +86,7 @@ class ProductsPageTest extends TestCase
     {
         $team = Team::factory()->create(['team_code' => 'GEM']);
         $employee = User::factory()->create(['team_id' => $team->id]);
-        $product = Product::factory()->create(['name' => 'Snapshot Me', 'price' => 120.5]);
+        $product = Product::factory()->create(['name' => 'Snapshot Me', 'price' => 120.5, 'duration' => '7d']);
 
         $this->actingAs($this->admin(), 'admin')
             ->post(route('admin.orders.store'), [
@@ -109,5 +109,73 @@ class ProductsPageTest extends TestCase
 
         $product->update(['name' => 'Renamed', 'price' => 999]);
         $this->assertSame('Snapshot Me', $order->fresh()->product_name);
+    }
+
+    public function test_admin_can_search_and_filter_products(): void
+    {
+        Product::factory()->create(['name' => 'Alpha Basic', 'status' => 'active']);
+        Product::factory()->create(['name' => 'Beta Pro', 'status' => 'inactive']);
+
+        $admin = $this->admin();
+
+        // Search by name
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.products', ['search' => 'Alpha']))
+            ->assertOk()
+            ->assertSee('Alpha Basic')
+            ->assertDontSee('Beta Pro');
+
+        // Filter by status
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.products', ['status' => 'inactive']))
+            ->assertOk()
+            ->assertSee('Beta Pro')
+            ->assertDontSee('Alpha Basic');
+    }
+
+    public function test_admin_can_toggle_product_status(): void
+    {
+        $product = Product::factory()->create(['status' => 'active']);
+
+        $this->actingAs($this->admin(), 'admin')
+            ->patch(route('admin.products.toggle-status', $product))
+            ->assertRedirect(route('admin.products'));
+
+        $this->assertSame('inactive', $product->fresh()->status);
+
+        $this->actingAs($this->admin(), 'admin')
+            ->patch(route('admin.products.toggle-status', $product))
+            ->assertRedirect(route('admin.products'));
+
+        $this->assertSame('active', $product->fresh()->status);
+    }
+
+    public function test_deleting_product_with_orders_archives_safely(): void
+    {
+        $product = Product::factory()->create(['name' => 'In Use Plan', 'status' => 'active']);
+        $team = Team::factory()->create(['team_code' => 'ARC']);
+        SalesOrder::factory()->create([
+            'team_id' => $team->id,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+        ]);
+
+        $this->actingAs($this->admin(), 'admin')
+            ->delete(route('admin.products.destroy', $product))
+            ->assertRedirect(route('admin.products'));
+
+        // Product is not deleted; it is archived (inactive)
+        $this->assertDatabaseHas('products', ['id' => $product->id, 'status' => 'inactive']);
+    }
+
+    public function test_dashboard_renders_dynamic_product_analytics(): void
+    {
+        Product::factory()->create(['name' => 'Analytics Product', 'status' => 'active']);
+
+        $this->actingAs($this->admin(), 'admin')
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Dynamic Product Analytics')
+            ->assertSee('Analytics Product');
     }
 }

@@ -122,7 +122,9 @@ class FollowUpsController extends Controller
 
         return response()->json([
             'follow_up' => new FollowUpResource($model),
-            'history' => FollowUpHistoryResource::collection($model->history()->latest('created_at')->get()),
+            'history' => [
+                'data' => FollowUpHistoryResource::collection($model->history()->latest('created_at')->get()),
+            ],
         ]);
     }
 

@@ -29,6 +29,8 @@ trait ProvidesApiTokens
 
     protected function actingAsToken(string $token): array
     {
+        auth()->forgetGuards();
+
         return [
             'Authorization' => 'Bearer '.$token,
             'Accept' => 'application/json',

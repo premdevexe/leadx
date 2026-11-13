@@ -35,8 +35,24 @@
 </div>
 
 <div class="mt-6 flex items-center gap-3">
-    <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+    <button type="submit" id="product-submit-btn" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
         {{ $product->exists ? 'Save changes' : 'Create product' }}
     </button>
     <a href="{{ route('admin.products') }}" class="text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
 </div>
+
+<script>
+    (function () {
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function () {
+                const btn = document.getElementById('product-submit-btn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-75', 'cursor-not-allowed');
+                    btn.innerHTML = '<span class="inline-block animate-spin mr-1">↻</span> Saving…';
+                }
+            });
+        }
+    })();
+</script>

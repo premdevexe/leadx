@@ -15,14 +15,14 @@ use Throwable;
  * The payment-verification pipeline.
  *
  * The only thing that can activate a subscription is a *verified*
- * payment — either one an admin explicitly verified/rejected through the
+ * payment - either one an admin explicitly verified/rejected through the
  * manual flow, or one confirmed by a signed gateway webhook. Unverified
  * screenshots, client-side status claims and pending/failed rows never
  * activate anything.
  *
  * The pipeline is:
  *   1. verify/reject a payment row (manual, admin) or mark it gateway-verified
- *   2. recompute the order's verified total
+ *   2. link the payment to the CRM customer and recompute the order's verified total
  *   3. activate (or refuse) the subscription per the configured policy
  *
  * Activation is transaction-safe and idempotent: repeated verify calls
@@ -38,7 +38,7 @@ class PaymentService
 
     /**
      * Manually verify a payment. Idempotent: re-verifying an already
-     * verified row only refreshes the notes — it never re-mints a
+     * verified row only refreshes the notes - it never re-mints a
      * subscription (activation is itself idempotent, keyed on order_id).
      */
     public function verify(Payment $payment, int $adminId, ?string $notes = null): Payment
@@ -74,7 +74,7 @@ class PaymentService
 
     /**
      * Manually reject a payment (e.g. a failed or invalid transfer). A
-     * rejected row must never activate a subscription — and if one was
+     * rejected row must never activate a subscription - and if one was
      * earlier activated off a different verified row, that activation is
      * suspended, not silently kept.
      */
@@ -159,7 +159,7 @@ class PaymentService
 
         $customer = null;
 
-        // The CRM upsert happens only for verified purchases — pending or
+        // The CRM upsert happens only for verified purchases - pending or
         // failed gateway rows never create or promote a customer.
         if ($payment->isVerified()) {
             try {
@@ -168,6 +168,13 @@ class PaymentService
                     \App\Support\Money::toCents($payment->amount),
                     $adminId,
                 );
+
+                // Link the verified payment to the CRM customer it settled,
+                // so the customer's purchase and payment history stay
+                // traversable from both sides.
+                if ($customer->id !== $payment->customer_id) {
+                    $payment->forceFill(['customer_id' => $customer->id])->save();
+                }
             } catch (Throwable) {
                 // An unresolvable customer never blocks activation; the
                 // admin can resolve it manually.

@@ -77,8 +77,8 @@ class GoogleCalendarOauthTest extends TestCase
             ->assertJsonPath('data.connection.status', 'connected')
             ->assertJsonPath('data.connection.google_email', 'employee@gmail.com')
             // Module 2: credentials are never serialized.
-            ->assertJsonMissing('data.connection.access_token')
-            ->assertJsonMissing('data.connection.refresh_token');
+            ->assertJsonMissingPath('data.connection.access_token')
+            ->assertJsonMissingPath('data.connection.refresh_token');
 
         $this->assertDatabaseHas('employee_google_connections', [
             'employee_id' => $this->employee->id,
@@ -119,8 +119,8 @@ class GoogleCalendarOauthTest extends TestCase
         $this->getJson('/api/v1/employee/google/calendar', $this->actingAsToken($this->employeeToken($this->employee)))
             ->assertOk()
             ->assertJsonPath('data.connected', true)
-            ->assertJsonMissing('data.connection.access_token')
-            ->assertJsonMissing('data.connection.refresh_token');
+            ->assertJsonMissingPath('data.connection.access_token')
+            ->assertJsonMissingPath('data.connection.refresh_token');
     }
 
     public function test_disconnect_clears_credentials(): void

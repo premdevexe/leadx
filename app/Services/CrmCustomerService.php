@@ -87,6 +87,9 @@ class CrmCustomerService
         $phone = $this->normalizePhone($order->customer_phone);
         $email = $this->normalizeEmail($order->customer_email ?? $order->customer_name);
 
+        // Seed at zero: the caller (upsertForPurchase) immediately records
+        // this verified purchase on top, so the first purchase lands at a
+        // count of exactly one.
         return Customer::create([
             'name' => $name,
             'email' => $order->customer_email ?? null,
@@ -96,7 +99,7 @@ class CrmCustomerService
             'status' => 'paying',
             'team_id' => $order->team_id,
             'created_by_admin_id' => $createdByAdminId,
-            'purchases_count' => 1,
+            'purchases_count' => 0,
             'total_purchased' => '0.00',
         ]);
     }

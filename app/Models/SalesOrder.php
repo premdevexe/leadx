@@ -89,6 +89,9 @@ class SalesOrder extends Model
         'customer_email',
         'product_id',
         'product_name',
+        'product_name_snapshot',
+        'product_price_snapshot',
+        'product_duration_snapshot',
         'subscription_plan',
         'duration',
         'product_value',
@@ -108,6 +111,7 @@ class SalesOrder extends Model
     {
         return [
             'product_value' => 'decimal:2',
+            'product_price_snapshot' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'closing_value' => 'decimal:2',
             'amount_received' => 'decimal:2',

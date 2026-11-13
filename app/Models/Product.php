@@ -40,4 +40,12 @@ class Product extends Model
             'price' => 'decimal:2',
         ];
     }
+
+    /**
+     * Orders created from this product.
+     */
+    public function orders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SalesOrder::class);
+    }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AnalyticsController;
 use App\Http\Controllers\Api\V1\Admin\AuthenticationController as AdminAuth;
 use App\Http\Controllers\Api\V1\Admin\EmployeesController;
 use App\Http\Controllers\Api\V1\Admin\PaymentsController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Api\V1\Employee\GoogleCalendarController;
 use App\Http\Controllers\Api\V1\FollowUpsController;
 use App\Http\Controllers\Api\V1\GatewayWebhookController;
 use App\Http\Controllers\Api\V1\OrdersController;
+use App\Http\Controllers\Api\V1\ProductsController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\Team\AuthenticationController as TeamAuth;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +45,11 @@ Route::prefix('v1')->group(function () {
         Route::post('admin/payments', [PaymentsController::class, 'store']);
         Route::post('admin/payments/{payment}/verify', [PaymentsController::class, 'verify']);
         Route::post('admin/payments/{payment}/reject', [PaymentsController::class, 'reject']);
+
+        // Product analytics (catalog-driven: new products appear
+        // automatically, see AnalyticsController)
+        Route::get('admin/analytics/products', [AnalyticsController::class, 'productReport']);
+        Route::get('admin/analytics/summary', [AnalyticsController::class, 'summary']);
     });
 
     // ---- Team ----
@@ -77,6 +84,10 @@ Route::prefix('v1')->group(function () {
 
     // ---- Orders (admin / team / employee; scoped per-actor in controller) ----
     Route::middleware('auth:sanctum')->group(function () {
+        // Active catalog for order selection (database is the source of
+        // truth for names, prices and durations).
+        Route::get('products', [ProductsController::class, 'index']);
+
         Route::get('orders', [OrdersController::class, 'index']);
         Route::post('orders', [OrdersController::class, 'store']);
         Route::get('orders/by-number/{orderNumber}', [OrdersController::class, 'byNumber']);
@@ -85,14 +96,14 @@ Route::prefix('v1')->group(function () {
         Route::post('orders/{order}/whatsapp-share-log', [OrdersController::class, 'whatsappShareLog']);
         Route::put('orders/{order}/activate', [OrdersController::class, 'activate']);
 
-        // Subscriptions (Phase 07) — read + lifecycle actions, scoped per
+        // Subscriptions (Phase 07) - read + lifecycle actions, scoped per
         // actor in the controller.
         Route::get('subscriptions', [SubscriptionController::class, 'index']);
         Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
         Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew']);
         Route::post('subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
 
-        // Phase 08, Module 1 — customer follow-ups. Reads are scoped to the
+        // Phase 08, Module 1 - customer follow-ups. Reads are scoped to the
         // actor's team/employee inside FollowUpsController; the customer
         // listing is restricted to verified CRM customers so it can be
         // dropped straight into the follow-up picker.
@@ -108,5 +119,5 @@ Route::prefix('v1')->group(function () {
 });
 
 // ---- Gateway webhook (unauthenticated; trust comes from the gateway's
-// signed payload, verified server-side — see GatewayService) ----
+// signed payload, verified server-side - see GatewayService) ----
 Route::post('v1/gateway/webhook', [GatewayWebhookController::class, 'handle']);
