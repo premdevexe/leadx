@@ -30,7 +30,7 @@ class SubscriptionActivatedNotification extends Notification
             'subscription_id' => $sub->id,
             'order_number' => $order?->order_number,
             'team_id' => $sub->team_id,
-            'plan' => $sub->plan_snapshot ?? $order?->subscription_plan,
+            'plan' => $sub->plan_snapshot,
             'expires_at' => $sub->expires_at?->toIso8601String(),
             'amount_paid' => Money::format(Money::toCents($sub->amount_paid)),
         ];

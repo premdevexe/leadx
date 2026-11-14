@@ -58,12 +58,12 @@ class OrderService
                 'product_name_snapshot' => $productName,
                 'product_price_snapshot' => $productPrice,
                 'product_duration_snapshot' => $productDuration,
-                'subscription_plan' => $data['subscription_plan'] ?? null,
                 'duration' => $productDuration,
                 'product_value' => $productPrice,
                 'discount_amount' => $data['discount_amount'] ?? 0,
                 'closing_value' => $data['closing_value'] ?? 0,
                 'amount_received' => $data['amount_received'] ?? 0,
+                'payment_method' => $data['payment_method'] ?? null,
                 'payment_status' => $data['payment_status'] ?? 'pending',
                 'order_status' => $data['order_status'] ?? 'pending',
             ]);

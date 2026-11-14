@@ -32,7 +32,6 @@ class SalesOrderFactory extends Factory
             'customer_name' => fake()->name(),
             'customer_phone' => '+1'.fake()->unique()->numerify('5##-###-####'),
             'product_name' => fake()->word(),
-            'subscription_plan' => fake()->randomElement(['monthly', 'quarterly', 'annual']),
             'duration' => fake()->randomElement(array_keys(SalesOrder::DURATIONS)),
             'product_value' => fake()->randomFloat(2, 0, 5000),
             'discount_amount' => 0,

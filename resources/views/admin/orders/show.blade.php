@@ -92,6 +92,11 @@
                     <span class="rounded-full px-2.5 py-0.5 text-xs font-medium {{ $paymentColors[$order->payment_status] ?? 'bg-neutral-100 text-neutral-600' }}">
                         Payment: {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
                     </span>
+                    @if ($order->payment_method)
+                        <span class="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
+                            Via: {{ \App\Models\Setting::paymentMethodLabel($order->payment_method) }}
+                        </span>
+                    @endif
                     <span class="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
                         Status: {{ ucfirst(str_replace('_', ' ', $order->order_status)) }}
                     </span>

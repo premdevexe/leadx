@@ -101,12 +101,13 @@ class OrdersController extends Controller
             'customer_email' => ['nullable', 'string', 'max:255'],
             'product_id' => ['nullable', 'integer', 'exists:products,id'],
             'product_name' => ['nullable', 'string', 'max:255'],
-            'subscription_plan' => ['nullable', 'string', 'max:50'],
             'duration' => ['sometimes', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
             'product_value' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'closing_value' => ['nullable', 'numeric', 'min:0'],
             'amount_received' => ['nullable', 'numeric', 'min:0'],
+            // Only methods the admin has enabled in Settings may be chosen.
+            'payment_method' => ['nullable', 'in:'.implode(',', \App\Models\Setting::enabledPaymentMethods())],
             'payment_status' => ['in:'.implode(',', SalesOrder::PAYMENT_STATUSES)],
             'order_status' => ['in:'.implode(',', SalesOrder::STATUSES)],
         ]);
@@ -182,7 +183,6 @@ class OrdersController extends Controller
             'customer_email' => ['nullable', 'email', 'max:255'],
             'product_id' => ['nullable', 'integer', 'exists:products,id'],
             'product_name' => ['nullable', 'string', 'max:255'],
-            'subscription_plan' => ['nullable', 'string', 'max:50'],
             'duration' => ['required', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
             'product_value' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],

@@ -148,7 +148,7 @@ class SubscriptionActivator
             'product_id' => $order->product_id,
             'plan_id' => $plan?->id ?? $subscription->plan_id,
             'billing_cycle' => $cycle,
-            'plan_snapshot' => $plan?->name ?? $order->subscription_plan,
+            'plan_snapshot' => $plan?->name,
             'price_snapshot' => $priceSnapshot,
             'amount_paid' => $order->verifiedPaymentTotal(),
             'status' => 'active',
@@ -166,12 +166,7 @@ class SubscriptionActivator
 
     protected function resolvePlan(SalesOrder $order): ?Plan
     {
-        // A plan is referenced by its code stored on the order, or resolved
-        // by product when the order carries a product_id.
-        if ($order->subscription_plan && $plan = Plan::where('name', $order->subscription_plan)->first()) {
-            return $plan;
-        }
-
+        // A plan is resolved by the product the order was created from.
         if ($order->product_id && $plan = Plan::where('product_id', $order->product_id)->active()->orderByDesc('id')->first()) {
             return $plan;
         }

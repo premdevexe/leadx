@@ -156,10 +156,6 @@ class WhatsappShareService
             $lines[] = 'Product: '.$order->product_name;
         }
 
-        if ($order->subscription_plan) {
-            $lines[] = 'Plan: '.$order->subscription_plan;
-        }
-
         $lines[] = 'Closing Value: '
             . ($order->closing_value !== null ? config('leadx.currency', '$') . number_format((float) $order->closing_value, 2) : '—');
         $lines[] = 'Payment Status: '.$this->label($order->payment_status);
@@ -177,14 +173,13 @@ class WhatsappShareService
         if (is_string($template) && $template !== '') {
             return str_replace([
                 '{team}', '{order_id}', '{customer}', '{product}',
-                '{plan}', '{closing_value}', '{payment_status}',
+                '{closing_value}', '{payment_status}',
                 '{subscription_status}', '{expiry_date}',
             ], [
                 (string) ($order->team?->team_name),
                 (string) $order->order_number,
                 (string) $order->customer_name,
                 (string) $order->product_name,
-                (string) $order->subscription_plan,
                 number_format((float) $order->closing_value, 2),
                 $this->label($order->payment_status),
                 $this->label($subscription?->status ?? 'unknown'),

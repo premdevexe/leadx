@@ -30,12 +30,12 @@ class StoreOrderRequest extends FormRequest
             'customer_phone' => ['sometimes', 'nullable', 'string', 'max:30'],
             'customer_email' => ['sometimes', 'nullable', 'string', 'max:255'],
             'product_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'subscription_plan' => ['sometimes', 'nullable', 'string', 'max:50'],
             'duration' => ['sometimes', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
             'product_value' => ['sometimes', 'numeric', 'min:0', 'max:999999999999999.99'],
             'discount_amount' => ['sometimes', 'numeric', 'min:0'],
             'closing_value' => ['sometimes', 'numeric', 'min:0'],
             'amount_received' => ['sometimes', 'numeric', 'min:0'],
+            'payment_method' => ['sometimes', 'nullable', 'in:'.implode(',', \App\Models\Setting::enabledPaymentMethods())],
             'payment_status' => ['sometimes', 'in:'.implode(',', SalesOrder::PAYMENT_STATUSES)],
             'order_status' => ['sometimes', 'in:'.implode(',', SalesOrder::STATUSES)],
             // The catalog product reference. Only the id is accepted from

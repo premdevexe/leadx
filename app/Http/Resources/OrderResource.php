@@ -33,7 +33,6 @@ class OrderResource extends JsonResource
             'product_name_snapshot' => $this->product_name_snapshot ?? $this->product_name,
             'product_price_snapshot' => $this->product_price_snapshot ?? $this->product_value,
             'product_duration_snapshot' => $this->product_duration_snapshot ?? $this->duration,
-            'subscription_plan' => $this->subscription_plan,
             'duration' => $this->duration,
             'product_value' => $this->product_value,
             'discount_amount' => $this->discount_amount,

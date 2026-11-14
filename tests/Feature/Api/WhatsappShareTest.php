@@ -87,7 +87,6 @@ class WhatsappShareTest extends TestCase
         $order->forceFill([
             'customer_name' => 'Nadia K.',
             'product_name' => 'Pro Plan',
-            'subscription_plan' => 'annual',
         ])->save();
 
         $service = app(WhatsappShareService::class);
@@ -100,7 +99,6 @@ class WhatsappShareTest extends TestCase
         $this->assertStringContainsString('Nadia K.', $message);
         $this->assertStringContainsString('Gemini Sales', $message);
         $this->assertStringContainsString('Pro Plan', $message);
-        $this->assertStringContainsString('annual', $message);
         $this->assertStringContainsString('149.99', $message);
         $this->assertStringContainsString('Paid', $message);
         $this->assertStringContainsString('Active', $message);

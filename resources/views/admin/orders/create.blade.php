@@ -115,6 +115,20 @@
             </div>
 
             <div>
+                <label class="block text-xs font-medium text-neutral-500">Payment method</label>
+                <select name="payment_method" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                    <option value="">—</option>
+                    @foreach ($paymentMethods ?? \App\Models\Setting::PAYMENT_METHODS as $code => $label)
+                        @if (in_array($code, $enabledPaymentMethods ?? array_keys(\App\Models\Setting::PAYMENT_METHODS), true))
+                            <option value="{{ $code }}" @selected(old('payment_method') === $code)>{{ $label }}</option>
+                        @endif
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-neutral-400">Only methods enabled in Settings are shown.</p>
+                @error('payment_method') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
                 <label class="block text-xs font-medium text-neutral-500">Payment status</label>
                 <select name="payment_status" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
                     @foreach ($paymentStatuses as $status)

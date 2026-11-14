@@ -92,7 +92,6 @@ class SalesOrder extends Model
         'product_name_snapshot',
         'product_price_snapshot',
         'product_duration_snapshot',
-        'subscription_plan',
         'duration',
         'product_value',
         'discount_amount',
