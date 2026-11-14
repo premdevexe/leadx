@@ -67,6 +67,37 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Team expiry notification (the "expires tomorrow" reminder)
+    |--------------------------------------------------------------------------
+    |
+    | The team-only reminder fires exactly one day before a subscription's
+    | expiry, delivered to the ACTIVE members of that subscription's team
+    | (and no one else). `expiry_reminder_time` is the wall-clock time the
+    | daily scheduler checks for expiries (in the application timezone).
+    |
+    */
+
+    'notifications' => [
+        'expiry_reminder_time' => env('LEADX_EXPIRY_REMINDER_TIME', '08:00'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Google Calendar expiry-reminder lead time
+    |--------------------------------------------------------------------------
+    |
+    | How many minutes before the event start Google should fire its popup
+    | reminder. Defaults to 24h so the calendar alert lands the day before
+    | expiry, matching the team in-app reminder.
+    |
+    */
+
+    'google' => [
+        'expiry_reminder_lead_minutes' => (int) env('LEADX_GOOGLE_EXPIRY_REMINDER_LEAD_MINUTES', 1440),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Payment policy
     |--------------------------------------------------------------------------
     |

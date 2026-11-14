@@ -59,8 +59,19 @@ class OrdersController extends Controller
 
         $orders = $query->orderByDesc('id')->paginate(20)->withQueryString();
 
+        // Prefill a wa.me share link for each row. prepare() only touches the
+        // already-eager-loaded team/subscription relations, so this adds no
+        // extra queries. Only share-eligible orders (active order + active
+        // subscription + valid phone) get a link; the rest render without one.
+        $shareLinks = [];
+        foreach ($orders as $order) {
+            $payload = $this->whatsapp->prepare($order);
+            $shareLinks[$order->id] = $payload['eligible'] ? $payload['url'] : null;
+        }
+
         return view('admin.orders.index', [
             'orders' => $orders,
+            'shareLinks' => $shareLinks,
             'teams' => Team::orderBy('team_code')->get(['id', 'team_code', 'team_name']),
             'employees' => User::where('role', 'employee')->orderBy('username')->get(['id', 'username', 'name', 'team_id']),
             'filters' => [
@@ -211,11 +222,22 @@ class OrdersController extends Controller
             $data['product_duration_snapshot'] = $data['duration'] ?? '1y';
         }
 
-        $productVal = (float) ($data['product_value'] ?? $order->product_value ?? 0);
-        $discountVal = (float) ($data['discount_amount'] ?? $order->discount_amount ?? 0);
-        if (! isset($data['closing_value']) || $data['closing_value'] === null || $data['closing_value'] === '') {
-            $data['closing_value'] = max(0, $productVal - $discountVal);
-        }
+        // Closing value is the rep's input; the discount is *derived* as the
+        // gap between list price and closing price, never typed. A blank
+        // closing value keeps the stored one (falling back to list price),
+        // and the discount is re-derived whenever either side changes so the
+        // stored figure can never drift from product_value - closing_value.
+        $productVal = (float) (isset($data['product_value']) && $data['product_value'] !== ''
+            ? $data['product_value']
+            : ($order->product_value ?? 0));
+
+        $closingVal = (isset($data['closing_value']) && $data['closing_value'] !== '')
+            ? (float) $data['closing_value']
+            : ((float) ($order->closing_value ?? 0) > 0 ? (float) $order->closing_value : $productVal);
+
+        $data['closing_value'] = $closingVal;
+        $data['discount_amount'] = round(max(0.0, $productVal - $closingVal), 2);
+        $data['product_value'] = $productVal;
 
         $order->update($data);
 
@@ -240,7 +262,7 @@ class OrdersController extends Controller
             'source' => 'manual',
             'payment_method' => $data['payment_method'],
             'amount' => $data['amount'],
-            'currency' => 'USD',
+            'currency' => \App\Models\Setting::currency(),
             'payment_date' => now(),
             'payment_status' => 'pending',
             'admin_notes' => $data['admin_notes'] ?? null,
@@ -284,26 +306,21 @@ class OrdersController extends Controller
      */
     public function activate(Request $request, SalesOrder $order): RedirectResponse
     {
-        if ($order->payment_status !== 'paid') {
+        // Activation goes through the decision engine: it enforces the
+        // verified-payment policy, is idempotent (one subscription per order,
+        // keyed by order_id) so duplicate activation is impossible, freezes
+        // the duration snapshot, and creates the calendar expiry event.
+        $subscription = app(\App\Services\SubscriptionActivator::class)
+            ->maybeActivate($order, $request->user('admin')?->id);
+
+        if ($subscription === null) {
             return back()->with(
                 'error',
-                'Order '.$order->order_number.' cannot be activated: payment status is "'.$order->payment_status.'", not "paid".'
+                'Order '.$order->order_number.' was not activated: its verified payments do not yet satisfy the activation policy (see payment status "'.$order->payment_status.'").'
             );
         }
 
-        $subscription = Subscription::updateOrCreate(
-            ['order_id' => $order->id],
-            [
-                'team_id' => $order->team_id,
-                'status' => 'active',
-                'started_at' => now(),
-                'expires_at' => SalesOrder::expiryFor((string) ($order->duration ?: '1y')),
-            ]
-        );
-
-        $order->forceFill(['order_status' => 'active'])->save();
-
-        return back()->with('status', 'Subscription activated ('.$subscription->status.' - expires '.$subscription->expires_at->toDateString().').');
+        return back()->with('status', 'Subscription activated ('.$subscription->status.' - expires '.$subscription->expires_at?->toDateString().').');
     }
 
     /**

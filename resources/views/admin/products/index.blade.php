@@ -4,6 +4,7 @@
 
 @php
     $f = $filters ?? ['search' => null, 'status' => null];
+    $cur = \App\Models\Setting::currencySymbol();
 @endphp
 
 @section('content')
@@ -90,7 +91,7 @@
                                 {{ \App\Models\SalesOrder::DURATIONS[$product->duration] ?? $product->duration }}
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums font-medium text-neutral-900">
-                                {{ number_format((float) $product->price, 2) }}
+                                {{ $cur }}{{ number_format((float) $product->price, 2) }}
                             </td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex items-center gap-1.5 text-xs font-medium {{ $product->status === 'active' ? 'text-emerald-700' : 'text-neutral-500' }}">

@@ -45,6 +45,17 @@ class OrderService
             $productPrice = $product ? $product->price : ($data['product_value'] ?? 0);
             $productDuration = $product ? (string) $product->duration : ($data['duration'] ?? '1y');
 
+            // Closing value is the rep's input — the final deal price. The
+            // discount is *derived*, not typed: it is the gap between the list
+            // price and the closing value. A blank/absent closing value means
+            // the deal closes at list price (no discount). Any client-submitted
+            // discount_amount is ignored so the stored figure can never drift
+            // from product_value − closing_value.
+            $closingValue = array_key_exists('closing_value', $data) && $data['closing_value'] !== ''
+                ? (float) $data['closing_value']
+                : (float) $productPrice;
+            $discountAmount = round(max(0.0, (float) $productPrice - $closingValue), 2);
+
             return SalesOrder::create([
                 'order_number' => $orderNumber,
                 'team_id' => $team->id,
@@ -60,8 +71,8 @@ class OrderService
                 'product_duration_snapshot' => $productDuration,
                 'duration' => $productDuration,
                 'product_value' => $productPrice,
-                'discount_amount' => $data['discount_amount'] ?? 0,
-                'closing_value' => $data['closing_value'] ?? 0,
+                'discount_amount' => $discountAmount,
+                'closing_value' => $closingValue,
                 'amount_received' => $data['amount_received'] ?? 0,
                 'payment_method' => $data['payment_method'] ?? null,
                 'payment_status' => $data['payment_status'] ?? 'pending',

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Admin Dashboard') — LeadX</title>
+    <title>@yield('title', 'Admin Dashboard') — {{ \App\Models\Setting::siteName() }}</title>
     <link rel="manifest" href="{{ url('/manifest.json') }}">
     <meta name="theme-color" content="#171717">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -17,7 +17,7 @@
                class="fixed inset-y-0 left-0 z-40 w-60 shrink-0 -translate-x-full overflow-hidden border-r border-neutral-200 bg-white transition-[width,transform] duration-200 ease-in-out md:static md:translate-x-0">
             <div class="flex h-14 items-center gap-2 px-4">
                 <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-sm font-semibold text-white">L</span>
-                <span class="font-semibold tracking-tight">LeadX</span>
+                <span class="font-semibold tracking-tight">{{ \App\Models\Setting::siteName() }}</span>
             </div>
             <nav class="flex flex-col gap-1 px-2 pb-6 pt-4">
                 <p class="px-3 pb-1 text-xs text-neutral-400">Management</p>
@@ -30,6 +30,7 @@
                         ['route' => 'admin.products', 'label' => 'Products', 'match' => 'admin.products*'],
                         ['route' => 'admin.customers', 'label' => 'Customers (CRM)', 'match' => 'admin.customers*'],
                         ['route' => 'admin.employees', 'label' => 'Employees', 'match' => 'admin.employees*'],
+                        ['route' => 'admin.admins', 'label' => 'Admins', 'match' => 'admin.admins*'],
                         ['route' => 'admin.notifications', 'label' => 'Send Notification', 'match' => 'admin.notifications*'],
                         ['route' => 'admin.settings', 'label' => 'Settings', 'match' => 'admin.settings*'],
                     ];

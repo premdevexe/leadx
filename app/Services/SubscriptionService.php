@@ -104,12 +104,18 @@ class SubscriptionService
             'renewal_date' => $this->billing->renewalDate($expiry),
             'amount_paid' => $order->verifiedPaymentTotal(),
             'last_renewal_reminder_at' => $anchor,
+            // New cycle, new expiry: freeze the governing duration again.
+            'duration_snapshot' => $plan?->duration_code ?? (string) ($order->duration ?: '1y'),
         ])->save();
 
         $order->forceFill(['order_status' => 'active'])->save();
 
         $team = Team::find($subscription->team_id);
         $team?->notifyNow(new SubscriptionActivatedNotification($subscription->fresh()));
+
+        // A renewal moves the expiry, so the calendar event must follow (or be
+        // created if it had never synced). Never blocks the renewal itself.
+        $this->calendar->syncUpdate($subscription->fresh());
 
         return $subscription->fresh();
     }
@@ -131,6 +137,10 @@ class SubscriptionService
         if ($subscription->order) {
             $subscription->order->forceFill(['order_status' => 'cancelled'])->save();
         }
+
+        // Cancellation removes the remote expiry-reminder event (idempotent:
+        // no-op when none was ever created). Never blocks the cancel.
+        $this->calendar->syncCancel($subscription->fresh());
 
         return $subscription->fresh();
     }
@@ -164,6 +174,7 @@ class SubscriptionService
     public function __construct(
         protected BillingRules $billing,
         protected SubscriptionActivator $activator,
+        protected \App\Services\Google\SubscriptionCalendarService $calendar,
     ) {
     }
 }

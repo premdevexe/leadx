@@ -26,9 +26,15 @@ class WhatsappShareService
     /**
      * Build the share payload for an order.
      *
-     * @return array<string, mixed> {order, eligible, reason, phone, message, url}
+     * The customer's API key is included ONLY when $includeApiKey is
+     * explicitly true AND the order actually has a stored credential — never
+     * by default. Callers gate $includeApiKey on their own authorization
+     * check (see OrderCredentialService::canManage); this service only
+     * assembles the text from an allow-list of order fields plus that key.
+     *
+     * @return array<string, mixed> {order, eligible, reason, phone, message, url, api_key_included}
      */
-    public function prepare(SalesOrder $order): array
+    public function prepare(SalesOrder $order, bool $includeApiKey = false): array
     {
         $order->loadMissing(['team', 'subscription']);
 
@@ -47,6 +53,7 @@ class WhatsappShareService
                 'phone' => $normalized,
                 'message' => null,
                 'url' => null,
+                'api_key_included' => false,
             ];
         }
 
@@ -58,10 +65,11 @@ class WhatsappShareService
                 'phone' => null,
                 'message' => null,
                 'url' => null,
+                'api_key_included' => false,
             ];
         }
 
-        $message = $this->buildMessage($order);
+        $message = $this->buildMessage($order, $includeApiKey);
 
         return [
             'order' => $order,
@@ -70,17 +78,31 @@ class WhatsappShareService
             'phone' => $normalized,
             'message' => $message,
             'url' => $this->buildUrl($normalized, $message),
+            // True only when the key was actually folded into the text.
+            'api_key_included' => $includeApiKey && OrderCredentialService::hasKey($order),
         ];
+    }
+
+    /**
+     * Whether the message text would carry the customer's API key given the
+     * opt-in flag, regardless of eligibility. Used by controllers to gate
+     * the checkbox on the order actually having a key.
+     */
+    public static function keyAvailableFor(SalesOrder $order): bool
+    {
+        return OrderCredentialService::hasKey($order);
     }
 
     /**
      * Record a share the user explicitly initiated.
      *
-     * @param string|null $editedMessage employee-reviewed/edited message body
+     * @param string|null $editedMessage   employee-reviewed/edited message body
+     * @param bool $sharedApiKey           whether the opted-in key was folded
+     *                                     into the shared text this time
      *
      * @return WhatsappShareLog
      */
-    public function logShare(SalesOrder $order, mixed $actor, ?string $editedMessage = null): WhatsappShareLog
+    public function logShare(SalesOrder $order, mixed $actor, ?string $editedMessage = null, bool $sharedApiKey = false): WhatsappShareLog
     {
         $payload = $this->prepare($order);
 
@@ -94,6 +116,7 @@ class WhatsappShareService
 
         // Only persist fields we produced ourselves; strip anything that even
         // looks like a secret, just in case an edited message smuggles one in.
+        // This guarantees the customer's API key never reaches the log row.
         $message = $this->scrub($message);
 
         return WhatsappShareLog::create([
@@ -102,6 +125,9 @@ class WhatsappShareService
             'actor_type' => $actor ? class_basename($actor) : null,
             'normalized_phone' => $payload['phone'],
             'message' => $message,
+            // Records that a key was shared (an audit fact), WITHOUT the key
+            // itself — the key is scrubbed out of the stored message.
+            'shared_api_key' => $sharedApiKey,
             // "recorded" = a share was prepared/logged by the user.
             // It is deliberately NOT "delivered".
             'status' => 'recorded',
@@ -140,9 +166,13 @@ class WhatsappShareService
     }
 
     /**
-     * Assemble the share message from an allow-list of fields only.
+     * Assemble the share message from an allow-list of order/subscription
+     * fields. The customer's API key is appended ONLY when $includeApiKey is
+     * true (an explicit, authorized choice) — it is never part of the
+     * default summary. The activation date and subscription status come from
+     * the subscription so the payload matches the delivery spec.
      */
-    protected function buildMessage(SalesOrder $order): string
+    protected function buildMessage(SalesOrder $order, bool $includeApiKey = false): string
     {
         $subscription = $order->subscription;
 
@@ -152,20 +182,42 @@ class WhatsappShareService
             'Customer: '.$order->customer_name,
         ];
 
-        if ($order->product_name) {
-            $lines[] = 'Product: '.$order->product_name;
+        $productName = $order->product_name_snapshot ?? $order->product_name;
+
+        if ($productName) {
+            $lines[] = 'Product: '.$productName;
         }
 
-        $lines[] = 'Closing Value: '
-            . ($order->closing_value !== null ? config('leadx.currency', '$') . number_format((float) $order->closing_value, 2) : '—');
-        $lines[] = 'Payment Status: '.$this->label($order->payment_status);
+        $price = $order->product_price_snapshot ?? $order->product_value;
+
+        $lines[] = 'Price: '
+            . ($price !== null
+                ? config('leadx.currency', '$').number_format((float) $price, 2)
+                : '—');
+        $lines[] = 'Duration: '
+            . (\App\Models\SalesOrder::DURATIONS[$order->product_duration_snapshot ?? $order->duration] ?? ($order->product_duration_snapshot ?? $order->duration ?? '—'));
 
         if ($subscription) {
             $lines[] = 'Subscription Status: '.$this->label($subscription->status);
 
+            if ($subscription->started_at) {
+                $lines[] = 'Activation Date: '.$subscription->started_at->toDateString();
+            }
+
             if ($subscription->expires_at) {
                 $lines[] = 'Expiry Date: '.$subscription->expires_at->toDateString();
             }
+        }
+
+        $lines[] = 'Payment Status: '.$this->label($order->payment_status);
+
+        // The API key is opt-in and comes from the order's encrypted
+        // credential. It is added only here, only when explicitly requested,
+        // and is later scrubbed from any stored log copy.
+        if ($includeApiKey) {
+            $key = OrderCredentialService::keyFor($order);
+
+            $lines[] = $key !== null ? 'API Key: '.$key : 'API Key: (none stored)';
         }
 
         $template = Config::get('leadx.whatsapp.message_template');

@@ -83,7 +83,7 @@
                     ] as $label => $amount)
                         <div class="flex justify-between tabular-nums">
                             <dt class="text-neutral-500">{{ $label }}</dt>
-                            <dd class="font-medium text-neutral-900">{{ number_format((float) $amount, 2) }}</dd>
+                            <dd class="font-medium text-neutral-900">{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $amount, 2) }}</dd>
                         </div>
                     @endforeach
                 </dl>
@@ -129,7 +129,7 @@
                                     <tr>
                                         <td class="px-3 py-2 text-neutral-600">{{ $payment->created_at->format('M d, Y') }}</td>
                                         <td class="px-3 py-2 uppercase font-mono text-neutral-700">{{ $payment->payment_method }}</td>
-                                        <td class="px-3 py-2 text-right tabular-nums font-medium">{{ number_format((float) $payment->amount, 2) }}</td>
+                                        <td class="px-3 py-2 text-right tabular-nums font-medium">{{ \App\Models\Setting::currencySymbolFor($payment->currency) }}{{ number_format((float) $payment->amount, 2) }}</td>
                                         <td class="px-3 py-2">
                                             <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium {{ $paymentColors[$payment->payment_status] ?? 'bg-neutral-100' }}">
                                                 {{ ucfirst($payment->payment_status) }}
@@ -212,11 +212,11 @@
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-neutral-500">Price Snapshot</dt>
-                            <dd class="tabular-nums">{{ number_format((float) ($order->subscription->price_snapshot ?? $order->product_price_snapshot ?? $order->product_value), 2) }}</dd>
+                            <dd class="tabular-nums">{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) ($order->subscription->price_snapshot ?? $order->product_price_snapshot ?? $order->product_value), 2) }}</dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-neutral-500">Verified Amount Paid</dt>
-                            <dd class="tabular-nums font-medium text-emerald-700">{{ number_format((float) ($order->subscription->amount_paid ?? $order->amount_received), 2) }}</dd>
+                            <dd class="tabular-nums font-medium text-emerald-700">{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) ($order->subscription->amount_paid ?? $order->amount_received), 2) }}</dd>
                         </div>
                         @if ($order->subscription->started_at)
                             <div class="flex justify-between"><dt class="text-neutral-500">Started</dt><dd>{{ $order->subscription->started_at->toDateString() }}</dd></div>

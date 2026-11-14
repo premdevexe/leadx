@@ -28,6 +28,24 @@ class Setting extends Model
     public const KEY_PAYMENT_METHODS = 'payment_methods';
 
     /**
+     * Currencies the admin can pick on the Settings page, code => symbol.
+     * The site name and active currency live under the 'site_name' and
+     * 'currency' keys.
+     *
+     * @var array<string, string>
+     */
+    public const CURRENCIES = [
+        'INR' => '₹',
+        'USD' => '$',
+        'EUR' => '€',
+        'GBP' => '£',
+        'AED' => 'د.إ',
+    ];
+
+    public const KEY_SITE_NAME = 'site_name';
+    public const KEY_CURRENCY = 'currency';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -92,5 +110,69 @@ class Setting extends Model
         }
 
         return self::PAYMENT_METHODS[$code] ?? $code;
+    }
+
+    /**
+     * The site name (default 'LeadX').
+     */
+    public static function siteName(): string
+    {
+        $value = static::where('key', self::KEY_SITE_NAME)->value('value');
+
+        return is_string($value) && trim($value) !== '' ? trim($value) : 'LeadX';
+    }
+
+    /**
+     * Store the site name. An empty value clears the setting so the
+     * default ('LeadX') applies again.
+     */
+    public static function setSiteName(string $name): void
+    {
+        $name = trim($name);
+
+        static::where('key', self::KEY_SITE_NAME)
+            ->first()
+            ?->delete();
+
+        if ($name !== '') {
+            static::create(['key' => self::KEY_SITE_NAME, 'value' => $name]);
+        }
+    }
+
+    /**
+     * The active currency code (default 'USD').
+     */
+    public static function currency(): string
+    {
+        $value = static::where('key', self::KEY_CURRENCY)->value('value');
+
+        return is_string($value) && $value !== '' ? $value : 'USD';
+    }
+
+    /**
+     * The symbol for the active currency code.
+     */
+    public static function currencySymbol(): string
+    {
+        return self::currencySymbolFor(static::currency());
+    }
+
+    /**
+     * The display symbol for a stored currency code (payment rows carry
+     * their own code). Falls back to the code itself when unknown.
+     */
+    public static function currencySymbolFor(?string $code): string
+    {
+        $code = $code === null || $code === '' ? 'USD' : $code;
+
+        return self::CURRENCIES[$code] ?? $code;
+    }
+
+    /**
+     * Persist the active currency code.
+     */
+    public static function setCurrency(string $code): void
+    {
+        static::updateOrCreate(['key' => self::KEY_CURRENCY], ['value' => $code]);
     }
 }

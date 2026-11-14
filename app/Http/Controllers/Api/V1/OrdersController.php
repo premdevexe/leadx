@@ -156,9 +156,16 @@ class OrdersController extends Controller
     public function whatsappShare(Request $request, int $order): JsonResponse
     {
         $thisOrder = SalesOrder::with(['team', 'subscription'])->findOrFail($order);
-        $this->orders->assertCanAccess($thisOrder, $request->user('sanctum'));
+        $actor = $request->user('sanctum');
+        $this->orders->assertCanAccess($thisOrder, $actor);
 
-        $payload = $this->whatsapp->prepare($thisOrder);
+        // The customer's API key joins the prefilled message ONLY when the
+        // caller explicitly opts in AND is authorized to manage this order's
+        // key. An unauthorized opt-in silently produces a key-free message.
+        $includeKey = $request->boolean('include_api_key')
+            && $this->credentials->canManage($thisOrder, $actor);
+
+        $payload = $this->whatsapp->prepare($thisOrder, $includeKey);
 
         return response()->json([
             'order_id' => $thisOrder->id,
@@ -168,6 +175,7 @@ class OrdersController extends Controller
             'phone' => $payload['phone'],
             'message' => $payload['message'],
             'url' => $payload['url'],
+            'api_key_included' => $payload['api_key_included'],
         ]);
     }
 
@@ -202,25 +210,21 @@ class OrdersController extends Controller
         $thisOrder = SalesOrder::findOrFail($order);
         $this->orders->assertCanAccess($thisOrder, $request->user('sanctum'));
 
-        if ($thisOrder->payment_status !== 'paid') {
+        // Route through the decision engine rather than writing the row by
+        // hand: it enforces the verified-payment policy, is idempotent (the
+        // subscription is keyed by the unique order_id, so a repeated call
+        // can never mint a duplicate activation), freezes the duration
+        // snapshot, and creates the calendar expiry event.
+        $subscription = app(\App\Services\SubscriptionActivator::class)
+            ->maybeActivate($thisOrder, $request->user('sanctum')?->getKey());
+
+        if ($subscription === null) {
             throw ValidationException::withMessages([
-                'payment_status' => 'An order may only become an active subscription once payment is verified.',
+                'payment_status' => 'An order may only become an active subscription once its verified payments satisfy the activation policy.',
             ]);
         }
 
-        $subscription = Subscription::updateOrCreate(
-            ['order_id' => $thisOrder->id],
-            [
-                'team_id' => $thisOrder->team_id,
-                'status' => 'active',
-                'started_at' => now(),
-                'expires_at' => SalesOrder::expiryFor((string) ($thisOrder->duration ?: '1y')),
-            ]
-        );
-
-        $thisOrder->forceFill(['order_status' => 'active'])->save();
-
-        return (new OrderResource($thisOrder->load('subscription', 'team')))
+        return (new OrderResource($thisOrder->fresh()->load('subscription', 'team')))
             ->response();
     }
 }

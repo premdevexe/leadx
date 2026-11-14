@@ -9,8 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Admin settings page. Currently exposes which payment methods are
- * enabled for orders (GPay, PhonePe, Paytm, …).
+ * Admin settings page. Exposes the site identity (name + currency) and
+ * which payment methods are enabled for orders (GPay, PhonePe, Paytm, …).
  */
 class SettingsController extends Controller
 {
@@ -19,11 +19,12 @@ class SettingsController extends Controller
      */
     public function index(): View
     {
-        $enabled = Setting::enabledPaymentMethods();
-
         return view('admin.settings.index', [
             'paymentMethods' => Setting::PAYMENT_METHODS,
-            'enabledMethods' => $enabled,
+            'enabledMethods' => Setting::enabledPaymentMethods(),
+            'siteName' => Setting::siteName(),
+            'currencies' => Setting::CURRENCIES,
+            'currency' => Setting::currency(),
         ]);
     }
 
@@ -33,15 +34,20 @@ class SettingsController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'site_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'currency' => ['required', 'string', 'in:'.implode(',', array_keys(Setting::CURRENCIES))],
             'payment_methods' => ['array'],
             'payment_methods.*' => ['string', 'in:'.implode(',', array_keys(Setting::PAYMENT_METHODS))],
         ]);
 
         // A submitted (possibly empty) array always replaces the set, so
         // unchecking the last method disables payments entirely.
-        $methods = $data['payment_methods'] ?? [];
+        Setting::setStringList(Setting::KEY_PAYMENT_METHODS, $data['payment_methods'] ?? []);
+        Setting::setCurrency($data['currency']);
 
-        Setting::setStringList(Setting::KEY_PAYMENT_METHODS, $methods);
+        if (array_key_exists('site_name', $data)) {
+            Setting::setSiteName((string) $data['site_name']);
+        }
 
         return redirect()->route('admin.settings')->with('status', 'Settings saved.');
     }

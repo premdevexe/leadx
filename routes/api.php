@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Employee\AuthenticationController as EmployeeAut
 use App\Http\Controllers\Api\V1\Employee\GoogleCalendarController;
 use App\Http\Controllers\Api\V1\FollowUpsController;
 use App\Http\Controllers\Api\V1\GatewayWebhookController;
+use App\Http\Controllers\Api\V1\OrderCredentialController;
 use App\Http\Controllers\Api\V1\OrdersController;
 use App\Http\Controllers\Api\V1\ProductsController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
@@ -108,6 +109,14 @@ Route::prefix('v1')->group(function () {
         Route::get('orders/{order}/whatsapp-share', [OrdersController::class, 'whatsappShare']);
         Route::post('orders/{order}/whatsapp-share-log', [OrdersController::class, 'whatsappShareLog']);
         Route::put('orders/{order}/activate', [OrdersController::class, 'activate']);
+
+        // Order delivery: the customer's own API key, per order. Status and
+        // store are scoped per actor; reveal is the one authorized plaintext
+        // read (never logged). No key is ever generated or echoed in list
+        // endpoints — OrderResource does not expose it.
+        Route::get('orders/{order}/api-key', [OrderCredentialController::class, 'show']);
+        Route::post('orders/{order}/api-key', [OrderCredentialController::class, 'store']);
+        Route::post('orders/{order}/api-key/reveal', [OrderCredentialController::class, 'reveal']);
 
         // Subscriptions (Phase 07) - read + lifecycle actions, scoped per
         // actor in the controller.

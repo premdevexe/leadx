@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\AdminLoginController;
+use App\Http\Controllers\Admin\AdminsController;
 use App\Http\Controllers\Admin\CustomersController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmployeesController;
@@ -89,6 +90,13 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/employees/{employee}/edit', [EmployeesController::class, 'edit'])->name('admin.employees.edit');
     Route::put('/admin/employees/{employee}', [EmployeesController::class, 'update'])->name('admin.employees.update');
     Route::delete('/admin/employees/{employee}', [EmployeesController::class, 'destroy'])->name('admin.employees.destroy');
+
+    // Admin account management
+    Route::get('/admin/admins', [AdminsController::class, 'index'])->name('admin.admins');
+    Route::get('/admin/admins/create', [AdminsController::class, 'create'])->name('admin.admins.create');
+    Route::post('/admin/admins', [AdminsController::class, 'store'])->name('admin.admins.store');
+    Route::get('/admin/admins/{admin}/edit', [AdminsController::class, 'edit'])->name('admin.admins.edit');
+    Route::put('/admin/admins/{admin}', [AdminsController::class, 'update'])->name('admin.admins.update');
 
     // Customer management (CRM)
     Route::get('/admin/customers', [CustomersController::class, 'index'])->name('admin.customers');

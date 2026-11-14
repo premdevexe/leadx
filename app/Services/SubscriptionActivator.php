@@ -33,6 +33,7 @@ class SubscriptionActivator
 {
     public function __construct(
         protected BillingRules $billing,
+        protected \App\Services\Google\SubscriptionCalendarService $calendar,
     ) {
     }
 
@@ -50,7 +51,7 @@ class SubscriptionActivator
 
         $policyMet = $this->policySatisfied($order);
 
-        return DB::transaction(function () use ($order, $policyMet, $customer, $adminId) {
+        $subscription = DB::transaction(function () use ($order, $policyMet, $customer, $adminId) {
             $subscription = $this->findOrCreateFor($order);
 
             if (! $policyMet) {
@@ -68,6 +69,17 @@ class SubscriptionActivator
 
             return $subscription->fresh();
         });
+
+        // Now active: create (or reconcile) the Google Calendar expiry-reminder
+        // event. Done OUTSIDE the activation transaction so a calendar hiccup
+        // never rolls back a valid activation; the sync records a pending
+        // status when no calendar is connected, and is idempotent so a re-run
+        // (e.g. a repeated webhook) never creates a second event.
+        if ($subscription && $subscription->status === 'active') {
+            $this->calendar->syncCreate($subscription);
+        }
+
+        return $subscription;
     }
 
     /**
@@ -152,9 +164,16 @@ class SubscriptionActivator
             'price_snapshot' => $priceSnapshot,
             'amount_paid' => $order->verifiedPaymentTotal(),
             'status' => 'active',
+            // Activation date: the moment the verified purchase activates the
+            // subscription (kept on re-activation, so a repeated verify does
+            // not move the start or create a second activation).
             'started_at' => $subscription->started_at ?? now(),
+            // Expiry = activation date + the frozen duration snapshot.
             'expires_at' => $expiry,
             'renewal_date' => $renewal,
+            // The duration that governs THIS subscription's horizon, frozen
+            // at activation. Product/plan duration edits later never move it.
+            'duration_snapshot' => $plan?->duration_code ?? (string) ($order->duration ?: '1y'),
         ])->save();
 
         $order->forceFill(['order_status' => 'active'])->save();

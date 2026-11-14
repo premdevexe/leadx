@@ -65,6 +65,21 @@ class Team extends Authenticatable
     }
 
     /**
+     * The active employee members of this team: users whose (denormalized,
+     * kept in sync by TeamService) team_id points here, with an active
+     * employee account. This is the recipient set for team-scoped
+     * notifications — inactives and anyone no longer on the team are
+     * excluded. Membership is verified against the users table at dispatch
+     * time.
+     */
+    public function activeMembers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->users()
+            ->where('role', 'employee')
+            ->where('status', 'active');
+    }
+
+    /**
      * Orders issued to this team.
      */
     public function orders(): HasMany

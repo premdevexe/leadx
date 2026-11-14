@@ -4,6 +4,7 @@
 
 @php
     $f = $filters ?? ['search' => null, 'team_id' => null];
+    $cur = \App\Models\Setting::currencySymbol();
 @endphp
 
 @section('content')
@@ -93,7 +94,7 @@
                                 {{ $customer->purchases_count }}
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums font-medium text-neutral-900">
-                                {{ number_format((float) $customer->total_purchased, 2) }}
+                                {{ $cur }}{{ number_format((float) $customer->total_purchased, 2) }}
                             </td>
                             <td class="px-4 py-3 text-right text-xs text-neutral-500">
                                 {{ $customer->last_purchase_at ? $customer->last_purchase_at->format('M d, Y') : '—' }}

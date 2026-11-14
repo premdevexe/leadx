@@ -2,6 +2,10 @@
 
 @section('title', 'Sales Analytics & Reports')
 
+@php
+    $cur = \App\Models\Setting::currencySymbol();
+@endphp
+
 @section('content')
     <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -129,25 +133,25 @@
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
                     <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Verified Revenue</div>
-                    <div class="mt-2 text-2xl font-bold tabular-nums text-emerald-600">${{ $overview['verified_revenue'] }}</div>
+                    <div class="mt-2 text-2xl font-bold tabular-nums text-emerald-600">{{ $cur }}{{ $overview['verified_revenue'] }}</div>
                     <div class="mt-1 text-xs text-neutral-400">Actual collected & cleared</div>
                 </div>
 
                 <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
                     <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Pending Collections</div>
-                    <div class="mt-2 text-2xl font-bold tabular-nums text-amber-600">${{ $overview['pending_collections'] }}</div>
+                    <div class="mt-2 text-2xl font-bold tabular-nums text-amber-600">{{ $cur }}{{ $overview['pending_collections'] }}</div>
                     <div class="mt-1 text-xs text-neutral-400">Outstanding ledger balance</div>
                 </div>
 
                 <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
                     <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Total Closing Value</div>
-                    <div class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">${{ $overview['total_closing_value'] }}</div>
+                    <div class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $cur }}{{ $overview['total_closing_value'] }}</div>
                     <div class="mt-1 text-xs text-neutral-400">Agreed contract values</div>
                 </div>
 
                 <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
                     <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Discounts & Concessions</div>
-                    <div class="mt-2 text-2xl font-bold tabular-nums text-neutral-700">${{ $overview['total_discounts'] }}</div>
+                    <div class="mt-2 text-2xl font-bold tabular-nums text-neutral-700">{{ $cur }}{{ $overview['total_discounts'] }}</div>
                     <div class="mt-1 text-xs text-neutral-400">Catalog list vs closing</div>
                 </div>
             </div>
@@ -157,27 +161,27 @@
                 <dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm">
                     <div class="rounded-lg bg-neutral-50 p-3">
                         <dt class="text-xs text-neutral-500">Gross Product Value</dt>
-                        <dd class="mt-1 text-lg font-semibold text-neutral-900">${{ $revenue['product_value'] }}</dd>
+                        <dd class="mt-1 text-lg font-semibold text-neutral-900">{{ $cur }}{{ $revenue['product_value'] }}</dd>
                     </div>
                     <div class="rounded-lg bg-neutral-50 p-3">
                         <dt class="text-xs text-neutral-500">Total Closing Value</dt>
-                        <dd class="mt-1 text-lg font-semibold text-neutral-900">${{ $revenue['closing_value'] }}</dd>
+                        <dd class="mt-1 text-lg font-semibold text-neutral-900">{{ $cur }}{{ $revenue['closing_value'] }}</dd>
                     </div>
                     <div class="rounded-lg bg-neutral-50 p-3">
                         <dt class="text-xs text-neutral-500">Total Discounts</dt>
-                        <dd class="mt-1 text-lg font-semibold text-neutral-700">${{ $revenue['discounts'] }}</dd>
+                        <dd class="mt-1 text-lg font-semibold text-neutral-700">{{ $cur }}{{ $revenue['discounts'] }}</dd>
                     </div>
                     <div class="rounded-lg bg-emerald-50/50 p-3">
                         <dt class="text-xs text-emerald-700">Collected Amount Received</dt>
-                        <dd class="mt-1 text-lg font-bold text-emerald-700">${{ $revenue['amount_received'] }}</dd>
+                        <dd class="mt-1 text-lg font-bold text-emerald-700">{{ $cur }}{{ $revenue['amount_received'] }}</dd>
                     </div>
                     <div class="rounded-lg bg-amber-50/50 p-3">
                         <dt class="text-xs text-amber-700">Pending Uncollected Balance</dt>
-                        <dd class="mt-1 text-lg font-bold text-amber-700">${{ $revenue['pending_amount'] }}</dd>
+                        <dd class="mt-1 text-lg font-bold text-amber-700">{{ $cur }}{{ $revenue['pending_amount'] }}</dd>
                     </div>
                     <div class="rounded-lg bg-red-50/50 p-3">
                         <dt class="text-xs text-red-700">Deducted Refunds</dt>
-                        <dd class="mt-1 text-lg font-semibold text-red-700">${{ $revenue['refunds'] }}</dd>
+                        <dd class="mt-1 text-lg font-semibold text-red-700">{{ $cur }}{{ $revenue['refunds'] }}</dd>
                     </div>
                 </dl>
 
@@ -188,7 +192,7 @@
                             @foreach ($revenue['by_payment_method'] as $method => $amount)
                                 <div class="rounded-lg border border-neutral-200 p-3">
                                     <div class="text-xs text-neutral-500 capitalize">{{ str_replace('_', ' ', $method) }}</div>
-                                    <div class="mt-1 text-base font-semibold text-neutral-900">${{ $amount }}</div>
+                                    <div class="mt-1 text-base font-semibold text-neutral-900">{{ $cur }}{{ $amount }}</div>
                                 </div>
                             @endforeach
                         </div>
@@ -217,10 +221,10 @@
                         <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
                             <td class="px-4 py-3 font-medium text-neutral-900">{{ $row['product'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $row['orders'] }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">${{ $row['collected_revenue'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">{{ $cur }}{{ $row['collected_revenue'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-700">{{ $row['active_subscriptions'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-700">{{ $row['active_customers'] }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums text-neutral-500">${{ $row['pending_collection'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-500">{{ $cur }}{{ $row['pending_collection'] }}</td>
                         </tr>
                     @empty
                         <tr><td colspan="6" class="px-4 py-8 text-center text-neutral-400">No products found</td></tr>
@@ -254,9 +258,9 @@
                             </td>
                             <td class="px-4 py-3 font-mono text-xs text-neutral-600">{{ $row['team_code'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $row['total_orders'] }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums text-neutral-700">${{ $row['closing_value'] }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">${{ $row['verified_revenue'] }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums text-neutral-500">${{ $row['pending_collections'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-700">{{ $cur }}{{ $row['closing_value'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">{{ $cur }}{{ $row['verified_revenue'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-500">{{ $cur }}{{ $row['pending_collections'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-700">{{ $row['active_subscriptions'] }}</td>
                         </tr>
                     @empty
@@ -290,9 +294,9 @@
                             <td class="px-4 py-3 font-mono text-xs text-neutral-600">{{ $row['team_code'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $row['members_count'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $row['orders'] }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums text-neutral-700">${{ $row['closing_value'] }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">${{ $row['revenue'] }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums text-neutral-500">${{ $row['pending_collections'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-700">{{ $cur }}{{ $row['closing_value'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">{{ $cur }}{{ $row['revenue'] }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-500">{{ $cur }}{{ $row['pending_collections'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-700">{{ $row['active_subscriptions'] }}</td>
                         </tr>
                     @empty
@@ -330,8 +334,8 @@
                             <td class="px-4 py-3 font-medium">{{ $order->customer_name }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-neutral-600">{{ $order->team_code_snapshot }}</td>
                             <td class="px-4 py-3 text-neutral-700">{{ $order->product_name ?? $order->product_name_snapshot ?? '—' }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums font-medium">${{ number_format((float)$order->closing_value, 2) }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">${{ $order->verifiedPaymentTotal() }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums font-medium">{{ $cur }}{{ number_format((float)$order->closing_value, 2) }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">{{ $cur }}{{ $order->verifiedPaymentTotal() }}</td>
                             <td class="px-4 py-3">
                                 <span class="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
                                     {{ ucfirst(str_replace('_', ' ', $order->order_status)) }}

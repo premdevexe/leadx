@@ -164,6 +164,25 @@ class SalesOrder extends Model
     }
 
     /**
+     * The customer's delivered API key for this order (encrypted at rest).
+     * The key itself is excluded from serialization — only a masked
+     * indicator is ever surfaced, and only to authorized actors.
+     */
+    public function apiCredential(): HasOne
+    {
+        return $this->hasOne(OrderApiCredential::class, 'order_id', 'id');
+    }
+
+    /**
+     * The customer's API key, when the caller is authorized to read it.
+     * Returns the decrypted plaintext only; it is never logged by callers.
+     */
+    public function apiKey(): ?string
+    {
+        return $this->apiCredential?->decryptedKey();
+    }
+
+    /**
      * Total amount that has been *verified* by an admin (excludes pending,
      * failed and refunded rows, and payments older than the configured
      * staleness window). Used for activation decisions and revenue

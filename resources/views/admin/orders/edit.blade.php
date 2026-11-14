@@ -126,18 +126,19 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Discount amount</label>
-                <input type="number" step="0.01" min="0" id="discount-amount" name="discount_amount" value="{{ old('discount_amount', $order->discount_amount ?? 0) }}"
+                <label class="block text-xs font-medium text-neutral-500">Closing value</label>
+                <input type="number" step="0.01" min="0" id="closing-value" name="closing_value" value="{{ old('closing_value', $order->closing_value ?? $order->product_value ?? 0) }}"
                        class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
-                @error('discount_amount') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                <p class="mt-1 text-xs text-neutral-400">The final deal price you close at. The discount below is auto-calculated from it.</p>
+                @error('closing_value') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Closing value</label>
-                <input type="number" step="0.01" min="0" id="closing-value" name="closing_value" value="{{ old('closing_value', $order->closing_value ?? 0) }}"
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
-                <p class="mt-1 text-xs text-neutral-400">Auto-calculated if blank (Product value - Discount).</p>
-                @error('closing_value') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                <label class="block text-xs font-medium text-neutral-500">Discount amount</label>
+                <input type="text" readonly id="discount-amount" name="discount_amount" value="{{ $order->discount_amount ?? 0 }}"
+                       class="mt-1 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-500 cursor-not-allowed tabular-nums">
+                <p class="mt-1 text-xs text-neutral-400">Auto-calculated: Product value − Closing value. Read-only.</p>
+                @error('discount_amount') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div>
@@ -193,10 +194,13 @@
             const discountInput = document.getElementById('discount-amount');
             const closingInput = document.getElementById('closing-value');
 
-            function updateClosing() {
+            // Discount is read-only and derives from the closing price:
+            // discount = product value − closing value. Closing value is the
+            // rep's input; touching either side re-computes the discount.
+            function updateDiscount() {
                 const price = parseFloat(priceInput.value) || 0;
-                const discount = parseFloat(discountInput.value) || 0;
-                closingInput.value = Math.max(0, price - discount).toFixed(2);
+                const closing = parseFloat(closingInput.value) || 0;
+                discountInput.value = Math.max(0, price - closing).toFixed(2);
             }
 
             select.addEventListener('change', function () {
@@ -207,11 +211,11 @@
                 if (priceInput && opt.dataset.price) priceInput.value = opt.dataset.price;
                 if (durationSelect && opt.dataset.duration) durationSelect.value = opt.dataset.duration;
 
-                updateClosing();
+                updateDiscount();
             });
 
-            discountInput.addEventListener('input', updateClosing);
-            priceInput.addEventListener('input', updateClosing);
+            closingInput.addEventListener('input', updateDiscount);
+            priceInput.addEventListener('input', updateDiscount);
         })();
     </script>
 @endsection

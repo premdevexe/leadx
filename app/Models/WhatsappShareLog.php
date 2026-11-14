@@ -18,6 +18,7 @@ class WhatsappShareLog extends Model
         'actor_type',
         'normalized_phone',
         'message',
+        'shared_api_key',
         'status',
     ];
 
@@ -29,6 +30,7 @@ class WhatsappShareLog extends Model
         return [
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
+            'shared_api_key' => 'boolean',
         ];
     }
 

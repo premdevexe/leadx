@@ -2,6 +2,10 @@
 
 @section('title', 'Customer: '.$customer->name)
 
+@php
+    $cur = \App\Models\Setting::currencySymbol();
+@endphp
+
 @section('content')
     <div class="flex items-center justify-between">
         <div>
@@ -44,7 +48,7 @@
                 </div>
                 <div class="flex justify-between">
                     <dt class="text-neutral-500">Total Spent</dt>
-                    <dd class="tabular-nums font-semibold text-emerald-700">{{ number_format((float) $customer->total_purchased, 2) }}</dd>
+                    <dd class="tabular-nums font-semibold text-emerald-700">{{ $cur }}{{ number_format((float) $customer->total_purchased, 2) }}</dd>
                 </div>
                 <div class="flex justify-between">
                     <dt class="text-neutral-500">Last Purchase</dt>
@@ -77,7 +81,7 @@
                                         {{ $sub->product?->name ?? $sub->plan_snapshot ?? 'Standard Product' }}
                                     </td>
                                     <td class="px-3 py-2 text-right tabular-nums">
-                                        {{ number_format((float) ($sub->price_snapshot ?? $sub->amount_paid), 2) }}
+                                        {{ $cur }}{{ number_format((float) ($sub->price_snapshot ?? $sub->amount_paid), 2) }}
                                     </td>
                                     <td class="px-3 py-2">
                                         <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium {{ $sub->status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-600' }}">
@@ -124,10 +128,10 @@
                                         {{ $order->product_name_snapshot ?? $order->product_name ?? '—' }}
                                     </td>
                                     <td class="px-3 py-2 text-right tabular-nums">
-                                        {{ number_format((float) $order->closing_value, 2) }}
+                                        {{ $cur }}{{ number_format((float) $order->closing_value, 2) }}
                                     </td>
                                     <td class="px-3 py-2 text-right tabular-nums font-medium text-emerald-700">
-                                        {{ number_format((float) $order->amount_received, 2) }}
+                                        {{ $cur }}{{ number_format((float) $order->amount_received, 2) }}
                                     </td>
                                     <td class="px-3 py-2">
                                         <span class="rounded px-1.5 py-0.5 text-[10px] {{ $order->payment_status === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-600' }}">
