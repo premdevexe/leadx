@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Admin;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
@@ -221,6 +222,25 @@ class AuthTest extends TestCase
         $response = $this->actingAs($admin, 'admin')->get('/admin/dashboard');
         $response->assertStatus(200);
         $response->assertSee('superadmin');
+    }
+
+    public function test_admin_dashboard_renders_when_admin_has_null_created_at(): void
+    {
+        // Raw inserts (e.g. one-off seed/test scripts) can bypass Eloquent
+        // timestamps, leaving created_at NULL. The dashboard view must not
+        // crash formatting that column.
+        $admin = Admin::create([
+            'name' => 'Null Timestamp Admin',
+            'username' => 'nulltsadmin',
+            'email' => 'nullts@leadx.local',
+            'password' => 'password123',
+        ]);
+
+        DB::table('admins')->where('id', $admin->id)->update(['created_at' => null]);
+        $admin->refresh();
+
+        $response = $this->actingAs($admin, 'admin')->get('/admin/dashboard');
+        $response->assertStatus(200);
     }
 
     public function test_unauthenticated_visitor_cannot_access_admin_dashboard(): void

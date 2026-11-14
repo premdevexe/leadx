@@ -46,9 +46,7 @@
 
         <div class="flex min-w-0 flex-1 flex-col">
             <header class="flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-6">
-                <span class="text-sm text-neutral-500">Admin</span>
-                <div class="flex items-center gap-4">
-                    <span class="text-sm text-neutral-700">{{ auth('admin')->user()->username }}</span>
+                <div class="flex items-center gap-3">
                     <button type="button" id="sidebar-toggle" aria-label="Toggle menu" class="relative h-9 w-9 rounded-lg border border-neutral-200 text-neutral-700 transition-colors hover:bg-neutral-50">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-menu absolute inset-0 m-auto h-5 w-5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -57,6 +55,10 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
+                    <span class="text-sm text-neutral-500">Admin</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-neutral-700">{{ auth('admin')->user()->username }}</span>
                     <form method="POST" action="{{ route('admin.logout') }}">
                         @csrf
                         <button type="submit" class="rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-700 transition-colors hover:bg-neutral-50">
@@ -77,17 +79,23 @@
     <style>
         #sidebar-toggle .icon-menu,
         #sidebar-toggle .icon-close {
-            opacity: 0;
-            transform: scale(0.5);
             transition: opacity 0.2s ease, transform 0.2s ease;
         }
-        #sidebar-toggle.menu-open .icon-close {
+        #sidebar-toggle .icon-menu {
             opacity: 1;
             transform: scale(1);
+        }
+        #sidebar-toggle .icon-close {
+            opacity: 0;
+            transform: scale(0.5);
         }
         #sidebar-toggle.menu-open .icon-menu {
             opacity: 0;
             transform: scale(0.5);
+        }
+        #sidebar-toggle.menu-open .icon-close {
+            opacity: 1;
+            transform: scale(1);
         }
         #sidebar.sidebar-collapsed {
             width: 0 !important;

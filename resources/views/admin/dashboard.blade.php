@@ -268,7 +268,7 @@
                             <tr class="border-b border-neutral-100 last:border-0">
                                 <td class="px-4 py-3 font-medium">{{ $admin->username }}</td>
                                 <td class="px-4 py-3 text-neutral-500">{{ $admin->email }}</td>
-                                <td class="px-4 py-3 text-neutral-500">{{ $admin->created_at->format('M d, Y') }}</td>
+                                <td class="px-4 py-3 text-neutral-500">{{ $admin->created_at?->format('M d, Y') ?? '—' }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="3" class="px-4 py-6 text-center text-neutral-400">No administrators yet</td></tr>
