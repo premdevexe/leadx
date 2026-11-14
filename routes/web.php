@@ -97,6 +97,7 @@ Route::middleware('admin')->group(function () {
     // Notification sending (Pusher Beams web push)
     Route::get('/admin/notifications', [NotificationsController::class, 'index'])->name('admin.notifications');
     Route::post('/admin/notifications', [NotificationsController::class, 'store'])->name('admin.notifications.store');
+    Route::post('/admin/notifications/{log}/resend', [NotificationsController::class, 'resend'])->name('admin.notifications.resend');
     Route::delete('/admin/notifications', [NotificationsController::class, 'clear'])->name('admin.notifications.clear');
 
     Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');

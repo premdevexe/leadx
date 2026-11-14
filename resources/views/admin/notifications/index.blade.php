@@ -41,6 +41,9 @@
                 <label class="block text-xs font-medium text-neutral-500" for="interests">
                     Interests <span class="text-neutral-400">(comma-separated, defaults to <code class="font-mono text-xs">{{ config('services.pusher.device_interest', 'hello') }}</code>)</span>
                 </label>
+                <p class="mt-1 text-xs text-neutral-400">
+                    Interest names may only contain letters, numbers and <code class="font-mono">_ - = @ , . ;</code> — no spaces (use e.g. <code class="font-mono">Divi-Chellow</code> instead of "Divi Chellow").
+                </p>
                 <input type="text" name="interests" id="interests" value="{{ old('interests', config('services.pusher.device_interest', 'hello')) }}" required
                        class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 font-mono text-sm focus:border-neutral-500 focus:outline-none">
                 @error('interests') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -58,7 +61,19 @@
     <div class="mt-10 flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-sm font-semibold tracking-tight">Send history</h2>
         <div class="flex flex-wrap items-center gap-3 text-xs text-neutral-400">
-            <form method="GET" action="{{ route('admin.notifications') }}">
+            @php $filterKey = $status === 'failed' ? 'failed' : ($status === 'sent' ? 'sent' : 'all'); @endphp
+            <div class="flex items-center gap-1">
+                @foreach ([['all', 'All'], ['failed', 'Failed'], ['sent', 'Sent']] as [$key, $label])
+                    <a href="{{ $key === 'all' ? route('admin.notifications') : route('admin.notifications', ['status' => $key]) }}"
+                       class="rounded-lg px-2.5 py-1 font-medium transition-colors {{ $filterKey === $key ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 hover:text-neutral-700' }}">
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
+            <form method="GET" action="{{ route('admin.notifications') }}" class="flex items-center gap-2">
+                @if ($status)
+                    <input type="hidden" name="status" value="{{ $status }}">
+                @endif
                 <select name="limit" onchange="this.form.submit()"
                         class="rounded-lg border border-neutral-300 px-2 py-1 text-xs focus:border-neutral-500 focus:outline-none">
                     @foreach ([10, 25, 50, 100] as $option)
@@ -66,7 +81,6 @@
                     @endforeach
                 </select>
             </form>
-            <a href="{{ route('admin.notifications', ['limit' => 100]) }}" class="transition-colors hover:text-neutral-700">View more</a>
             @if ($history->isNotEmpty())
                 <form method="POST" action="{{ route('admin.notifications.clear') }}"
                       onsubmit="return confirm('Clear all notification history? This cannot be undone.');">
@@ -115,7 +129,27 @@
                                     {{ $log->status }}
                                 </span>
                                 @if ($log->error)
-                                    <div class="mt-1 max-w-xs text-xs text-red-500">{{ Str::limit($log->error, 60) }}</div>
+                                    <div class="mt-1 max-w-xs text-xs text-red-500" title="{{ $log->error }}">{{ Str::limit($log->error, 120) }}</div>
+                                @endif
+                                @if ($log->status !== 'sent')
+                                    <form method="POST"
+                                          action="{{ route('admin.notifications.resend', $log) }}"
+                                          class="mt-2 flex flex-wrap items-center gap-2">
+                                        @csrf
+                                        <input type="text"
+                                               name="interests"
+                                               value="{{ session('retry_interests.'.$log->id, $log->interests) }}"
+                                               placeholder="Interests (comma-separated)"
+                                               title="Interests this retry will be sent to — edit to correct a failed interest, e.g. replace a space with a hyphen"
+                                               class="w-44 rounded-lg border border-neutral-300 px-2 py-1 font-mono text-xs focus:border-neutral-500 focus:outline-none">
+                                        <button type="submit"
+                                                class="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-500 hover:bg-neutral-50">
+                                            ↻ Retry
+                                        </button>
+                                    </form>
+                                    @if (session('retry_error.'.$log->id))
+                                        <p class="mt-1 text-xs text-red-600">{{ session('retry_error.'.$log->id) }}</p>
+                                    @endif
                                 @endif
                             </td>
                             <td class="px-4 py-3 font-mono text-xs text-neutral-400">{{ $log->publish_id ?? '—' }}</td>

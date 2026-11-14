@@ -13,7 +13,7 @@ class BeamsService
      * never reaches the browser.
      *
      * @param  string[]  $interests
-     * @return array{publish_id: ?string, status: int}
+     * @return array{publish_id: ?string, status: int, body: string}
      */
     public function publishWebNotification(string $title, string $body, array $interests): array
     {
@@ -35,6 +35,7 @@ class BeamsService
         return [
             'publish_id' => $response->json('publishId'),
             'status' => $response->status(),
+            'body' => $response->body(),
         ];
     }
 
