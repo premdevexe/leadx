@@ -179,7 +179,7 @@
     {{-- ════════════════════════════════════════════════════════════════
          TAB 3 – TEMPLATES
          ════════════════════════════════════════════════════════════════ --}}
-    <div id="tab-templates" class="tab-content mt-5 space-y-4">
+    <div id="tab-templates" class="tab-content mt-5 hidden space-y-4">
         <p class="text-sm text-neutral-500">
             Manage email templates. Default templates are preserved and cannot be deleted.
             Placeholders use double-brace syntax, e.g. <code class="bg-neutral-100 px-1 rounded text-xs">customer_name</code>,
@@ -448,24 +448,46 @@
             Note: SMTP acceptance does not guarantee inbox delivery. "Sent" means the message was accepted by the mail server.
         </p>
     </div>
-@endsection
 
-@section('scripts')
-<script>
-function switchTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('bg-neutral-900', 'text-white');
-        btn.classList.add('text-neutral-500', 'hover:text-neutral-700');
-    });
+    <script>
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(function(el) {
+            el.classList.add('hidden');
+        });
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.classList.remove('bg-neutral-900', 'text-white');
+            btn.classList.add('text-neutral-500', 'hover:text-neutral-700');
+        });
 
-    const panel = document.getElementById('tab-' + tab);
-    const btn = document.getElementById('tab-' + tab + '-btn');
-    if (panel) panel.classList.remove('hidden');
-    if (btn) {
-        btn.classList.remove('text-neutral-500', 'hover:text-neutral-700');
-        btn.classList.add('bg-neutral-900', 'text-white');
+        const panel = document.getElementById('tab-' + tab);
+        const btn = document.getElementById('tab-' + tab + '-btn');
+        if (panel) panel.classList.remove('hidden');
+        if (btn) {
+            btn.classList.remove('text-neutral-500', 'hover:text-neutral-700');
+            btn.classList.add('bg-neutral-900', 'text-white');
+        }
+        if (window.history && window.history.replaceState) {
+            try {
+                window.history.replaceState(null, '', '#' + tab);
+            } catch (e) {}
+        }
     }
-}
-</script>
+    window.switchTab = switchTab;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const hash = (window.location.hash || '').replace('#', '');
+        if (hash && document.getElementById('tab-' + hash)) {
+            switchTab(hash);
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                const tabId = this.id.replace('tab-', '').replace('-btn', '');
+                if (tabId) {
+                    switchTab(tabId);
+                }
+            });
+        });
+    });
+    </script>
 @endsection
