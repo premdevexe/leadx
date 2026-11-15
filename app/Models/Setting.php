@@ -45,6 +45,9 @@ class Setting extends Model
     public const KEY_SITE_NAME = 'site_name';
     public const KEY_CURRENCY = 'currency';
     public const KEY_EMAIL_REMINDERS = 'email_reminders';
+    public const KEY_LOGO = 'site_logo';
+    public const KEY_LOGO_TRANSPARENT = 'site_logo_transparent';
+    public const KEY_FAVICON = 'site_favicon';
 
     /**
      * The attributes that are mass assignable.
@@ -244,5 +247,115 @@ class Setting extends Model
     public static function setCurrency(string $code): void
     {
         static::updateOrCreate(['key' => self::KEY_CURRENCY], ['value' => $code]);
+    }
+
+    /**
+     * Relative path to the uploaded main logo, or null.
+     */
+    public static function logoPath(): ?string
+    {
+        $val = static::where('key', self::KEY_LOGO)->value('value');
+
+        return is_string($val) && trim($val) !== '' ? trim($val) : null;
+    }
+
+    /**
+     * Full URL to the uploaded main logo, or null if unset/missing.
+     */
+    public static function logoUrl(): ?string
+    {
+        $path = static::logoPath();
+
+        return $path && file_exists(public_path($path)) ? asset($path) : null;
+    }
+
+    /**
+     * Store or clear the main logo path.
+     */
+    public static function setLogo(?string $path): void
+    {
+        $path = $path ? trim($path) : '';
+
+        static::where('key', self::KEY_LOGO)->delete();
+
+        if ($path !== '') {
+            static::create(['key' => self::KEY_LOGO, 'value' => $path]);
+        }
+    }
+
+    /**
+     * Relative path to the transparent logo, or null.
+     */
+    public static function logoTransparentPath(): ?string
+    {
+        $val = static::where('key', self::KEY_LOGO_TRANSPARENT)->value('value');
+
+        return is_string($val) && trim($val) !== '' ? trim($val) : null;
+    }
+
+    /**
+     * Full URL to the transparent logo, or null if unset/missing.
+     */
+    public static function logoTransparentUrl(): ?string
+    {
+        $path = static::logoTransparentPath();
+
+        return $path && file_exists(public_path($path)) ? asset($path) : null;
+    }
+
+    /**
+     * Store or clear the transparent logo path.
+     */
+    public static function setLogoTransparent(?string $path): void
+    {
+        $path = $path ? trim($path) : '';
+
+        static::where('key', self::KEY_LOGO_TRANSPARENT)->delete();
+
+        if ($path !== '') {
+            static::create(['key' => self::KEY_LOGO_TRANSPARENT, 'value' => $path]);
+        }
+    }
+
+    /**
+     * Relative path to the uploaded favicon, or null.
+     */
+    public static function faviconPath(): ?string
+    {
+        $val = static::where('key', self::KEY_FAVICON)->value('value');
+
+        return is_string($val) && trim($val) !== '' ? trim($val) : null;
+    }
+
+    /**
+     * Full URL to the uploaded favicon, or null if unset/missing.
+     */
+    public static function faviconUrl(): ?string
+    {
+        $path = static::faviconPath();
+
+        if ($path && file_exists(public_path($path))) {
+            return asset($path);
+        }
+
+        if (file_exists(public_path('favicon.ico')) && filesize(public_path('favicon.ico')) > 0) {
+            return asset('favicon.ico');
+        }
+
+        return null;
+    }
+
+    /**
+     * Store or clear the favicon path.
+     */
+    public static function setFavicon(?string $path): void
+    {
+        $path = $path ? trim($path) : '';
+
+        static::where('key', self::KEY_FAVICON)->delete();
+
+        if ($path !== '') {
+            static::create(['key' => self::KEY_FAVICON, 'value' => $path]);
+        }
     }
 }

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Team Dashboard') — {{ \App\Models\Setting::siteName() }}</title>
+    @if (\App\Models\Setting::faviconUrl())
+        <link rel="icon" href="{{ \App\Models\Setting::faviconUrl() }}">
+    @else
+        <link rel="icon" href="{{ asset('favicon.ico') }}">
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-neutral-50 font-sans text-neutral-900 antialiased overflow-x-clip">
@@ -20,8 +25,15 @@
             <div class="flex h-full w-full flex-col">
                 <div class="flex h-14 shrink-0 items-center justify-between border-b border-neutral-100 px-4 md:border-b-0">
                     <div class="flex items-center gap-2">
-                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-sm font-semibold text-white">L</span>
-                        <span class="font-semibold tracking-tight">{{ \App\Models\Setting::siteName() }}</span>
+                        @php $brandLogo = \App\Models\Setting::logoTransparentUrl() ?? \App\Models\Setting::logoUrl(); @endphp
+                        @if ($brandLogo)
+                            <img src="{{ $brandLogo }}" alt="{{ \App\Models\Setting::siteName() }}" class="h-8 max-w-[140px] w-auto object-contain">
+                        @else
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-sm font-semibold text-white">
+                                {{ strtoupper(substr(\App\Models\Setting::siteName(), 0, 1)) }}
+                            </span>
+                            <span class="font-semibold tracking-tight">{{ \App\Models\Setting::siteName() }}</span>
+                        @endif
                     </div>
                     <button type="button" id="sidebar-close-btn" class="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 md:hidden" aria-label="Close menu">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
@@ -65,7 +77,7 @@
         {{-- Main Column --}}
         <div class="flex min-w-0 flex-1 flex-col">
             <header class="sticky top-0 z-30 flex h-14 shrink-0 w-full items-center justify-between border-b border-neutral-200 bg-white/95 backdrop-blur-sm px-4 sm:px-6">
-                <div class="flex items-center gap-2 sm:gap-3">
+                <div class="flex items-center gap-2.5 sm:gap-3.5">
                     <button type="button" id="sidebar-toggle" aria-label="Toggle menu" class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-700 transition-colors hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-200">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-menu absolute inset-0 m-auto h-5 w-5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -74,7 +86,21 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
-                    <span class="text-xs sm:text-sm font-medium text-neutral-500">Team Portal</span>
+
+                    <a href="{{ route('team.dashboard') }}" class="flex items-center gap-2 transition-opacity hover:opacity-85">
+                        @php $headerLogo = \App\Models\Setting::logoTransparentUrl() ?? \App\Models\Setting::logoUrl(); @endphp
+                        @if ($headerLogo)
+                            <img src="{{ $headerLogo }}" alt="{{ \App\Models\Setting::siteName() }}" class="h-8 max-w-[140px] w-auto object-contain">
+                        @else
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-xs font-semibold text-white">
+                                {{ strtoupper(substr(\App\Models\Setting::siteName(), 0, 1)) }}
+                            </span>
+                            <span class="font-semibold tracking-tight text-neutral-900 text-sm hidden sm:inline">{{ \App\Models\Setting::siteName() }}</span>
+                        @endif
+                    </a>
+
+                    <span class="hidden sm:inline-block h-4 w-px bg-neutral-200"></span>
+                    <span class="text-[11px] font-medium text-neutral-500 rounded bg-neutral-100 px-1.5 py-0.5">Team</span>
                 </div>
                 <div class="flex items-center gap-2 sm:gap-4">
                     <span class="max-w-[110px] truncate text-xs sm:max-w-xs sm:text-sm text-neutral-700 font-medium">{{ request()->user()?->team_name ?? request()->user()?->team_code }}</span>

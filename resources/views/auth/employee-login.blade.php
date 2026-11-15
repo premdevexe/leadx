@@ -4,13 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Login — {{ \App\Models\Setting::siteName() }}</title>
+    @if (\App\Models\Setting::faviconUrl())
+        <link rel="icon" href="{{ \App\Models\Setting::faviconUrl() }}">
+    @else
+        <link rel="icon" href="{{ asset('favicon.ico') }}">
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-neutral-50 font-sans text-neutral-900 antialiased">
     <div class="flex min-h-screen items-center justify-center px-4">
         <div class="w-full max-w-sm">
             <div class="mb-8 text-center">
-                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-900 text-sm font-semibold text-white mx-auto">L</span>
+                @if (\App\Models\Setting::logoUrl())
+                    <img src="{{ \App\Models\Setting::logoUrl() }}" alt="{{ \App\Models\Setting::siteName() }}" class="h-10 max-w-[180px] w-auto mx-auto object-contain">
+                @else
+                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-900 text-sm font-semibold text-white mx-auto">
+                        {{ strtoupper(substr(\App\Models\Setting::siteName(), 0, 1)) }}
+                    </span>
+                @endif
                 <h1 class="mt-4 text-lg font-semibold">Employee Login</h1>
                 <p class="mt-1 text-sm text-neutral-500">{{ \App\Models\Setting::siteName() }}</p>
             </div>
