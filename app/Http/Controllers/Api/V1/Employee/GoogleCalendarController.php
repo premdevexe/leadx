@@ -53,11 +53,15 @@ class GoogleCalendarController extends Controller
      * what makes it structurally impossible for a team's shared login to
      * connect a personal Google calendar.
      */
-    public function callback(Request $request): JsonResponse
+    public function callback(Request $request): mixed
     {
         $error = $request->input('error');
         // Google sends `error` (e.g. access_denied) instead of a code.
         if ($error !== null) {
+            if ($request->acceptsHtml() && ! $request->wantsJson()) {
+                return redirect()->route('employee.calendar')->with('error', 'Google returned an error: '.$error);
+            }
+
             return $this->callbackFailure('Google returned an error: '.$error);
         }
 
@@ -68,7 +72,19 @@ class GoogleCalendarController extends Controller
         $code = $request->input('code');
         $state = $request->input('state');
 
-        $result = $this->oauth->completeFromCallback($code, $state, $error);
+        try {
+            $result = $this->oauth->completeFromCallback($code, $state, $error);
+        } catch (\Throwable $e) {
+            if ($request->acceptsHtml() && ! $request->wantsJson()) {
+                return redirect()->route('employee.calendar')->with('error', $e->getMessage());
+            }
+
+            throw $e;
+        }
+
+        if ($request->acceptsHtml() && ! $request->wantsJson()) {
+            return redirect()->route('employee.calendar')->with('status', 'Google Calendar connected successfully!');
+        }
 
         // No token is returned here (Module 2: never expose credentials).
         return response()->json([

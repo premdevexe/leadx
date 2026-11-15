@@ -299,9 +299,175 @@ class DashboardController extends Controller
         ]);
     }
 
+    /**
+     * Start the Google Calendar OAuth flow for the authenticated employee.
+     */
+    public function connectCalendar(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        /** @var \App\Models\User $employee */
+        $employee = $request->user();
+
+        if (empty(config('google.client_id')) || empty(config('google.client_secret'))) {
+            return redirect()->route('employee.calendar')
+                ->with('error', 'Google Calendar integration is not configured yet. Please configure credentials in Admin API Settings.');
+        }
+
+        $payload = app(\App\Services\Google\GoogleOAuthService::class)->authorizationUrl($employee);
+
+        return redirect()->away($payload['url']);
+    }
+
+    /**
+     * Disconnect the Google Calendar for the authenticated employee.
+     */
+    public function disconnectCalendar(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        /** @var \App\Models\User $employee */
+        $employee = $request->user();
+        $connection = EmployeeGoogleConnection::where('employee_id', $employee->id)->first();
+
+        if ($connection) {
+            app(\App\Services\Google\GoogleOAuthService::class)->disconnect($connection);
+        }
+
+        return redirect()->route('employee.calendar')->with('status', 'Google Calendar disconnected.');
+    }
+
+    /**
+     * Complete the Google Calendar OAuth flow from the web callback.
+     */
+    public function calendarCallback(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        $error = $request->input('error');
+        if ($error !== null) {
+            return redirect()->route('employee.calendar')->with('error', 'Google returned an error: '.$error);
+        }
+
+        $code = $request->input('code');
+        $state = $request->input('state');
+
+        try {
+            app(\App\Services\Google\GoogleOAuthService::class)->completeFromCallback($code, $state, $error);
+
+            return redirect()->route('employee.calendar')->with('status', 'Google Calendar connected successfully! 36-hour expiry notifications are now active.');
+        } catch (\Throwable $e) {
+            return redirect()->route('employee.calendar')->with('error', 'Google authorization failed: '.$e->getMessage());
+        }
+    }
+
     public function reports(): View
     {
-        return view('employee.reports', ['employee' => auth()->user()]);
+        /** @var \App\Models\User $employee */
+        $employee = auth()->user();
+
+        $viewMode = request()->query('view', 'my_data');
+        $hasTeamAccess = $employee->hasActiveTeamAccess();
+        $activeGrant = null;
+        $currencySymbol = \App\Models\Setting::currencySymbol();
+
+        if ($viewMode === 'team_data') {
+            if (! $hasTeamAccess || ! $employee->team_id) {
+                $viewMode = 'my_data';
+            } else {
+                $today = now()->startOfDay()->toDateString();
+                $activeGrant = \App\Models\EmployeeTeamAccessGrant::where('user_id', $employee->id)
+                    ->whereNull('revoked_at')
+                    ->where('start_date', '<=', $today)
+                    ->where('end_date', '>=', $today)
+                    ->first();
+                if (! $activeGrant) {
+                    $viewMode = 'my_data';
+                }
+            }
+        } else {
+            $viewMode = 'my_data';
+        }
+
+        // Build order query based on view mode
+        if ($viewMode === 'team_data' && $activeGrant) {
+            $orderQuery = \App\Models\SalesOrder::where('team_id', $employee->team_id)
+                ->whereDate('created_at', '>=', $activeGrant->start_date)
+                ->whereDate('created_at', '<=', $activeGrant->end_date);
+        } else {
+            $orderQuery = \App\Models\SalesOrder::where('assigned_employee_id', $employee->id);
+        }
+
+        // Key metrics
+        $totalOrders = (clone $orderQuery)->count();
+        $totalClosingValue = (clone $orderQuery)->sum('closing_value');
+        $currentMonthOrders = (clone $orderQuery)
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->count();
+        $monthlyClosingValue = (clone $orderQuery)
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->sum('closing_value');
+
+        // Verified revenue
+        $staleAfterDays = (int) config('leadx.payments.stale_after_days', 90);
+        $cutoff = now()->subDays($staleAfterDays);
+        $verifiedRevenue = (clone $orderQuery)
+            ->join('payments', 'sales_orders.id', '=', 'payments.order_id')
+            ->where(function ($q) {
+                $q->whereNotNull('payments.verified_by_admin_id')
+                    ->orWhere('payments.verification_source', 'gateway');
+            })
+            ->whereNotIn('payments.payment_status', ['failed', 'refunded'])
+            ->where(function ($q) use ($cutoff) {
+                $q->whereNull('payments.verified_at')
+                    ->orWhere('payments.verified_at', '>=', $cutoff);
+            })
+            ->sum('payments.amount');
+
+        // Unique customers
+        $customersCount = (clone $orderQuery)
+            ->whereNotNull('customer_phone')
+            ->where('customer_phone', '!=', '')
+            ->distinct('customer_phone')
+            ->count('customer_phone');
+        if ($customersCount === 0) {
+            $customersCount = (clone $orderQuery)->distinct('customer_name')->count('customer_name');
+        }
+
+        // Monthly breakdown (last 12 months)
+        $monthlyBreakdown = collect();
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $monthLabel = $month->format('M Y');
+            $monthStart = $month->copy()->startOfMonth();
+            $monthEnd = $month->copy()->endOfMonth();
+
+            $mOrders = (clone $orderQuery)
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->count();
+            $mClosing = (clone $orderQuery)
+                ->whereBetween('created_at', [$monthStart, $monthEnd])
+                ->sum('closing_value');
+            $mAvg = $mOrders > 0 ? round($mClosing / $mOrders, 2) : 0;
+
+            $monthlyBreakdown->push([
+                'month' => $monthLabel,
+                'orders' => $mOrders,
+                'closing_value' => $mClosing,
+                'avg_order_value' => $mAvg,
+            ]);
+        }
+
+        return view('employee.reports', [
+            'employee' => $employee,
+            'viewMode' => $viewMode,
+            'hasTeamAccess' => $hasTeamAccess,
+            'activeGrant' => $activeGrant,
+            'totalOrders' => $totalOrders,
+            'currentMonthOrders' => $currentMonthOrders,
+            'totalClosingValue' => $totalClosingValue,
+            'monthlyClosingValue' => $monthlyClosingValue,
+            'verifiedRevenue' => $verifiedRevenue,
+            'customersCount' => $customersCount,
+            'monthlyBreakdown' => $monthlyBreakdown,
+            'currencySymbol' => $currencySymbol,
+        ]);
     }
 
     public function settings(): View

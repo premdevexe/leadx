@@ -257,6 +257,9 @@ Route::middleware('employee.web')->group(function () {
     Route::put('/employee/profile/password', [EmployeeProfileController::class, 'updatePassword'])->name('employee.profile.password');
 
     Route::get('/employee/calendar', [EmployeeDashboardController::class, 'calendar'])->name('employee.calendar');
+    Route::get('/employee/calendar/connect', [EmployeeDashboardController::class, 'connectCalendar'])->name('employee.calendar.connect');
+    Route::get('/employee/calendar/callback', [EmployeeDashboardController::class, 'calendarCallback'])->name('employee.calendar.callback');
+    Route::post('/employee/calendar/disconnect', [EmployeeDashboardController::class, 'disconnectCalendar'])->name('employee.calendar.disconnect');
     Route::get('/employee/subscriptions/expiring', [EmployeeSubscriptionsController::class, 'expiring'])->name('employee.subscriptions.expiring')->middleware('permission:subscriptions.view');
     Route::get('/employee/orders', [EmployeeOrdersController::class, 'index'])->name('employee.orders')->middleware('permission:orders.view');
     Route::get('/employee/orders/create', [CreateOrderController::class, 'create'])->name('employee.orders.create')->middleware('permission:orders.create');

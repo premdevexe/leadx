@@ -271,9 +271,9 @@ class SubscriptionCalendarService
             'reminders' => [
                 'useDefault' => false,
                 'overrides' => [
-                    // Popup one day before the expiry — mirrors the team
-                    // in-app reminder timing.
-                    ['method' => 'popup', 'minutes' => (int) config('leadx.google.expiry_reminder_lead_minutes', 1440)],
+                    // Popup & email notification 36 hours before expiry (2160 minutes)
+                    ['method' => 'popup', 'minutes' => (int) config('leadx.google.expiry_reminder_lead_minutes', 2160)],
+                    ['method' => 'email', 'minutes' => (int) config('leadx.google.expiry_reminder_lead_minutes', 2160)],
                 ],
             ],
         ];

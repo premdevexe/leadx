@@ -64,9 +64,15 @@ class EmployeesController extends Controller
     {
         $employee->load('team');
 
+        $teamGrants = \App\Models\EmployeeTeamAccessGrant::where('user_id', $employee->id)
+            ->with('admin')
+            ->orderByDesc('created_at')
+            ->get();
+
         return view('admin.employees.edit', [
             'employee' => $employee,
             'teams' => Team::orderBy('team_name')->get(),
+            'teamGrants' => $teamGrants,
         ]);
     }
 

@@ -328,4 +328,54 @@ class SalesOrder extends Model
                 $q->where('status', 'active');
             });
     }
+
+    /**
+     * Generate 1-click Google Calendar Event creation URL for browser popup.
+     * Pre-configured with customer details and 36-hour expiry notification reminder.
+     */
+    public function googleCalendarUrl(): string
+    {
+        $customerName = $this->customer_name ?? $this->customer?->name ?? 'Customer';
+        $orderNumber = $this->order_number ?? ('#' . $this->id);
+        $productName = $this->product_name_snapshot ?? $this->product_name ?? 'Subscription';
+
+        $expiryDate = $this->subscription?->expires_at;
+        if (! $expiryDate) {
+            $days = match ($this->product_duration_snapshot ?? $this->duration) {
+                '3d' => 3,
+                '7d' => 7,
+                '15d' => 15,
+                '30d' => 30,
+                '3m' => 90,
+                '6m' => 180,
+                '1y' => 365,
+                default => 30,
+            };
+            $expiryDate = ($this->created_at ?? now())->copy()->addDays($days);
+        }
+
+        $start = $expiryDate->copy()->setTime(9, 0, 0);
+        $end = $start->copy()->addHour();
+        $dates = $start->copy()->utc()->format('Ymd\THis\Z') . '/' . $end->copy()->utc()->format('Ymd\THis\Z');
+
+        $lines = [
+            'LeadX Subscription Expiry Reminder',
+            'Customer: ' . $customerName,
+            'Phone: ' . ($this->customer_phone ?? '—'),
+            'Order ID: ' . $orderNumber,
+            'Product: ' . $productName,
+            'Expiry Date: ' . $expiryDate->toDateString(),
+            'Lead Notification: 36 hours before expiry.',
+        ];
+
+        $params = [
+            'action' => 'TEMPLATE',
+            'text' => 'LeadX Expiry: ' . $customerName . ' (' . $orderNumber . ')',
+            'dates' => $dates,
+            'details' => implode("\n", $lines),
+            'location' => 'LeadX Platform',
+        ];
+
+        return 'https://calendar.google.com/calendar/render?' . http_build_query($params);
+    }
 }

@@ -187,4 +187,41 @@ class Subscription extends Model
             ->whereNotNull('renewal_date')
             ->where('renewal_date', '<=', now()->addDays($days));
     }
+
+    /**
+     * Generate 1-click Google Calendar Event creation URL for browser popup.
+     * Pre-configured with customer details and 36-hour expiry notification reminder.
+     */
+    public function googleCalendarUrl(): string
+    {
+        $order = $this->order;
+        $customerName = $order?->customer_name ?? $this->customer?->name ?? 'Customer';
+        $orderNumber = $order?->order_number ?? ('#' . $this->id);
+        $productName = $this->plan_snapshot ?? $order?->product_name_snapshot ?? $order?->product_name ?? 'Subscription';
+
+        $expiryDate = $this->expires_at ?? now()->addDays(30);
+        $start = $expiryDate->copy()->setTime(9, 0, 0);
+        $end = $start->copy()->addHour();
+        $dates = $start->copy()->utc()->format('Ymd\THis\Z') . '/' . $end->copy()->utc()->format('Ymd\THis\Z');
+
+        $lines = [
+            'LeadX Subscription Expiry Reminder',
+            'Customer: ' . $customerName,
+            'Phone: ' . ($order?->customer_phone ?? '—'),
+            'Order ID: ' . $orderNumber,
+            'Product: ' . $productName,
+            'Expiry Date: ' . $expiryDate->toDateString(),
+            'Lead Notification: 36 hours before expiry.',
+        ];
+
+        $params = [
+            'action' => 'TEMPLATE',
+            'text' => 'LeadX Expiry: ' . $customerName . ' (' . $orderNumber . ')',
+            'dates' => $dates,
+            'details' => implode("\n", $lines),
+            'location' => 'LeadX Platform',
+        ];
+
+        return 'https://calendar.google.com/calendar/render?' . http_build_query($params);
+    }
 }

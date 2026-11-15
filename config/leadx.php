@@ -87,13 +87,13 @@ return [
     |--------------------------------------------------------------------------
     |
     | How many minutes before the event start Google should fire its popup
-    | reminder. Defaults to 24h so the calendar alert lands the day before
-    | expiry, matching the team in-app reminder.
+    | reminder. Defaults to 36 hours (2160 minutes) so the calendar alert
+    | lands 36 hours before subscription expiry.
     |
     */
 
     'google' => [
-        'expiry_reminder_lead_minutes' => (int) env('LEADX_GOOGLE_EXPIRY_REMINDER_LEAD_MINUTES', 1440),
+        'expiry_reminder_lead_minutes' => (int) env('LEADX_GOOGLE_EXPIRY_REMINDER_LEAD_MINUTES', 2160),
     ],
 
     /*

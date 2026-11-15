@@ -14,6 +14,28 @@
             {{ session('status') }}
         </div>
     @endif
+    @if (session('error'))
+        <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    {{-- 36-Hour Expiry Notification Configuration Banner --}}
+    <div class="rounded-2xl border border-blue-200 bg-blue-50/70 p-5 shadow-2xs">
+        <div class="flex items-start gap-3">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold text-blue-900">36-Hour Advance Expiry Notification Configured</h3>
+                <p class="mt-1 text-xs text-blue-800 leading-relaxed">
+                    LeadX synchronizes subscription expiration reminders directly to your Google Calendar with a mandatory <strong>36-hour lead time</strong> (2,160 minutes before expiration). You will receive both a Google Calendar popup alarm and an email notification 36 hours prior to any customer subscription ending.
+                </p>
+            </div>
+        </div>
+    </div>
 
     <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs">
         <div class="flex items-start justify-between border-b border-neutral-100 pb-5">
@@ -55,10 +77,14 @@
                         <span class="text-neutral-500">Connected Since:</span>
                         <span class="text-neutral-800">{{ $connection->created_at?->format('M d, Y H:i') ?? '—' }}</span>
                     </div>
+                    <div class="flex justify-between pt-1 border-t border-neutral-200">
+                        <span class="text-neutral-500">Expiry Reminder Lead Time:</span>
+                        <span class="font-semibold text-blue-700">36 Hours Before Expiry (Popup & Email)</span>
+                    </div>
                 </div>
 
                 <div class="pt-2 flex justify-end">
-                    <form action="{{ url('/api/v1/employee/google/calendar/disconnect') }}" method="POST" onsubmit="return confirm('Disconnect Google Calendar?');">
+                    <form action="{{ route('employee.calendar.disconnect') }}" method="POST" onsubmit="return confirm('Disconnect Google Calendar?');">
                         @csrf
                         <button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 hover:bg-red-100">
                             Disconnect Calendar
@@ -72,10 +98,10 @@
                     </svg>
                     <p class="mt-3 text-sm font-medium text-neutral-900">No Google Calendar Connected</p>
                     <p class="mt-1 text-xs text-neutral-500 max-w-sm mx-auto">
-                        Connect your personal Google account to synchronize follow-up appointments and 1-day subscription expiration reminders.
+                        Connect your personal Google account to synchronize follow-up appointments and receive automatic notifications 36 hours before subscription expiry.
                     </p>
                     <div class="mt-5">
-                        <a href="{{ url('/api/v1/employee/google/calendar/connect') }}"
+                        <a href="{{ route('employee.calendar.connect') }}"
                            class="inline-flex items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800">
                             <svg class="h-4 w-4" viewBox="0 0 24 24">
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
