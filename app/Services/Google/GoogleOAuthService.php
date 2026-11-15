@@ -231,13 +231,16 @@ class GoogleOAuthService
      */
     public function disconnect(EmployeeGoogleConnection $connection): void
     {
+        // Delete unneeded credentials immediately to minimize attack surface
         if (filled($connection->access_token)) {
-            Http::asForm()->post(config('google.token_uri'), [
-                'client_id' => config('google.client_id'),
-                'client_secret' => config('google.client_secret'),
-                'grant_type' => 'urn:ietf:params:oauth:grant-type:revocation',
-                'token' => $connection->access_token,
-            ]);
+            $revokeUrl = config('google.revoke_uri', 'https://oauth2.googleapis.com/revoke');
+            try {
+                Http::asForm()->post($revokeUrl, [
+                    'token' => $connection->access_token,
+                ]);
+            } catch (\Throwable) {
+                // If remote revocation is unreachable, proceed to wipe credentials locally
+            }
         }
 
         $connection->forceFill([

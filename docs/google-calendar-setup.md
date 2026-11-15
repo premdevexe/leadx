@@ -109,3 +109,29 @@ Security properties:
 `leadx:mark-follow-ups-overdue` runs daily at 00:10 (registered in
 `routes/console.php`) and flips any past-due scheduled follow-ups to
 `overdue`. Ensure `php artisan schedule:run` is running in production.
+
+## 6. Google Cloud API Key & OAuth Security Best Practices
+
+LeadX strictly implements Google Cloud's security guidelines for API keys and OAuth 2.0 authentication:
+
+1. **Header Transmission (`x-goog-api-key`) — No Query Parameter Exposure**:
+   - Google Calendar API calls pass the optional API key exclusively through the `X-Goog-Api-Key` HTTP header.
+   - API keys, client secrets, and bearer tokens are **never** appended as URL query parameters (`?key=...`), preventing exposure via URL access logs, proxy caches, and network telemetry scans.
+
+2. **Least Privilege & Short-Lived Credentials**:
+   - In accordance with Google's recommendation against static authorization keys in production, LeadX uses short-lived OAuth 2.0 access tokens (expiring hourly).
+   - Scopes are restricted strictly to `calendar.events` (events management) and `userinfo.email` (user identity verification).
+
+3. **Per-Employee Credential Isolation**:
+   - Each sales representative authenticates with their own individual Google account (`EmployeeGoogleConnection`).
+   - Shared team credentials or service account authorization keys are forbidden, guaranteeing that every event creation and reschedule is attributed to a specific employee identity in Google Cloud Audit Logs.
+
+4. **Server-Side Encrypted Storage**:
+   - Client secrets, refresh tokens, and access tokens are never committed to code repositories or exposed in browser client code.
+   - All credentials are encrypted at rest using AES-256 (`Crypt::encryptString` and Eloquent `encrypted` cast).
+
+5. **Instant Remote Revocation on Disconnect**:
+   - When an employee disconnects their calendar, LeadX dispatches an immediate revocation request to Google's authorization endpoint (`https://oauth2.googleapis.com/revoke`), invalidating the token remotely and purging local tokens.
+
+6. **Sanitized Monitoring & Error Logging**:
+   - Error logging captures only HTTP status codes and sanitized API error messages (`error.message`). Raw response bodies are never logged to prevent accidental exposure of reflected parameters or request tokens.

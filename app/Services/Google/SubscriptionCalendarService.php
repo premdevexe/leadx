@@ -80,14 +80,12 @@ class SubscriptionCalendarService
             return ['created' => false, 'event_id' => null, 'error' => 'auth_unavailable'];
         }
 
-        $response = Http::withToken($token)
-            ->acceptJson()
+        $response = $this->httpClient($token)
             ->post($this->endpoint("calendars/{$calendarId}/events"), $this->eventPayload($subscription));
 
         if ($response->failed()) {
             $this->mark($subscription, 'sync_error', 'Google event creation failed.');
-            // The body may echo request details; log a stable marker only.
-            report("SubscriptionCalendarService: create failed for subscription {$subscription->id} (HTTP {$response->status()}).");
+            report("SubscriptionCalendarService: create failed for subscription {$subscription->id} (HTTP {$response->status()} - ".$response->json('error.message', 'Google API error').').');
 
             return ['created' => false, 'event_id' => null, 'error' => 'google_error'];
         }
@@ -135,8 +133,7 @@ class SubscriptionCalendarService
             return ['updated' => false, 'event_id' => $subscription->google_event_id, 'error' => 'auth_unavailable'];
         }
 
-        $response = Http::withToken($token)
-            ->acceptJson()
+        $response = $this->httpClient($token)
             ->put($this->endpoint("calendars/{$calendarId}/events/{$subscription->google_event_id}"), $this->eventPayload($subscription));
 
         if ($response->failed()) {
@@ -174,8 +171,7 @@ class SubscriptionCalendarService
             $token = $this->oauth->currentAccessToken($connection);
 
             if ($token !== null) {
-                $response = Http::withToken($token)
-                    ->acceptJson()
+                $response = $this->httpClient($token)
                     ->delete($this->endpoint("calendars/{$calendarId}/events/{$subscription->google_event_id}"));
 
                 // 404 = already gone out-of-band; treat as success.
@@ -298,8 +294,7 @@ class SubscriptionCalendarService
             return null;
         }
 
-        $response = Http::withToken($token)
-            ->acceptJson()
+        $response = $this->httpClient($token)
             ->get($this->endpoint('calendars/primary'));
 
         if ($response->failed()) {
@@ -313,6 +308,29 @@ class SubscriptionCalendarService
         }
 
         return $calendarId;
+    }
+
+    /**
+     * Build an HTTP client for Google Calendar API adhering to Google Cloud Security Best Practices:
+     * 1. Short-lived Bearer token authentication via Authorization header.
+     * 2. If a Google API Key is configured, transmits via `x-goog-api-key` header (NEVER in query parameters).
+     * 3. Sanitized error handling and bounded timeouts.
+     */
+    protected function httpClient(?string $token = null): \Illuminate\Http\Client\PendingRequest
+    {
+        $request = Http::acceptJson()->timeout(10);
+
+        if ($token !== null) {
+            $request = $request->withToken($token);
+        }
+
+        $apiKey = config('google.api_key');
+        if (! empty($apiKey)) {
+            // Google Cloud Best Practice: use x-goog-api-key HTTP header, never pass API key as URL parameter
+            $request = $request->withHeader('X-Goog-Api-Key', $apiKey);
+        }
+
+        return $request;
     }
 
     protected function mark(Subscription $subscription, string $status, string $message): void

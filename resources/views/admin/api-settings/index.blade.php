@@ -161,6 +161,35 @@
                         <p class="mt-1 text-xs text-neutral-400">Must exactly match the authorized redirect URI in your Google Cloud Console OAuth 2.0 Credentials.</p>
                         @error('redirect_uri') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="google_api_key" class="text-sm font-medium text-neutral-800">Google API Key (Optional)</label>
+                        <input id="google_api_key" name="api_key" type="password"
+                               placeholder="{{ !empty($google['api_key']) ? '•••••••••••• (leave blank to keep current key)' : 'Enter Google API Key (optional)' }}"
+                               class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm font-mono focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200">
+                        @if(!empty($maskedGoogleApiKey))
+                            <p class="mt-1 text-xs text-neutral-500 font-mono">Current key: {{ $maskedGoogleApiKey }}</p>
+                        @endif
+                        <p class="mt-1 text-xs text-neutral-400">Sent strictly via the <code class="bg-neutral-100 px-1 py-0.5 rounded font-mono text-neutral-700">X-Goog-Api-Key</code> HTTP header — never exposed as a URL query parameter.</p>
+                        @error('api_key') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                {{-- Security Best Practices Alert Box --}}
+                <div class="mt-5 rounded-lg border border-blue-200 bg-blue-50/70 p-4 text-xs text-blue-900 space-y-1.5">
+                    <div class="flex items-center gap-1.5 font-semibold text-blue-950">
+                        <svg class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        Google Cloud API Key & OAuth Security Best Practices Enforced
+                    </div>
+                    <ul class="list-disc pl-5 space-y-1 text-blue-800">
+                        <li><strong>Header Transmission:</strong> API keys are transmitted exclusively via the <code class="font-mono bg-blue-100 px-1 rounded">X-Goog-Api-Key</code> HTTP header — never exposed in URL query parameters.</li>
+                        <li><strong>Short-Lived Credentials:</strong> OAuth access tokens expire hourly and auto-refresh in the background using AES-256 encrypted refresh tokens.</li>
+                        <li><strong>Per-Employee Isolation:</strong> Every team member connects their own Google account, providing an explicit audit trail in Google Cloud Monitoring.</li>
+                        <li><strong>Instant Revocation:</strong> Disconnecting a Google account revokes the token directly on Google's authorization servers (<code class="font-mono bg-blue-100 px-1 rounded">oauth2.googleapis.com/revoke</code>).</li>
+                        <li><strong>Least-Privilege Scopes:</strong> Access is restricted strictly to calendar event creation (<code class="font-mono bg-blue-100 px-1 rounded">calendar.events</code>) and user email identity.</li>
+                    </ul>
                 </div>
             </div>
 

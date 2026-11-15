@@ -47,6 +47,7 @@ class ApiSetting extends Model
                 'client_id' => config('google.client_id', ''),
                 'client_secret' => config('google.client_secret', ''),
                 'redirect_uri' => config('google.redirect_uri', ''),
+                'api_key' => config('google.api_key', ''),
                 'is_enabled' => true,
             ],
             self::GROUP_WHATSAPP => [
@@ -146,7 +147,7 @@ class ApiSetting extends Model
     {
         return match ($group) {
             self::GROUP_PUSHER => ['server_key'],
-            self::GROUP_GOOGLE => ['client_secret'],
+            self::GROUP_GOOGLE => ['client_secret', 'api_key'],
             self::GROUP_WHATSAPP => ['access_token'],
             self::GROUP_GATEWAY => ['secret_key', 'webhook_secret'],
             self::GROUP_WEBHOOK => ['secret_token'],
@@ -205,6 +206,9 @@ class ApiSetting extends Model
                 }
                 if (! empty($settings['redirect_uri'])) {
                     config(['google.redirect_uri' => $settings['redirect_uri']]);
+                }
+                if (! empty($settings['api_key'])) {
+                    config(['google.api_key' => $settings['api_key']]);
                 }
                 break;
 

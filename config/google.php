@@ -23,6 +23,8 @@ return [
     'client_id' => env('GOOGLE_CLIENT_ID', ''),
     'client_secret' => env('GOOGLE_CLIENT_SECRET', ''),
     'redirect_uri' => env('GOOGLE_REDIRECT_URI', ''),
+    'api_key' => env('GOOGLE_API_KEY', ''),
+    'revoke_uri' => env('GOOGLE_REVOKE_URI', 'https://oauth2.googleapis.com/revoke'),
 
     /*
     |--------------------------------------------------------------------------

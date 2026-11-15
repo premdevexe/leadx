@@ -26,6 +26,7 @@ class ApiSettingsController extends Controller
         // Masked representations for secret display
         $maskedPusherSecret = ! empty($pusher['server_key']) ? '••••••••'.substr($pusher['server_key'], -4) : '';
         $maskedGoogleSecret = ! empty($google['client_secret']) ? '••••••••'.substr($google['client_secret'], -4) : '';
+        $maskedGoogleApiKey = ! empty($google['api_key']) ? '••••••••'.substr($google['api_key'], -4) : '';
         $maskedWhatsappToken = ! empty($whatsapp['access_token']) ? '••••••••'.substr($whatsapp['access_token'], -4) : '';
         $maskedGatewaySecret = ! empty($gateway['secret_key']) ? '••••••••'.substr($gateway['secret_key'], -4) : '';
         $maskedWebhookSecret = ! empty($gateway['webhook_secret']) ? '••••••••'.substr($gateway['webhook_secret'], -4) : '';
@@ -41,6 +42,7 @@ class ApiSettingsController extends Controller
             'webhook'                     => $webhook,
             'maskedPusherSecret'          => $maskedPusherSecret,
             'maskedGoogleSecret'          => $maskedGoogleSecret,
+            'maskedGoogleApiKey'          => $maskedGoogleApiKey,
             'maskedWhatsappToken'         => $maskedWhatsappToken,
             'maskedGatewaySecret'         => $maskedGatewaySecret,
             'maskedWebhookSecret'         => $maskedWebhookSecret,
@@ -79,6 +81,7 @@ class ApiSettingsController extends Controller
             'client_id'     => ['required', 'string', 'max:500'],
             'client_secret' => ['nullable', 'string', 'max:500'],
             'redirect_uri'  => ['required', 'url', 'max:500'],
+            'api_key'       => ['nullable', 'string', 'max:500'],
             'is_enabled'    => ['sometimes', 'boolean'],
         ]);
 
