@@ -51,38 +51,53 @@
                 <span class="text-xs text-amber-700">Requested {{ $order->closing_approval_requested_at?->diffForHumans() }}</span>
             </div>
 
-            <p class="text-xs text-amber-800 leading-relaxed">
-                The employee set a closing value of <strong>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }}</strong>,
-                which is below the product's minimum floor price of <strong>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->minimum_closing_price_snapshot, 2) }}</strong>
-                (Catalog Base Price: {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->product_value, 2) }}).
+            <p class="text-xs text-amber-900 leading-relaxed">
+                @if ((float) $order->minimum_closing_price_snapshot > 0 && (float) $order->closing_value < (float) $order->minimum_closing_price_snapshot)
+                    The employee set a closing value of <strong>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }}</strong>,
+                    which is below the product's minimum floor price of <strong>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->minimum_closing_price_snapshot, 2) }}</strong>
+                    (Catalog Base Price: {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->product_value, 2) }}).
+                @else
+                    The employee submitted this deal with a closing value of <strong>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }}</strong>
+                    (Catalog Base Price: <strong>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->product_value, 2) }}</strong>,
+                    Discount: <strong>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->discount_amount, 2) }}</strong>).
+                    Super Admin approval is required before the subscription can be activated.
+                @endif
             </p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-amber-200">
                 {{-- Accept Form --}}
-                <form method="POST" action="{{ route('admin.orders.closing-approval.accept', $order) }}" class="space-y-2 bg-white p-3.5 rounded-lg border border-amber-200">
+                <form method="POST" action="{{ route('admin.orders.closing-approval.accept', $order) }}" class="space-y-3 bg-white p-4 rounded-xl border border-amber-200 shadow-xs">
                     @csrf
-                    <span class="text-xs font-semibold text-emerald-800 block">Option A: Accept</span>
-                    <div>
-                        <label class="block text-[11px] text-neutral-500">Adjusted Value (leave blank to accept {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }})</label>
-                        <input type="number" step="0.01" name="adjusted_closing_value" placeholder="{{ $order->closing_value }}" class="mt-0.5 w-full rounded border border-neutral-300 px-2 py-1 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Option A: Accept Deal</span>
+                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-medium">Approve</span>
                     </div>
                     <div>
-                        <input type="text" name="notes" placeholder="Approval notes (optional)" class="w-full rounded border border-neutral-300 px-2 py-1 text-xs">
+                        <label class="block text-[11px] font-medium text-neutral-600">Adjusted Value (optional)</label>
+                        <input type="number" step="0.01" name="adjusted_closing_value" placeholder="{{ $order->closing_value }}" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-900 focus:border-neutral-500 focus:outline-none">
+                        <p class="mt-1 text-[10px] text-neutral-400">Leave blank to accept {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }}.</p>
                     </div>
-                    <button type="submit" class="w-full rounded-md bg-emerald-700 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800">
+                    <div>
+                        <label class="block text-[11px] font-medium text-neutral-600">Approval notes (optional)</label>
+                        <input type="text" name="notes" placeholder="e.g. Approved discount" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-900 focus:border-neutral-500 focus:outline-none">
+                    </div>
+                    <button type="submit" style="background-color: #047857; color: #ffffff;" class="w-full rounded-lg py-2 px-4 text-xs font-bold text-white shadow-xs hover:opacity-90 active:scale-[0.99] transition cursor-pointer">
                         Accept
                     </button>
                 </form>
 
                 {{-- Reject Form --}}
-                <form method="POST" action="{{ route('admin.orders.closing-approval.reject', $order) }}" class="space-y-2 bg-white p-3.5 rounded-lg border border-amber-200">
+                <form method="POST" action="{{ route('admin.orders.closing-approval.reject', $order) }}" class="space-y-3 bg-white p-4 rounded-xl border border-amber-200 shadow-xs">
                     @csrf
-                    <span class="text-xs font-semibold text-red-800 block">Option B: Reject</span>
-                    <div>
-                        <label class="block text-[11px] text-neutral-500">Mandatory Rejection Reason</label>
-                        <textarea name="rejection_reason" required rows="2" placeholder="Explain why this closing value is rejected…" class="mt-0.5 w-full rounded border border-neutral-300 px-2 py-1 text-xs"></textarea>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-red-800 uppercase tracking-wider">Option B: Reject Deal</span>
+                        <span class="text-[10px] bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-200 font-medium">Suspend Order</span>
                     </div>
-                    <button type="submit" onclick="return confirm('Reject this closing value? Order will be suspended.')" class="w-full rounded-md bg-red-700 py-1.5 text-xs font-semibold text-white hover:bg-red-800">
+                    <div>
+                        <label class="block text-[11px] font-medium text-neutral-600">Mandatory Rejection Reason *</label>
+                        <textarea name="rejection_reason" required rows="2" placeholder="Explain why this closing value is rejected…" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-900 focus:border-neutral-500 focus:outline-none"></textarea>
+                    </div>
+                    <button type="submit" onclick="return confirm('Reject this closing value? Order will be suspended.')" style="background-color: #b91c1c; color: #ffffff;" class="w-full rounded-lg py-2 px-4 text-xs font-bold text-white shadow-xs hover:opacity-90 active:scale-[0.99] transition cursor-pointer">
                         Reject
                     </button>
                 </form>
