@@ -43,6 +43,8 @@ class EnsureRoleActive
             return response()->json(['message' => 'This token is not valid for the requested resource.'], 403);
         }
 
+        $user = $user->fresh() ?? $user;
+
         // Verify the account is still enabled; disabled accounts lose access
         // even though their tokens technically still exist. Admins (the
         // pre-existing model) have no status column and default to active.

@@ -34,11 +34,8 @@ class SubscriptionService
         if ($actor instanceof Team) {
             $query->where('team_id', $actor->id);
         } elseif ($actor instanceof User) {
-            $query->where(function (Builder $q) use ($actor): void {
-                $q->where('team_id', $actor->team_id)
-                    ->orWhereHas('order', function (Builder $o) use ($actor): void {
-                        $o->where('assigned_employee_id', $actor->id);
-                    });
+            $query->whereHas('order', function (Builder $o) use ($actor): void {
+                $o->where('assigned_employee_id', $actor->id);
             });
         }
 

@@ -41,12 +41,14 @@ class DashboardController extends Controller
             ->whereIn('payment_status', ['pending', 'partially_paid'])
             ->sum('closing_value');
 
-        $teamId = $employee->team_id;
+        $mySubscriptions = Subscription::whereHas('order', function ($q) use ($employee) {
+            $q->where('assigned_employee_id', $employee->id);
+        });
 
-        $activeSubscriptions = Subscription::where('team_id', $teamId)
+        $activeSubscriptions = (clone $mySubscriptions)
             ->where('status', 'active')->count();
 
-        $expiringSubscriptions = Subscription::where('team_id', $teamId)
+        $expiringSubscriptions = (clone $mySubscriptions)
             ->where('status', 'active')
             ->whereNotNull('expires_at')
             ->where('expires_at', '<=', now()->addDays(30))

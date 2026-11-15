@@ -56,13 +56,10 @@ class FollowUpService
         }
 
         if ($actor instanceof User) {
-            // An employee sees follow-ups they are assigned to, or that
-            // belong to their team's customers (rule 5).
             $isAssigned = (int) $followUp->assigned_employee_id === (int) $actor->id;
-            $isTeam = $actor->team_id !== null && (int) $followUp->team_id === (int) $actor->team_id;
 
-            if (! $isAssigned && ! $isTeam) {
-                $this->deny('You may only view follow-ups from your team.');
+            if (! $isAssigned) {
+                $this->deny('You may only view follow-ups assigned directly to you.');
             }
 
             return;
@@ -114,13 +111,7 @@ class FollowUpService
         if ($actor instanceof Team) {
             $query->forTeam($actor->id);
         } elseif ($actor instanceof User) {
-            $query->where(function ($q) use ($actor): void {
-                $q->where('assigned_employee_id', $actor->id);
-
-                if ($actor->team_id !== null) {
-                    $q->orWhere('team_id', $actor->team_id);
-                }
-            });
+            $query->where('assigned_employee_id', $actor->id);
         }
 
         // Admin: no restriction.
@@ -169,9 +160,18 @@ class FollowUpService
 
         // Rule 3: the assigned employee (when given) must be active and
         // belong to the same team when the customer has one.
-        $employeeId = $this->resolveAssignment($data['assigned_employee_id'] ?? null, $teamId, $actor);
+        // An employee always self-assigns their created follow-ups.
+        $employeeId = $actor instanceof User
+            ? $actor->id
+            : $this->resolveAssignment($data['assigned_employee_id'] ?? null, $teamId, $actor);
 
         $order = ! empty($data['order_id']) ? SalesOrder::find((int) $data['order_id']) : null;
+
+        if ($order && $actor instanceof User && (int) ($order->assigned_employee_id ?? 0) !== (int) $actor->id) {
+            throw ValidationException::withMessages([
+                'order_id' => 'You may only attach orders assigned directly to you.',
+            ]);
+        }
 
         $followUp = DB::transaction(function () use ($customer, $teamId, $employeeId, $actor, $order, $data): FollowUp {
             $followUp = FollowUp::create([

@@ -117,7 +117,7 @@ class NotificationResendTest extends TestCase
             'admin_id' => $this->admin->id,
             'title' => 'Plain',
             'body' => 'Body',
-            'interests' => 'hello, world', // recorded interests win when none submitted
+            'interests' => 'hello, world', // recorded interests are normalized (trimmed) on retry
             'status' => 'failed',
             'error' => 'HTTP status 500',
         ]);
@@ -132,7 +132,8 @@ class NotificationResendTest extends TestCase
 
         $fresh = PushNotificationLog::where('publish_id', 'plain-789')->first();
         $this->assertNotNull($fresh);
-        $this->assertSame('hello, world', $fresh->interests);
+        // Interests are normalized (trimmed, no surrounding spaces) on retry.
+        $this->assertSame('hello,world', $fresh->interests);
     }
 
     public function test_a_sent_notification_cannot_be_retried(): void

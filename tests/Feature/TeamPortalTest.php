@@ -26,24 +26,20 @@ class TeamPortalTest extends TestCase
 
     private function actingAsTeam(Team $team): self
     {
-        // Establish session through the actual login endpoint
-        $this->post('/team/login', [
-            'login' => $team->username,
-            'password' => 'password',
-        ]);
+        $this->withSession(['team_id' => $team->id]);
 
         return $this;
     }
 
-    public function test_team_login_page_renders(): void
+    public function test_team_login_page_redirects_to_employee_login(): void
     {
         $response = $this->get('/team/login');
 
-        $response->assertStatus(200);
-        $response->assertSee('Team Login');
+        $response->assertRedirect(route('employee.login'));
+        $response->assertSessionHas('info');
     }
 
-    public function test_team_can_login_and_see_dashboard(): void
+    public function test_team_login_post_redirects_to_employee_login(): void
     {
         $team = Team::factory()->create(['password' => bcrypt('password')]);
 
@@ -52,18 +48,15 @@ class TeamPortalTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('team.dashboard'));
-
-        $response = $this->get('/team/dashboard');
-        $response->assertStatus(200);
-        $response->assertSee('Team Dashboard');
+        $response->assertRedirect(route('employee.login'));
+        $response->assertSessionHas('info');
     }
 
     public function test_unauthenticated_team_is_redirected_to_login(): void
     {
         $response = $this->get('/team/dashboard');
 
-        $response->assertRedirect(route('team.login'));
+        $response->assertRedirect(route('employee.login'));
     }
 
     public function test_inactive_team_cannot_login(): void
@@ -73,14 +66,12 @@ class TeamPortalTest extends TestCase
             'status' => 'inactive',
         ]);
 
-        $response = $this->withSession(['team_id' => $team->id])
-            ->post('/team/login', [
-                'login' => $team->username,
-                'password' => 'password',
-            ]);
+        $response = $this->post('/team/login', [
+            'login' => $team->username,
+            'password' => 'password',
+        ]);
 
-        $response->assertSessionHasErrors();
-        $this->assertNull(session('team_id'));
+        $response->assertRedirect(route('employee.login'));
     }
 
     public function test_team_dashboard_shows_real_statistics(): void
@@ -252,11 +243,7 @@ class TeamPortalTest extends TestCase
     {
         $team = Team::factory()->create(['password' => bcrypt('password')]);
 
-        // Login via session
-        $this->post('/team/login', [
-            'login' => $team->username,
-            'password' => 'password',
-        ]);
+        $this->actingAsTeam($team);
 
         $response = $this->get('/team/notifications');
         $response->assertStatus(200);
@@ -266,15 +253,12 @@ class TeamPortalTest extends TestCase
     {
         $team = Team::factory()->create(['password' => bcrypt('password')]);
 
-        $this->post('/team/login', [
-            'login' => $team->username,
-            'password' => 'password',
-        ]);
+        $this->actingAsTeam($team);
 
-        $this->post('/team/logout');
+        $response = $this->post('/team/logout');
 
-        $response = $this->get('/team/dashboard');
-        $response->assertRedirect(route('team.login'));
+        $response->assertRedirect(route('employee.login'));
+        $this->assertNull(session('team_id'));
     }
 }
 

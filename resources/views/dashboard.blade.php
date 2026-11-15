@@ -33,6 +33,14 @@
                 <dt class="text-sm text-neutral-500">Email</dt>
                 <dd class="text-sm">{{ auth()->user()->email }}</dd>
             </dl>
+            @if (auth()->user() && auth()->user()->role === 'employee')
+                <div class="pt-3">
+                    <a href="{{ route('employee.dashboard') }}"
+                       class="flex items-center justify-center w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800">
+                        Go to Employee Portal &rarr;
+                    </a>
+                </div>
+            @endif
         </div>
 
         <p class="mt-4 text-sm text-neutral-500">Need your team or credentials? Contact your administrator.</p>

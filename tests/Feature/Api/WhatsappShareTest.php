@@ -25,7 +25,7 @@ class WhatsappShareTest extends TestCase
             'customer_phone' => $phone,
             'order_status' => 'active',
             'payment_status' => 'paid',
-            'closing_value' => 149.99,
+            'product_value' => 149.99,
         ]);
 
         Subscription::factory()->create([
@@ -87,6 +87,8 @@ class WhatsappShareTest extends TestCase
         $order->forceFill([
             'customer_name' => 'Nadia K.',
             'product_name' => 'Pro Plan',
+            'product_price_snapshot' => '149.99',
+            'closing_value' => '149.99',
         ])->save();
 
         $service = app(WhatsappShareService::class);
@@ -129,6 +131,7 @@ class WhatsappShareTest extends TestCase
         $team = Team::factory()->create(['team_code' => 'GEM']);
         $order = $this->makeActiveOrder($team);
         $employee = User::factory()->create(['team_id' => $team->id]);
+        $order->forceFill(['assigned_employee_id' => $employee->id])->save();
 
         $this->postJson("/api/v1/orders/{$order->id}/whatsapp-share-log", [], $this->actingAsToken($this->employeeToken($employee)))
             ->assertCreated()

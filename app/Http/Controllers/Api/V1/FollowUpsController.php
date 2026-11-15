@@ -46,7 +46,35 @@ class FollowUpsController extends Controller
         if ($actor instanceof Team) {
             $query->where('team_id', $actor->id);
         } elseif ($actor instanceof User) {
-            $query->where('team_id', $actor->team_id);
+            $customerPhones = \DB::table('sales_orders')
+                ->where('assigned_employee_id', $actor->id)
+                ->whereNotNull('customer_phone')
+                ->distinct()
+                ->pluck('customer_phone');
+
+            $customerEmails = \DB::table('sales_orders')
+                ->where('assigned_employee_id', $actor->id)
+                ->whereNotNull('customer_email')
+                ->distinct()
+                ->pluck('customer_email');
+
+            $customerIdsFromSubscriptions = \DB::table('subscriptions')
+                ->join('sales_orders', 'subscriptions.order_id', '=', 'sales_orders.id')
+                ->where('sales_orders.assigned_employee_id', $actor->id)
+                ->pluck('subscriptions.customer_id');
+
+            $customerIdsFromPayments = \DB::table('payments')
+                ->join('sales_orders', 'payments.order_id', '=', 'sales_orders.id')
+                ->where('sales_orders.assigned_employee_id', $actor->id)
+                ->pluck('payments.customer_id');
+
+            $allCustomerIds = $customerIdsFromSubscriptions->merge($customerIdsFromPayments)->filter()->unique();
+
+            $query->where(function ($q) use ($customerPhones, $customerEmails, $allCustomerIds) {
+                $q->whereIn('id', $allCustomerIds)
+                    ->orWhereIn('phone', $customerPhones)
+                    ->orWhereIn('email', $customerEmails);
+            });
         }
 
         if ($request->filled('team_id') && $actor instanceof \App\Models\Admin) {

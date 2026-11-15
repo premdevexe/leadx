@@ -15,9 +15,10 @@ class AuthenticateTeamWeb
 
         if (! $teamId) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
+                return response()->json(['message' => 'Team login has been deprecated. Please use employee login.'], 410);
             }
-            return redirect()->route('team.login');
+            return redirect()->route('employee.login')
+                ->with('info', 'Team login has been deprecated. Please log in with your individual employee account.');
         }
 
         $team = Team::find($teamId);
@@ -27,9 +28,10 @@ class AuthenticateTeamWeb
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'This team account has been disabled.'], 403);
             }
-            return redirect()->route('team.login')->withErrors(['login' => 'Your team account has been disabled.']);
+            return redirect()->route('employee.login')->withErrors(['login' => 'Your team account has been disabled.']);
         }
 
+        \Illuminate\Support\Facades\Auth::guard('team')->setUser($team);
         $request->setUserResolver(fn () => $team);
 
         return $next($request);

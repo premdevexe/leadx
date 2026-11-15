@@ -91,6 +91,7 @@ class OrderCreationTest extends TestCase
         // Unpaid order.
         $pending = \App\Models\SalesOrder::factory()->create([
             'team_id' => $team->id,
+            'assigned_employee_id' => $employee->id,
             'payment_status' => 'pending',
         ]);
 
@@ -103,6 +104,7 @@ class OrderCreationTest extends TestCase
         // Paid order activates cleanly.
         $paid = \App\Models\SalesOrder::factory()->create([
             'team_id' => $team->id,
+            'assigned_employee_id' => $employee->id,
             'payment_status' => 'paid',
         ]);
         Payment::factory()->create([

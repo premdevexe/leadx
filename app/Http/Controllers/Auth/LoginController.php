@@ -65,6 +65,13 @@ class LoginController extends Controller
 
         Auth::guard('web')->login($user, $request->boolean('remember'));
 
+        if ($user->role === 'employee') {
+            Auth::guard('employee')->login($user, $request->boolean('remember'));
+            $request->session()->put('employee_id', $user->id);
+
+            return redirect()->intended(route('employee.dashboard'));
+        }
+
         return redirect()->intended('dashboard');
     }
 
@@ -74,6 +81,8 @@ class LoginController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
+        Auth::guard('employee')->logout();
+        $request->session()->forget('employee_id');
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

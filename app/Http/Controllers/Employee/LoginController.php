@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employee;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -57,6 +58,7 @@ class LoginController extends Controller
 
         RateLimiter::clear($key);
         $request->session()->regenerate();
+        Auth::guard('employee')->login($user, $request->boolean('remember'));
         $request->session()->put('employee_id', $user->id);
 
         return redirect()->intended(route('employee.dashboard'));
@@ -64,6 +66,7 @@ class LoginController extends Controller
 
     public function logout(Request $request): \Illuminate\Http\RedirectResponse
     {
+        Auth::guard('employee')->logout();
         $request->session()->forget('employee_id');
         $request->session()->invalidate();
         $request->session()->regenerateToken();

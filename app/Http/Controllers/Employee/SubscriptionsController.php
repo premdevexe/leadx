@@ -14,8 +14,7 @@ class SubscriptionsController extends Controller
         /** @var \App\Models\User $employee */
         $employee = $request->user();
 
-        $subscriptions = Subscription::where('team_id', $employee->team_id)
-            ->whereHas('order', function ($q) use ($employee) {
+        $subscriptions = Subscription::whereHas('order', function ($q) use ($employee) {
                 $q->where('assigned_employee_id', $employee->id);
             })
             ->with(['order', 'product', 'plan'])

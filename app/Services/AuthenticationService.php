@@ -83,6 +83,13 @@ class AuthenticationService
             ]);
         }
 
+        if ($user->role !== 'employee') {
+            RateLimiter::hit($key, 900);
+            throw ValidationException::withMessages([
+                'login' => 'This account is not an employee.',
+            ]);
+        }
+
         RateLimiter::clear($key);
 
         return $user->createToken('leadx-employee');

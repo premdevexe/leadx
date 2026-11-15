@@ -123,12 +123,10 @@ class OrderCredentialService
      * May this actor view or manage the order's customer key?
      *
      *  - an Admin (super admin) manages any order's key;
-     *  - a Team manages the keys of its own team's orders;
      *  - an Employee manages only the keys of orders they are the assigned
-     *    employee of, or that belong to their team.
+     *    employee of.
      *
-     * Everyone else — other teams' members, unrelated employees — has no
-     * access, so a key can never be read cross-team.
+     * Belonging to the same team never grants access to another employee's order's API key.
      */
     public function canManage(SalesOrder $order, mixed $actor): bool
     {
@@ -136,15 +134,8 @@ class OrderCredentialService
             return true;
         }
 
-        if ($actor instanceof Team) {
-            return (int) $order->team_id === (int) $actor->id;
-        }
-
         if ($actor instanceof User) {
-            $isOwner = (int) ($order->assigned_employee_id ?? 0) === (int) $actor->id;
-            $isTeamMember = (int) ($actor->team_id ?? 0) === (int) ($order->team_id ?? 0);
-
-            return $isOwner || $isTeamMember;
+            return (int) ($order->assigned_employee_id ?? 0) === (int) $actor->id;
         }
 
         return false;

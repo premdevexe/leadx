@@ -71,9 +71,18 @@
     </div>
 </div>
 
-<div class="mt-6 flex flex-wrap items-center gap-3">
-    <button type="submit" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
-        {{ $isEdit ? 'Save changes' : 'Create employee' }}
-    </button>
-    <a href="{{ route('admin.employees') }}" class="w-full sm:w-auto text-center text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
+<div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-5">
+    <div class="flex flex-wrap items-center gap-3">
+        <button type="submit" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+            {{ $isEdit ? 'Save changes' : 'Create employee' }}
+        </button>
+        <a href="{{ route('admin.employees') }}" class="w-full sm:w-auto text-center text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
+    </div>
+    @if ($isEdit)
+        <button type="button"
+                onclick="if(confirm('Are you sure you want to delete employee {{ $employee->name ?? $employee->username }}? This action cannot be undone.')) { document.getElementById('delete-employee-form').submit(); }"
+                class="w-full sm:w-auto rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 hover:text-red-900">
+            Delete employee
+        </button>
+    @endif
 </div>

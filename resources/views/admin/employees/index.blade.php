@@ -58,13 +58,21 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
-                                <a href="{{ route('admin.employees.edit', $employee) }}" class="text-sm text-neutral-600 transition-colors hover:text-neutral-900">Edit</a>
-                                <form method="POST" action="{{ route('admin.employees.destroy', $employee) }}" class="inline"
-                                      onsubmit="return confirm('Delete employee {{ $employee->username ?? '' }}?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="ml-3 text-sm text-red-600 transition-colors hover:text-red-800">Delete</button>
-                                </form>
+                                <div class="inline-flex items-center gap-2">
+                                    <a href="{{ route('admin.employees.edit', $employee) }}"
+                                       class="inline-flex items-center rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 shadow-xs transition-colors hover:bg-neutral-50 hover:text-neutral-900">
+                                        Edit
+                                    </a>
+                                    <form method="POST" action="{{ route('admin.employees.destroy', $employee) }}" class="inline"
+                                          onsubmit="return confirm('Are you sure you want to delete employee {{ $employee->name ?? $employee->username }}? This action cannot be undone.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 hover:text-red-900">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @endforeach

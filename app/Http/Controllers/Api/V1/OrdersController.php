@@ -106,18 +106,15 @@ class OrdersController extends Controller
         if ($actor instanceof Team) {
             $query->forTeam($actor->id);
         } elseif ($actor instanceof User) {
-            // Employees see orders in their team (or they own).
-            $query->where(function ($q) use ($actor): void {
-                $q->where('assigned_employee_id', $actor->id)
-                    ->orWhere('team_id', $actor->team_id);
-            });
+            // Employees only see orders assigned directly to them.
+            $query->where('assigned_employee_id', $actor->id);
         }
 
-        if ($request->filled('team_id')) {
+        if ($request->filled('team_id') && $actor instanceof Admin) {
             $query->where('team_id', $request->integer('team_id'));
         }
 
-        if ($request->filled('employee_id')) {
+        if ($request->filled('employee_id') && $actor instanceof Admin) {
             $query->where('assigned_employee_id', $request->integer('employee_id'));
         }
 

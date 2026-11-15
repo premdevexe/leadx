@@ -36,6 +36,12 @@ use App\Http\Controllers\Team\SubscriptionsController as TeamSubscriptionsContro
 use App\Http\Controllers\Team\TeamMembersController;
 
 Route::get('/', function () {
+    if (auth()->guard('admin')->check()) {
+        return redirect()->route('admin.dashboard');
+    }
+    if (auth()->guard('employee')->check() || (auth()->check() && auth()->user()->role === 'employee')) {
+        return redirect()->route('employee.dashboard');
+    }
     return auth()->check()
         ? redirect()->route('dashboard')
         : redirect()->route('login');
@@ -47,7 +53,13 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
+    Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+        $user = auth()->user();
+        if ($user && $user->role === 'employee') {
+            \Illuminate\Support\Facades\Auth::guard('employee')->login($user);
+            $request->session()->put('employee_id', $user->id);
+            return redirect()->route('employee.dashboard');
+        }
         return view('dashboard');
     })->name('dashboard');
 

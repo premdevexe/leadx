@@ -37,9 +37,9 @@ class DualAuthenticationTest extends TestCase
         ]);
     }
 
-    // ---------- 2. Team login ----------
+    // ---------- 2. Team login deprecation ----------
 
-    public function test_team_can_login(): void
+    public function test_team_login_is_deprecated_and_returns_410_gone(): void
     {
         $team = Team::factory()->create([
             'username' => 'sales',
@@ -51,14 +51,10 @@ class DualAuthenticationTest extends TestCase
             'password' => 'team-pass',
         ]);
 
-        $response->assertOk()
-            ->assertJsonPath('token_type', 'Bearer')
-            ->assertJsonStructure(['token']);
-
-        $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_type' => Team::class,
-            'tokenable_id' => $team->id,
-        ]);
+        $response->assertStatus(410)
+            ->assertJson([
+                'message' => 'Team login has been deprecated. Please authenticate using employee credentials at /api/v1/employee/login.',
+            ]);
     }
 
     // ---------- 3. Employee login ----------
@@ -90,10 +86,10 @@ class DualAuthenticationTest extends TestCase
 
     public function test_invalid_credentials_are_rejected(): void
     {
-        Team::factory()->create(['username' => 'sales', 'password' => 'team-pass']);
+        User::factory()->create(['username' => 'jdoe', 'password' => 'emp-pass']);
 
-        $response = $this->postJson('/api/v1/team/login', [
-            'login' => 'sales',
+        $response = $this->postJson('/api/v1/employee/login', [
+            'login' => 'jdoe',
             'password' => 'wrong',
         ]);
 
@@ -115,8 +111,7 @@ class DualAuthenticationTest extends TestCase
             'password' => 'team-pass',
         ]);
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['login']);
+        $response->assertStatus(410);
     }
 
     // ---------- 6. Inactive employee login rejection ----------

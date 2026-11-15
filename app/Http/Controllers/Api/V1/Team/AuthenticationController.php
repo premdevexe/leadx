@@ -18,18 +18,11 @@ class AuthenticationController extends Controller
     /**
      * POST /api/v1/team/login
      */
-    public function login(LoginRequest $request): JsonResponse
+    public function login(Request $request): JsonResponse
     {
-        $token = $this->auth->team(
-            $request->validated('login'),
-            $request->validated('password'),
-            $request->ip()
-        );
-
         return response()->json([
-            'token_type' => 'Bearer',
-            'token' => $token->plainTextToken,
-        ]);
+            'message' => 'Team login has been deprecated. Please authenticate using employee credentials at /api/v1/employee/login.',
+        ], 410);
     }
 
     /**

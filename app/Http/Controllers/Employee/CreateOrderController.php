@@ -8,6 +8,7 @@ use App\Models\SalesOrder;
 use App\Models\User;
 use App\Services\OrderNumberService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CreateOrderController extends Controller
@@ -74,30 +75,32 @@ class CreateOrderController extends Controller
         $closingValue = (float) $validated['closing_value'];
         $discountAmount = round(max(0.0, $productPrice - $closingValue), 2);
 
-        $orderNumber = $numbers->next($team);
+        $order = DB::transaction(function () use ($numbers, $team, $employee, $product, $productName, $productPrice, $productDuration, $closingValue, $discountAmount, $validated) {
+            $orderNumber = $numbers->next($team);
 
-        $order = SalesOrder::create([
-            'order_number' => $orderNumber,
-            'team_id' => $team->id,
-            'team_code_snapshot' => $team->team_code,
-            'assigned_employee_id' => $employee->id,
-            'customer_name' => $validated['customer_name'],
-            'customer_phone' => $validated['customer_phone'] ?? null,
-            'customer_email' => $validated['customer_email'] ?? null,
-            'product_id' => $product?->id,
-            'product_name' => $productName,
-            'product_name_snapshot' => $productName,
-            'product_price_snapshot' => $productPrice,
-            'product_duration_snapshot' => $productDuration,
-            'duration' => $productDuration,
-            'product_value' => $productPrice,
-            'discount_amount' => $discountAmount,
-            'closing_value' => $closingValue,
-            'amount_received' => $validated['amount_received'] ?? 0,
-            'payment_method' => $validated['payment_method'] ?? null,
-            'payment_status' => 'pending',
-            'order_status' => 'pending',
-        ]);
+            return SalesOrder::create([
+                'order_number' => $orderNumber,
+                'team_id' => $team->id,
+                'team_code_snapshot' => $team->team_code,
+                'assigned_employee_id' => $employee->id,
+                'customer_name' => $validated['customer_name'],
+                'customer_phone' => $validated['customer_phone'] ?? null,
+                'customer_email' => $validated['customer_email'] ?? null,
+                'product_id' => $product?->id,
+                'product_name' => $productName,
+                'product_name_snapshot' => $productName,
+                'product_price_snapshot' => $productPrice,
+                'product_duration_snapshot' => $productDuration,
+                'duration' => $productDuration,
+                'product_value' => $productPrice,
+                'discount_amount' => $discountAmount,
+                'closing_value' => $closingValue,
+                'amount_received' => $validated['amount_received'] ?? 0,
+                'payment_method' => $validated['payment_method'] ?? null,
+                'payment_status' => 'pending',
+                'order_status' => 'pending',
+            ]);
+        });
 
         return redirect()->route('employee.orders.show', $order)->with('success', 'Order created successfully.');
     }

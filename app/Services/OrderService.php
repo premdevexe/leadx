@@ -38,39 +38,41 @@ class OrderService
         // so an unknown or inactive product never burns an order number.
         $product = $this->resolveProduct($data['product_id'] ?? null);
 
-        $orderNumber = $this->numbers->next($team);
+        $order = DB::transaction(function () use ($team, $employee, $data, $product) {
+            $orderNumber = $this->numbers->next($team);
 
-        $productName = $product ? $product->name : ($data['product_name'] ?? null);
-        $productPrice = $product ? $product->price : ($data['product_value'] ?? 0);
-        $productDuration = $product ? (string) $product->duration : ($data['duration'] ?? '1y');
+            $productName = $product ? $product->name : ($data['product_name'] ?? null);
+            $productPrice = $product ? $product->price : ($data['product_value'] ?? 0);
+            $productDuration = $product ? (string) $product->duration : ($data['duration'] ?? '1y');
 
-        $closingValue = array_key_exists('closing_value', $data) && $data['closing_value'] !== ''
-            ? (float) $data['closing_value']
-            : (float) $productPrice;
-        $discountAmount = round(max(0.0, (float) $productPrice - $closingValue), 2);
+            $closingValue = array_key_exists('closing_value', $data) && $data['closing_value'] !== ''
+                ? (float) $data['closing_value']
+                : (float) $productPrice;
+            $discountAmount = round(max(0.0, (float) $productPrice - $closingValue), 2);
 
-        $order = SalesOrder::create([
-            'order_number' => $orderNumber,
-            'team_id' => $team->id,
-            'team_code_snapshot' => $team->team_code,
-            'assigned_employee_id' => $employee?->id,
-            'customer_name' => $data['customer_name'],
-            'customer_phone' => $data['customer_phone'] ?? null,
-            'customer_email' => $data['customer_email'] ?? null,
-            'product_id' => $product?->id,
-            'product_name' => $productName,
-            'product_name_snapshot' => $productName,
-            'product_price_snapshot' => $productPrice,
-            'product_duration_snapshot' => $productDuration,
-            'duration' => $productDuration,
-            'product_value' => $productPrice,
-            'discount_amount' => $discountAmount,
-            'closing_value' => $closingValue,
-            'amount_received' => $data['amount_received'] ?? 0,
-            'payment_method' => $data['payment_method'] ?? null,
-            'payment_status' => $data['payment_status'] ?? 'pending',
-            'order_status' => $data['order_status'] ?? 'pending',
-        ]);
+            return SalesOrder::create([
+                'order_number' => $orderNumber,
+                'team_id' => $team->id,
+                'team_code_snapshot' => $team->team_code,
+                'assigned_employee_id' => $employee?->id,
+                'customer_name' => $data['customer_name'],
+                'customer_phone' => $data['customer_phone'] ?? null,
+                'customer_email' => $data['customer_email'] ?? null,
+                'product_id' => $product?->id,
+                'product_name' => $productName,
+                'product_name_snapshot' => $productName,
+                'product_price_snapshot' => $productPrice,
+                'product_duration_snapshot' => $productDuration,
+                'duration' => $productDuration,
+                'product_value' => $productPrice,
+                'discount_amount' => $discountAmount,
+                'closing_value' => $closingValue,
+                'amount_received' => $data['amount_received'] ?? 0,
+                'payment_method' => $data['payment_method'] ?? null,
+                'payment_status' => $data['payment_status'] ?? 'pending',
+                'order_status' => $data['order_status'] ?? 'pending',
+            ]);
+        });
 
         SalesAnalyticsService::invalidateCache();
 
@@ -184,10 +186,9 @@ class OrderService
 
         if ($actor instanceof User) {
             $isOwner = (int) ($order->assigned_employee_id ?? 0) === (int) $actor->id;
-            $isTeamMember = (int) ($actor->team_id ?? 0) === (int) ($order->team_id ?? 0);
 
-            if (! $isOwner && ! $isTeamMember) {
-                $this->deny('You may only access orders from your assigned team.');
+            if (! $isOwner) {
+                $this->deny('You may only access orders assigned directly to you.');
             }
 
             return;

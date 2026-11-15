@@ -66,6 +66,8 @@ class EmployeeService
     {
         $this->audit($employee, 'deleted', $employee->onlyPublic(), null);
 
+        $this->detachTeam($employee);
+
         $employee->delete();
     }
 
