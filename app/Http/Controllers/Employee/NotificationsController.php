@@ -13,6 +13,8 @@ class NotificationsController extends Controller
         /** @var \App\Models\User $employee */
         $employee = $request->user();
 
+        $unreadCount = $employee->unreadNotifications()->count();
+
         $notifications = $employee->notifications()
             ->orderByDesc('created_at')
             ->paginate(20);
@@ -22,6 +24,7 @@ class NotificationsController extends Controller
         return view('employee.notifications.index', [
             'notifications' => $notifications,
             'employee' => $employee,
+            'unreadCount' => $unreadCount,
         ]);
     }
 }

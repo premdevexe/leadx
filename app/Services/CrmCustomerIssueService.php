@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\CrmCustomerIssue;
 use App\Models\CrmCustomerIssueHistory;
+use App\Models\Customer;
+use App\Models\SalesOrder;
 use App\Models\User;
 
 class CrmCustomerIssueService
@@ -28,7 +30,7 @@ class CrmCustomerIssueService
             'old_status' => null,
             'new_status' => $issue->status,
             'update_note' => 'Issue created.',
-            'created_at' => $issue->created_at ?? now(),
+            'created_at' => now(),
         ]);
 
         return $issue;
@@ -58,7 +60,7 @@ class CrmCustomerIssueService
                 'employee_id' => $employee->id,
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,
-                'update_note' => $updateNote ?: ($oldStatus === null ? 'Issue created.' : 'Status updated.'),
+                'update_note' => $updateNote ?: 'Status updated.',
                 'created_at' => now(),
             ]);
         }
@@ -68,6 +70,9 @@ class CrmCustomerIssueService
         return $issue;
     }
 
+    /**
+     * Get query for the authenticated employee's issues.
+     */
     public function getEmployeeIssuesQuery(User $employee)
     {
         return CrmCustomerIssue::query()
@@ -75,14 +80,31 @@ class CrmCustomerIssueService
             ->with(['customer:id,name', 'employee:id,name', 'histories' => fn ($q) => $q->limit(1)]);
     }
 
+    /**
+     * Get the IDs of CRM customers the employee is authorized to issue against.
+     * Authorization: the employee must have at least one sales order with a phone
+     * that matches the customer's normalized_phone.
+     */
     public function getAuthorizedCustomerIds(User $employee): array
     {
-        return $employee
-            ->salesOrders()
+        $orderPhones = SalesOrder::where('assigned_employee_id', $employee->id)
             ->whereNotNull('customer_phone')
             ->where('customer_phone', '!=', '')
             ->distinct()
-            ->pluck('customer_id')
+            ->pluck('customer_phone')
+            ->filter()
+            ->map(fn ($phone) => preg_replace('/[^\d+]/', '', $phone))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($orderPhones)) {
+            return [];
+        }
+
+        return Customer::whereIn('normalized_phone', $orderPhones)
+            ->pluck('id')
             ->filter()
             ->unique()
             ->values()

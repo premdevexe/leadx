@@ -20,16 +20,8 @@ class StoreCustomerIssueRequest extends FormRequest
         /** @var \App\Models\User $employee */
         $employee = $this->user();
 
-        $authorizedCustomerIds = $employee
-            ->salesOrders()
-            ->whereNotNull('customer_phone')
-            ->where('customer_phone', '!=', '')
-            ->distinct()
-            ->pluck('customer_id')
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        $authorizedCustomerIds = app(\App\Services\CrmCustomerIssueService::class)
+            ->getAuthorizedCustomerIds($employee);
 
         if (empty($authorizedCustomerIds)) {
             $authorizedCustomerIds = [0]; // fail everything if no authorized customers

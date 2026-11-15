@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Employee Dashboard') — {{ \App\Models\Setting::siteName() }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.pusher-channels')
 </head>
 <body class="min-h-screen bg-neutral-50 font-sans text-neutral-900 antialiased overflow-x-clip">
     <div class="relative flex min-h-screen w-full max-w-full overflow-x-clip">
@@ -95,6 +96,12 @@
                     <span class="text-xs sm:text-sm font-medium text-neutral-500">Employee Portal</span>
                 </div>
                 <div class="flex items-center gap-2 sm:gap-4">
+                    <button type="button" id="notification-bell" aria-label="Notifications" class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-700 transition-colors hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                        </svg>
+                        <span id="unread-badge" class="absolute -right-1.5 -top-1.5 hidden h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-white" style="font-size:10px; min-width:18px; height:18px; padding: 0 4px;">0</span>
+                    </button>
                     <span class="max-w-[110px] truncate text-xs sm:max-w-xs sm:text-sm text-neutral-700 font-medium">{{ request()->user()?->name }}</span>
                     <form method="POST" action="{{ route('employee.logout') }}" class="shrink-0">
                         @csrf
@@ -172,6 +179,52 @@
             window.addEventListener('resize', () => { const c = isMobile(); if (c !== prevIsMobile) { prevIsMobile = c; if (!c) mobileOpen = false; render(); } });
             render();
         })();
+    </script>
+
+    <script>
+        @auth
+        // Unread count comes from the Laravel view variable (already marked-as-read on page load)
+        var unreadInitial = @json($unreadCount ?? 0);
+        var badge = document.getElementById('unread-badge');
+        if (badge && unreadInitial > 0) {
+            badge.textContent = unreadInitial > 99 ? '99+' : unreadInitial;
+            badge.classList.remove('hidden');
+            badge.classList.add('flex');
+        }
+
+        document.addEventListener('leadx:notification', function (e) {
+            var data = e.detail;
+            if (!data || !data.title) return;
+
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;background:#18181b;color:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,.1);font-size:14px;max-width:320px;transform:translateY(100px);opacity:0;transition:all .3s ease;pointer-events:none;';
+            toast.innerHTML = '<div style="font-weight:600;margin-bottom:2px;">' + data.title + '</div>' +
+                '<div style="color:#a1a1aa;font-size:13px;">' + data.message + '</div>';
+            document.body.appendChild(toast);
+
+            requestAnimationFrame(function () {
+                toast.style.transform = 'translateY(0)';
+                toast.style.opacity = '1';
+            });
+
+            if (badge) {
+                var current = parseInt(badge.textContent || '0', 10);
+                badge.textContent = current + 1 > 99 ? '99+' : (current + 1);
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
+            }
+
+            setTimeout(function () {
+                toast.style.transform = 'translateY(100px)';
+                toast.style.opacity = '0';
+                setTimeout(function () { toast.remove(); }, 300);
+            }, 4000);
+        });
+
+        document.getElementById('notification-bell')?.addEventListener('click', function () {
+            window.location.href = '/employee/notifications';
+        });
+        @endauth
     </script>
 </body>
 </html>

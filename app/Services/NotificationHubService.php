@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\NotificationReceived;
 use App\Models\Admin;
 use App\Models\Payment;
 use App\Models\Refund;
@@ -39,6 +40,15 @@ class NotificationHubService
                 body: "Order {$order->order_number} has been assigned to you.",
                 interests: ['employee-'.$employee->id]
             );
+
+            $this->broadcastSafely($employee, [
+                'title' => 'New Order Attributed',
+                'message' => "You have been assigned to order {$order->order_number} ({$order->customer_name}).",
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'created',
+                'type' => 'order',
+            ]);
         }
 
         $this->sendBeamsSafely(
@@ -79,6 +89,15 @@ class NotificationHubService
             body: "Super Admin {$decision} closing value for {$order->order_number}.",
             interests: ['employee-'.$employee->id]
         );
+
+        $this->broadcastSafely($employee, [
+            'title' => $this->closingValueTitle($decision),
+            'message' => $this->closingValueMessage($order, $decision, $notes),
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'action' => $decision,
+            'type' => 'closing_value',
+        ]);
     }
 
     /**
@@ -105,6 +124,15 @@ class NotificationHubService
                 body: "Payment of \${$payment->amount} verified for {$order->order_number}.",
                 interests: ['employee-'.$employee->id]
             );
+
+            $this->broadcastSafely($employee, [
+                'title' => 'Payment Verified',
+                'message' => "Payment of \${$payment->amount} verified for order {$order->order_number}.",
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'payment_verified',
+                'type' => 'payment',
+            ]);
         }
     }
 
@@ -132,6 +160,15 @@ class NotificationHubService
                 body: "Subscription for {$order->order_number} activated.",
                 interests: ['employee-'.$employee->id, 'admin']
             );
+
+            $this->broadcastSafely($employee, [
+                'title' => 'Subscription Activated',
+                'message' => "Subscription for {$order->order_number} is now active (expires {$subscription->expires_at?->toDateString()}).",
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'subscription_activated',
+                'type' => 'subscription',
+            ]);
         }
     }
 
@@ -153,6 +190,15 @@ class NotificationHubService
                 order: $order,
                 action: 'expiring_soon'
             ));
+
+            $this->broadcastSafely($employee, [
+                'title' => 'Renewal Reminder',
+                'message' => "Order {$order->order_number} subscription expires in {$daysRemaining} days. Contact customer for renewal.",
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'expiring_soon',
+                'type' => 'renewal',
+            ]);
         }
     }
 
@@ -175,6 +221,15 @@ class NotificationHubService
                 body: "Order {$order->order_number} has been cancelled.",
                 interests: ['employee-'.$employee->id]
             );
+
+            $this->broadcastSafely($employee, [
+                'title' => 'Order Cancelled',
+                'message' => "Order {$order->order_number} has been cancelled. Reason: {$reason}",
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'cancelled',
+                'type' => 'order',
+            ]);
         }
     }
 
@@ -196,6 +251,15 @@ class NotificationHubService
                 order: $order,
                 action: 'refund'
             ));
+
+            $this->broadcastSafely($employee, [
+                'title' => 'Refund Processed',
+                'message' => "A refund of \${$refund->amount} was processed on order {$order->order_number}.",
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'refund',
+                'type' => 'refund',
+            ]);
         }
     }
 
@@ -209,5 +273,29 @@ class NotificationHubService
         } catch (\Throwable) {
             // Push notification network or credentials issue never interrupts transactions.
         }
+    }
+
+    /**
+     * Non-blocking Pusher Channels broadcast helper.
+     */
+    protected function broadcastSafely(\Illuminate\Contracts\Auth\Authenticatable $user, array $data): void
+    {
+        try {
+            broadcast(new NotificationReceived($user, $data))->toOthers();
+        } catch (\Throwable) {
+            // Broadcast failure must never interrupt the business transaction.
+        }
+    }
+
+    private function closingValueTitle(string $decision): string
+    {
+        return $decision === 'accepted' ? 'Closing Value Approved' : 'Closing Value Rejected';
+    }
+
+    private function closingValueMessage(SalesOrder $order, string $decision, ?string $notes): string
+    {
+        return $decision === 'accepted'
+            ? "Super Admin approved the closing value for order {$order->order_number}."
+            : "Super Admin rejected the closing value for order {$order->order_number}. Reason: {$notes}";
     }
 }

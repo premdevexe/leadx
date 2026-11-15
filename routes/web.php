@@ -71,6 +71,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 });
 
+// Broadcast auth routes (POST /broadcasting/auth, GET /broadcasting/auth).
+// Employee authentication goes through the employee guard, so we protect
+// the broadcast endpoint with the employee.web middleware and a dedicated
+// controller that uses the employee guard for authorization.
+Route::middleware('employee.web')->group(function () {
+    \Illuminate\Support\Facades\Broadcast::routes(['middleware' => []]);
+});
+
 // ---- Admin panel ----
 
 Route::middleware('guest:admin')->group(function () {

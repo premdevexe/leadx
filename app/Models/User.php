@@ -66,6 +66,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Orders assigned to this employee.
+     */
+    public function salesOrders(): HasMany
+    {
+        return $this->hasMany(SalesOrder::class, 'assigned_employee_id');
+    }
+
+    /**
      * All membership records, including historical ones.
      */
     public function memberships(): HasMany

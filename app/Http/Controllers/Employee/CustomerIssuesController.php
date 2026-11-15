@@ -142,6 +142,11 @@ class CustomerIssuesController extends Controller
         /** @var \App\Models\User $employee */
         $employee = $request->user();
 
+        if ((int) $customer_issue->employee_id !== (int) $employee->id) {
+            return redirect()->route('employee.customer-issues.index')
+                ->with('error', 'You are not authorized to edit this issue.');
+        }
+
         $validated = $request->validated();
         $updateNote = $validated['update_note'] ?? null;
 

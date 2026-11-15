@@ -25,21 +25,12 @@ class UpdateCustomerIssueRequest extends FormRequest
             return ['issue_title' => ['required', 'string', 'max:255']];
         }
 
-        // Ownership check - must own the issue
-        if ($issue->employee_id !== $employee->id) {
-            return ['_' => ['This issue is not accessible.']];
+        // Ownership check - handled by controller redirect
+        if ((int) $issue->employee_id !== (int) $employee->id) {
+            return [];
         }
 
-        $authorizedCustomerIds = $employee
-            ->salesOrders()
-            ->whereNotNull('customer_phone')
-            ->where('customer_phone', '!=', '')
-            ->distinct()
-            ->pluck('customer_id')
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        $authorizedCustomerIds = app(\App\Services\CrmCustomerIssueService::class)->getAuthorizedCustomerIds($employee);
 
         if (empty($authorizedCustomerIds)) {
             $authorizedCustomerIds = [0];
