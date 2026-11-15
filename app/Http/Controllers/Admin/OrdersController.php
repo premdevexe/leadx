@@ -109,6 +109,8 @@ class OrdersController extends Controller
             'assigned_employee_id' => ['nullable', 'integer', 'exists:users,id'],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:30'],
+            'customer_phone_local' => ['nullable', 'string', 'max:30'],
+            'customer_country_code' => ['nullable', 'string', 'max:10'],
             'customer_email' => ['nullable', 'string', 'max:255'],
             'product_id' => ['nullable', 'integer', 'exists:products,id'],
             'product_name' => ['nullable', 'string', 'max:255'],
@@ -122,6 +124,9 @@ class OrdersController extends Controller
             'payment_status' => ['in:'.implode(',', SalesOrder::PAYMENT_STATUSES)],
             'order_status' => ['in:'.implode(',', SalesOrder::STATUSES)],
         ]);
+
+        // Build E.164 phone from country code + local number
+        $data = $this->normalizePhone($data);
 
         $team = Team::find($data['team_id']);
 
@@ -197,6 +202,8 @@ class OrdersController extends Controller
             'assigned_employee_id' => ['nullable', 'integer', 'exists:users,id'],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:30'],
+            'customer_phone_local' => ['nullable', 'string', 'max:30'],
+            'customer_country_code' => ['nullable', 'string', 'max:10'],
             'customer_email' => ['nullable', 'email', 'max:255'],
             'product_id' => ['nullable', 'integer', 'exists:products,id'],
             'product_name' => ['nullable', 'string', 'max:255'],
@@ -244,6 +251,9 @@ class OrdersController extends Controller
         $data['closing_value'] = $closingVal;
         $data['discount_amount'] = round(max(0.0, $productVal - $closingVal), 2);
         $data['product_value'] = $productVal;
+
+        // Normalize phone: combine country code + local number into E.164
+        $this->normalizePhone($data);
 
         $editReason = $request->input('edit_reason', 'Order updated via Admin Panel');
 
@@ -624,5 +634,25 @@ class OrdersController extends Controller
         }
 
         return back()->with('status', 'Refund of $'.number_format($amount, 2).' (status: '.$refund->status.') recorded successfully.');
+    }
+
+    /**
+     * Normalize the phone fields in $data in place.
+     * Combines customer_country_code + customer_phone_local into a single
+     * E.164-style customer_phone string, then removes the local field.
+     */
+    private function normalizePhone(array &$data): void
+    {
+        $local = $data['customer_phone_local'] ?? null;
+        $cc = $data['customer_country_code'] ?? null;
+
+        if ($local) {
+            $digits = preg_replace('/\D/', '', $local);
+            $data['customer_phone'] = $cc ? '+' . preg_replace('/\D/', '', $cc) . ltrim($digits, '0') : $local;
+        } else {
+            $data['customer_phone'] = null;
+        }
+
+        unset($data['customer_phone_local']);
     }
 }

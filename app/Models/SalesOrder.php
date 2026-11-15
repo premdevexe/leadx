@@ -87,6 +87,7 @@ class SalesOrder extends Model
         'assigned_employee_id',
         'customer_name',
         'customer_phone',
+        'customer_country_code',
         'customer_email',
         'product_id',
         'product_name',

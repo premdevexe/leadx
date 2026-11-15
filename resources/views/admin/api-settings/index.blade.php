@@ -153,9 +153,9 @@
 
                     <div class="sm:col-span-2">
                         <label for="google_redirect_uri" class="text-sm font-medium text-neutral-800">Authorized Redirect URI *</label>
-                        <input id="google_redirect_uri" name="redirect_uri" type="url" value="{{ old('redirect_uri', $google['redirect_uri'] ?? url('/employee/calendar/connect')) }}" required
+                        <input id="google_redirect_uri" name="redirect_uri" type="url" value="{{ old('redirect_uri', $google['redirect_uri'] ?? url('/api/v1/google/calendar/callback')) }}" required
                                class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm font-mono focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200">
-                        <p class="mt-1 text-xs text-neutral-400">Must exactly match the authorized redirect URI in your Google Cloud Console OAuth 2.0 Credentials.</p>
+                        <p class="mt-1 text-xs text-neutral-400">Must exactly match the authorized redirect URI in your Google Cloud Console OAuth 2.0 Credentials. Must be <code class="font-mono bg-neutral-100 px-1 rounded">{{ url('/api/v1/google/calendar/callback') }}</code> (the OAuth callback endpoint).</p>
                         @error('redirect_uri') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
@@ -227,13 +227,6 @@
                             <option value="cloud_api" @selected(($whatsapp['provider'] ?? '') === 'cloud_api')>Meta WhatsApp Cloud API</option>
                         </select>
                         @error('provider') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <label for="whatsapp_default_country_code" class="text-sm font-medium text-neutral-800">Default Country Code *</label>
-                        <input id="whatsapp_default_country_code" name="default_country_code" type="text" value="{{ old('default_country_code', $whatsapp['default_country_code'] ?? '91') }}" required
-                               class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200">
-                        @error('default_country_code') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="sm:col-span-2">

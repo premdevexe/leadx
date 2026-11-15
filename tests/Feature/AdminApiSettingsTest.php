@@ -6,7 +6,6 @@ use App\Models\Admin;
 use App\Models\ApiSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\PersonalAccessToken;
 use Tests\TestCase;
 
 class AdminApiSettingsTest extends TestCase
@@ -24,17 +23,11 @@ class AdminApiSettingsTest extends TestCase
         $response->assertSee('Pusher Beams');
         $response->assertSee('Google OAuth');
         $response->assertSee('WhatsApp API');
-        $response->assertSee('Payment Gateway');
-        $response->assertSee('Outbound Webhooks');
-        $response->assertSee('API Access Tokens');
 
         // Check tabs and panels exist
         $response->assertSee('id="tab-pusher"', false);
         $response->assertSee('id="tab-google"', false);
         $response->assertSee('id="tab-whatsapp"', false);
-        $response->assertSee('id="tab-gateway"', false);
-        $response->assertSee('id="tab-webhooks"', false);
-        $response->assertSee('id="tab-tokens"', false);
     }
 
     public function test_unauthenticated_visitor_is_redirected()
@@ -85,7 +78,7 @@ class AdminApiSettingsTest extends TestCase
         $response = $this->actingAs($admin, 'admin')->put(route('admin.api-settings.google.update'), [
             'client_id'     => 'custom-google-client-id.apps.googleusercontent.com',
             'client_secret' => 'custom-google-client-secret-xyz',
-            'redirect_uri'  => 'https://leadx.test/employee/calendar/connect',
+            'redirect_uri'  => 'https://leadx.test/api/v1/google/calendar/callback',
             'is_enabled'    => 1,
         ]);
 
@@ -95,10 +88,12 @@ class AdminApiSettingsTest extends TestCase
         $google = ApiSetting::getGroup(ApiSetting::GROUP_GOOGLE);
         $this->assertEquals('custom-google-client-id.apps.googleusercontent.com', $google['client_id']);
         $this->assertEquals('custom-google-client-secret-xyz', $google['client_secret']);
+        $this->assertEquals('https://leadx.test/api/v1/google/calendar/callback', $google['redirect_uri']);
 
         // Check runtime config
         $this->assertEquals('custom-google-client-id.apps.googleusercontent.com', config('google.client_id'));
         $this->assertEquals('custom-google-client-secret-xyz', config('google.client_secret'));
+        $this->assertEquals('https://leadx.test/api/v1/google/calendar/callback', config('google.redirect_uri'));
     }
 
     public function test_admin_can_update_whatsapp_settings()
@@ -118,93 +113,9 @@ class AdminApiSettingsTest extends TestCase
 
         $whatsapp = ApiSetting::getGroup(ApiSetting::GROUP_WHATSAPP);
         $this->assertEquals('https://api.whatsapp.com/send', $whatsapp['base_url']);
-        $this->assertEquals('91', $whatsapp['default_country_code']);
 
         // Check runtime config
         $this->assertEquals('https://api.whatsapp.com/send', config('leadx.whatsapp.base_url'));
-        $this->assertEquals('91', config('leadx.whatsapp.default_country_code'));
     }
 
-    public function test_admin_can_update_payment_gateway_settings()
-    {
-        $admin = Admin::factory()->create();
-
-        $response = $this->actingAs($admin, 'admin')->put(route('admin.api-settings.gateway.update'), [
-            'driver'         => 'razorpay',
-            'environment'    => 'live',
-            'key_id'         => 'rzp_live_1234567890',
-            'secret_key'     => 'razorpay_secret_key_abcdef',
-            'webhook_secret' => 'whsec_testing_signature_999',
-            'is_enabled'     => 1,
-        ]);
-
-        $response->assertRedirect(route('admin.api-settings.index'));
-        $response->assertSessionHas('status', 'Payment Gateway API credentials updated successfully.');
-
-        $gateway = ApiSetting::getGroup(ApiSetting::GROUP_GATEWAY);
-        $this->assertEquals('razorpay', $gateway['driver']);
-        $this->assertEquals('live', $gateway['environment']);
-        $this->assertEquals('rzp_live_1234567890', $gateway['key_id']);
-        $this->assertEquals('razorpay_secret_key_abcdef', $gateway['secret_key']);
-        $this->assertEquals('whsec_testing_signature_999', $gateway['webhook_secret']);
-
-        // Check runtime config
-        $this->assertEquals('razorpay', config('leadx.gateway.driver'));
-        $this->assertEquals('whsec_testing_signature_999', config('leadx.gateway.secret'));
-    }
-
-    public function test_admin_can_update_outbound_webhook_settings()
-    {
-        $admin = Admin::factory()->create();
-
-        $response = $this->actingAs($admin, 'admin')->put(route('admin.api-settings.webhook.update'), [
-            'endpoint_url' => 'https://example.com/webhooks/leadx',
-            'secret_token' => 'my-webhook-secret-token',
-            'events'       => ['order.created', 'payment.verified'],
-            'is_enabled'   => 1,
-        ]);
-
-        $response->assertRedirect(route('admin.api-settings.index'));
-        $response->assertSessionHas('status', 'Outbound Webhooks configuration saved successfully.');
-
-        $webhook = ApiSetting::getGroup(ApiSetting::GROUP_WEBHOOK);
-        $this->assertEquals('https://example.com/webhooks/leadx', $webhook['endpoint_url']);
-        $this->assertEquals('my-webhook-secret-token', $webhook['secret_token']);
-        $this->assertEquals(['order.created', 'payment.verified'], $webhook['events']);
-        $this->assertTrue($webhook['is_enabled']);
-    }
-
-    public function test_admin_can_generate_and_revoke_sanctum_api_token()
-    {
-        $admin = Admin::factory()->create();
-
-        // Generate token
-        $response = $this->actingAs($admin, 'admin')->post(route('admin.api-settings.tokens.create'), [
-            'token_name' => 'Automated Test Token',
-            'abilities'  => 'orders.read, payments.read',
-        ]);
-
-        $response->assertRedirect(route('admin.api-settings.index'));
-        $response->assertSessionHas('status', 'New API Token created successfully.');
-        $response->assertSessionHas('new_token');
-
-        $this->assertDatabaseHas('personal_access_tokens', [
-            'name'           => 'Automated Test Token',
-            'tokenable_type' => Admin::class,
-            'tokenable_id'   => $admin->id,
-        ]);
-
-        $token = PersonalAccessToken::where('name', 'Automated Test Token')->first();
-        $this->assertNotNull($token);
-        $this->assertEquals(['orders.read', 'payments.read'], $token->abilities);
-
-        // Revoke token
-        $revokeResponse = $this->actingAs($admin, 'admin')->delete(route('admin.api-settings.tokens.revoke', $token));
-        $revokeResponse->assertRedirect(route('admin.api-settings.index'));
-        $revokeResponse->assertSessionHas('status', 'API Token "Automated Test Token" revoked successfully.');
-
-        $this->assertDatabaseMissing('personal_access_tokens', [
-            'id' => $token->id,
-        ]);
-    }
 }

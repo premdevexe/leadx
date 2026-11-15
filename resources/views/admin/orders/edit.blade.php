@@ -67,10 +67,65 @@
 
             <div>
                 <label class="block text-xs font-medium text-neutral-500">Customer phone</label>
-                <input type="text" name="customer_phone" value="{{ old('customer_phone', $order->customer_phone) }}" placeholder="+15551234567"
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                @php
+                    $existingPhone = $order->customer_phone ?? '';
+                    $existingCc = $order->customer_country_code ?? '';
+                    $existingLocal = $existingPhone;
+                    if (! $existingCc && $existingPhone) {
+                        $ccList = ['+968','+974','+965','+966','+973','+880','+234','+254','+971','+62','+63','+84','+94','+60','+65','+20','+27','+61','+44','+86','+91','+1'];
+                        foreach ($ccList as $cc) {
+                            if (str_starts_with($existingPhone, $cc)) {
+                                $existingCc = $cc;
+                                $existingLocal = substr($existingPhone, strlen($cc));
+                                break;
+                            }
+                        }
+                    } elseif ($existingCc && $existingPhone) {
+                        $existingLocal = substr($existingPhone, strlen($existingCc));
+                    }
+                    if (! $existingCc) { $existingCc = '+91'; }
+                    if ($existingLocal === $existingPhone && $existingCc) {
+                        $existingLocal = substr($existingLocal, strlen($existingCc));
+                    }
+                @endphp
+                <div class="mt-1 flex gap-2">
+                    <select name="customer_country_code" class="w-28 shrink-0 rounded-lg border border-neutral-300 bg-white px-2 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                        @php
+                            $editCountryCodes = [
+                                '+1' => '+1 (US/CA)',
+                                '+44' => '+44 (UK)',
+                                '+91' => '+91 (IN)',
+                                '+61' => '+61 (AU)',
+                                '+971' => '+971 (UAE)',
+                                '+968' => '+968 (OM)',
+                                '+974' => '+974 (QA)',
+                                '+965' => '+965 (KW)',
+                                '+966' => '+966 (SA)',
+                                '+973' => '+973 (BH)',
+                                '+20' => '+20 (EG)',
+                                '+234' => '+234 (NG)',
+                                '+254' => '+254 (KE)',
+                                '+27' => '+27 (ZA)',
+                                '+60' => '+60 (MY)',
+                                '+65' => '+65 (SG)',
+                                '+880' => '+880 (BD)',
+                                '+94' => '+94 (LK)',
+                                '+62' => '+62 (ID)',
+                                '+63' => '+63 (PH)',
+                                '+84' => '+84 (VN)',
+                                '+86' => '+86 (CN)',
+                            ];
+                        @endphp
+                        @foreach ($editCountryCodes as $code => $label)
+                            <option value="{{ $code }}" @selected(old('customer_country_code', $existingCc) === $code)>{{ $code }}</option>
+                        @endforeach
+                    </select>
+                    <input type="tel" name="customer_phone_local" value="{{ old('customer_phone_local', $existingLocal) }}" placeholder="9876543210"
+                           class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                </div>
                 <p class="mt-1 text-xs text-neutral-400">Needed for WhatsApp customer communications.</p>
                 @error('customer_phone') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                @error('customer_country_code') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div class="sm:col-span-2">

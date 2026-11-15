@@ -29,8 +29,8 @@ personal calendar. No frontend is part of this module.
    - Application type: **Web application**.
    - **Authorized redirect URIs** must exactly match `GOOGLE_REDIRECT_URI`,
      e.g. `https://api.yourdomain.com/api/v1/google/calendar/callback`.
-     (In development: `http://localhost:8000/api/v1/google/calendar/callback`
-     — `localhost` is allowed over plain HTTP by Google.)
+     (In development: `http://127.0.0.1:8000/api/v1/google/calendar/callback`
+     — use `127.0.0.1`, not `localhost`, to match the config default.)
    - Copy the **Client ID** and **Client secret**.
 
 5. **Domain verification (recommended)**: if the redirect URI is on your own

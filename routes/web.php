@@ -149,16 +149,11 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/settings/refund-statuses', [\App\Http\Controllers\Admin\RefundStatusesController::class, 'store'])->name('admin.settings.refund-statuses.store');
     Route::put('/admin/settings/refund-statuses/{status}', [\App\Http\Controllers\Admin\RefundStatusesController::class, 'update'])->name('admin.settings.refund-statuses.update');
 
-    // Dynamic API Integrations & Credentials (Pusher, Google, WhatsApp, Payment Gateways, Webhooks, Tokens)
+    // Dynamic API Integrations & Credentials (Pusher, Google, WhatsApp)
     Route::get('/admin/api-settings', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'index'])->name('admin.api-settings.index');
     Route::put('/admin/api-settings/pusher', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updatePusher'])->name('admin.api-settings.pusher.update');
     Route::put('/admin/api-settings/google', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updateGoogle'])->name('admin.api-settings.google.update');
     Route::put('/admin/api-settings/whatsapp', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updateWhatsapp'])->name('admin.api-settings.whatsapp.update');
-    Route::put('/admin/api-settings/gateway', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updatePaymentGateway'])->name('admin.api-settings.gateway.update');
-    Route::put('/admin/api-settings/webhook', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updateWebhook'])->name('admin.api-settings.webhook.update');
-    Route::post('/admin/api-settings/webhook/test', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'testWebhook'])->name('admin.api-settings.webhook.test');
-    Route::post('/admin/api-settings/tokens', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'createToken'])->name('admin.api-settings.tokens.create');
-    Route::delete('/admin/api-settings/tokens/{token}', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'revokeToken'])->name('admin.api-settings.tokens.revoke');
 
     // Email management (SMTP, templates, notification events, logs)
     Route::get('/admin/email', [EmailSettingsController::class, 'index'])->name('admin.email.index');
@@ -275,6 +270,9 @@ Route::middleware('employee.web')->group(function () {
     Route::get('/employee/orders/{order}', [EmployeeOrdersController::class, 'show'])->name('employee.orders.show');
     Route::post('/employee/orders/{order}/closing-approval/resubmit', [EmployeeOrdersController::class, 'resubmitClosingValue'])->name('employee.orders.closing-approval.resubmit');
     Route::post('/employee/orders/{order}/complete', [EmployeeOrdersController::class, 'complete'])->name('employee.orders.complete');
+    Route::get('/employee/orders/{order}/complete', function (\App\Models\SalesOrder $order) {
+        return redirect()->route('employee.orders.show', $order);
+    });
     Route::post('/employee/orders/{order}/api-key', [EmployeeOrdersController::class, 'storeApiKey'])->name('employee.orders.api-key.store');
     Route::post('/employee/orders/{order}/api-key/reveal', [EmployeeOrdersController::class, 'revealApiKey'])->name('employee.orders.api-key.reveal');
     Route::get('/employee/customers', [EmployeeCustomersController::class, 'index'])->name('employee.customers')->middleware('permission:customers.view');

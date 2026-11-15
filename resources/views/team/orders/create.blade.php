@@ -19,9 +19,43 @@
 
             <div>
                 <label class="block text-xs font-medium text-neutral-500">Customer phone</label>
-                <input type="text" name="customer_phone" value="{{ old('customer_phone') }}" placeholder="+15551234567"
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <div class="mt-1 flex gap-2">
+                    <select name="customer_country_code" class="w-28 shrink-0 rounded-lg border border-neutral-300 bg-white px-2 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                        @php
+                            $teamCountryCodes = [
+                                '+1' => '+1 (US/CA)',
+                                '+44' => '+44 (UK)',
+                                '+91' => '+91 (IN)',
+                                '+61' => '+61 (AU)',
+                                '+971' => '+971 (UAE)',
+                                '+968' => '+968 (OM)',
+                                '+974' => '+974 (QA)',
+                                '+965' => '+965 (KW)',
+                                '+966' => '+966 (SA)',
+                                '+973' => '+973 (BH)',
+                                '+20' => '+20 (EG)',
+                                '+234' => '+234 (NG)',
+                                '+254' => '+254 (KE)',
+                                '+27' => '+27 (ZA)',
+                                '+60' => '+60 (MY)',
+                                '+65' => '+65 (SG)',
+                                '+880' => '+880 (BD)',
+                                '+94' => '+94 (LK)',
+                                '+62' => '+62 (ID)',
+                                '+63' => '+63 (PH)',
+                                '+84' => '+84 (VN)',
+                                '+86' => '+86 (CN)',
+                            ];
+                        @endphp
+                        @foreach ($teamCountryCodes as $code => $label)
+                            <option value="{{ $code }}" @selected(old('customer_country_code') === $code || (! old('customer_country_code') && $code === '+91'))>{{ $code }}</option>
+                        @endforeach
+                    </select>
+                    <input type="tel" name="customer_phone_local" value="{{ old('customer_phone_local') }}" placeholder="9876543210"
+                           class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                </div>
                 @error('customer_phone') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                @error('customer_country_code') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div>

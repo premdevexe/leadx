@@ -139,4 +139,57 @@ class ApiKeyDeliveryAndOrderCompletionTest extends TestCase
         $this->assertStringContainsString('sk_live_secret_whatsapp_test', $result['message']);
         $this->assertStringStartsWith('https://wa.me/15551234567', $result['url']);
     }
+
+    public function test_get_complete_route_redirects_to_show_page(): void
+    {
+        $team = Team::factory()->create();
+        $employee = User::factory()->create(['team_id' => $team->id]);
+        $order = SalesOrder::factory()->create([
+            'team_id' => $team->id,
+            'assigned_employee_id' => $employee->id,
+            'order_status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($employee, 'employee')->get('/employee/orders/'.$order->id.'/complete');
+        $response->assertRedirect(route('employee.orders.show', $order));
+    }
+
+    public function test_completing_already_completed_order_redirects_with_info(): void
+    {
+        $team = Team::factory()->create();
+        $employee = User::factory()->create(['team_id' => $team->id]);
+        $order = SalesOrder::factory()->create([
+            'team_id' => $team->id,
+            'assigned_employee_id' => $employee->id,
+            'order_status' => 'active',
+            'closing_value_status' => 'Accepted',
+        ]);
+
+        $response = $this->actingAs($employee, 'employee')->post(route('employee.orders.complete', $order));
+        $response->assertRedirect(route('employee.orders.show', $order));
+        $response->assertSessionHas('info');
+    }
+
+    public function test_csrf_token_mismatch_redirects_back_with_friendly_error(): void
+    {
+        $team = Team::factory()->create();
+        $employee = User::factory()->create(['team_id' => $team->id]);
+        $order = SalesOrder::factory()->create([
+            'team_id' => $team->id,
+            'assigned_employee_id' => $employee->id,
+            'order_status' => 'pending',
+        ]);
+
+        $request = \Illuminate\Http\Request::create('/employee/orders/'.$order->id.'/complete', 'POST');
+        $session = app('session.store');
+        $session->put('_previous', ['url' => route('employee.orders.show', $order)]);
+        $request->setLaravelSession($session);
+
+        $handler = app(\Illuminate\Contracts\Debug\ExceptionHandler::class);
+        $response = $handler->render($request, new \Illuminate\Session\TokenMismatchException('CSRF token mismatch.'));
+
+        $this->assertEquals(302, $response->getStatusCode());
+        $this->assertEquals(route('employee.orders.show', $order), $response->headers->get('Location'));
+        $this->assertStringContainsString('expired', $session->get('error'));
+    }
 }

@@ -39,7 +39,8 @@ class WhatsappShareService
         $order->loadMissing(['team', 'subscription']);
 
         $phone = $order->customer_phone;
-        $normalized = $phone ? $this->normalizePhone((string) $phone) : null;
+        $countryCode = $order->customer_country_code;
+        $normalized = $phone ? $this->normalizePhone((string) $phone, (string) ($countryCode ?? '')) : null;
 
         if (! $order->isShareEligible()) {
             $reason = $order->order_status !== 'active'
@@ -141,7 +142,7 @@ class WhatsappShareService
      * leading '+', and otherwise prefixes the configured default country
      * code. Returns null when the result is not a plausible number.
      */
-    public function normalizePhone(string $raw): ?string
+    public function normalizePhone(string $raw, string $countryCode = ''): ?string
     {
         $raw = trim($raw);
         if ($raw === '') {
@@ -152,8 +153,7 @@ class WhatsappShareService
         $digits = preg_replace('/\D/', '', $raw);
 
         if ($digits === '' || ! $hasPlus) {
-            $default = (string) config('leadx.whatsapp.default_country_code', '1');
-            // A leading 0 is treated as a domestic trunk prefix.
+            $default = $countryCode ?: (string) config('leadx.whatsapp.default_country_code', '1');
             $digits = $default . ltrim($digits, '0');
         }
 

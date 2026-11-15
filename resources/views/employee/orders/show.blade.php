@@ -211,14 +211,23 @@
             <h2 class="text-sm font-semibold text-neutral-900">Order Fulfillment & Delivery</h2>
 
             <div class="flex flex-wrap items-center gap-3">
-                @canEmployee('orders.complete')
-                    <form method="POST" action="{{ route('employee.orders.complete', $order) }}">
-                        @csrf
-                        <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-xs font-semibold text-white hover:bg-neutral-800">
-                            Complete Order & Activate
-                        </button>
-                    </form>
-                @endcanEmployee
+                @if (in_array($order->order_status, ['active', 'confirmed']))
+                    <span class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800">
+                        <svg class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Order Completed & Activated
+                    </span>
+                @else
+                    @canEmployee('orders.complete')
+                        <form method="POST" action="{{ route('employee.orders.complete', $order) }}">
+                            @csrf
+                            <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-xs font-semibold text-white hover:bg-neutral-800">
+                                Complete Order & Activate
+                            </button>
+                        </form>
+                    @endcanEmployee
+                @endif
 
                 @if (isset($whatsappShare) && ($whatsappShare['eligible'] ?? false))
                     <a href="{{ $whatsappShare['url'] }}" target="_blank" rel="noopener"

@@ -23,5 +23,15 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withCommands()
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $e, \Illuminate\Http\Request $request) {
+            if ($response->getStatusCode() === 419) {
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'CSRF token mismatch. Please refresh and try again.'], 419);
+                }
+
+                return back()->withInput()->with('error', 'Your session or security token expired. The page has been refreshed — please try again.');
+            }
+
+            return $response;
+        });
     })->create();

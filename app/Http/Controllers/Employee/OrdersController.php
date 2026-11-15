@@ -121,6 +121,10 @@ class OrdersController extends Controller
             return back()->with('error', 'Cannot complete order: A customer API key is required for this product.');
         }
 
+        if (in_array($order->order_status, ['active', 'confirmed'])) {
+            return redirect()->route('employee.orders.show', $order)->with('info', "Order {$order->order_number} is already completed.");
+        }
+
         $order->update(['order_status' => 'confirmed']);
 
         // Attempt activation if verified payment satisfies policy
@@ -130,7 +134,7 @@ class OrdersController extends Controller
             ? "Order {$order->order_number} completed and subscription activated!"
             : "Order {$order->order_number} status updated to confirmed.";
 
-        return back()->with('status', $msg);
+        return redirect()->route('employee.orders.show', $order)->with('status', $msg);
     }
 
     public function revealApiKey(Request $request, SalesOrder $order): \Illuminate\Http\RedirectResponse

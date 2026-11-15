@@ -51,6 +51,7 @@ class CreateOrderController extends Controller
         $validated = $request->validate([
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:30'],
+            'customer_country_code' => ['nullable', 'string', 'max:10'],
             'customer_email' => ['nullable', 'email', 'max:255'],
             'product_id' => ['nullable', 'exists:products,id'],
             'product_name' => ['nullable', 'string', 'max:255'],
@@ -85,6 +86,15 @@ class CreateOrderController extends Controller
         $discountAmount = round(max(0.0, $productPrice - $closingValue), 2);
         $needsApproval = $product && $closingValue < $productPrice;
         $closingStatus = $needsApproval ? 'Requested' : 'Accepted';
+
+        $local = $request->input('customer_phone_local');
+        $cc = $validated['customer_country_code'] ?? null;
+        if ($local) {
+            $digits = preg_replace('/\D/', '', $local);
+            $validated['customer_phone'] = $cc ? '+' . preg_replace('/\D/', '', $cc) . ltrim($digits, '0') : $local;
+        } else {
+            $validated['customer_phone'] = null;
+        }
 
         $order = DB::transaction(function () use ($numbers, $team, $employee, $product, $productName, $productPrice, $productDuration, $minClosingPrice, $apiKeyRequired, $closingStatus, $needsApproval, $closingValue, $discountAmount, $validated) {
             $orderNumber = $numbers->next($team);
