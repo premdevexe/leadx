@@ -32,29 +32,30 @@
                     <p class="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-neutral-400">Employee Portal</p>
                     @php
                         $menuItems = [
-                            ['route' => 'employee.dashboard', 'label' => 'Dashboard', 'match' => 'employee.dashboard'],
-                            ['route' => 'employee.orders.create', 'label' => 'Create Order', 'match' => 'employee.orders.create'],
-                            ['route' => 'employee.orders', 'label' => 'My Orders', 'match' => 'employee.orders*'],
-                            ['route' => 'employee.customers', 'label' => 'My Customers', 'match' => 'employee.customers'],
-                            ['route' => 'employee.payments', 'label' => 'Payments', 'match' => 'employee.payments'],
-                            ['route' => 'employee.subscriptions', 'label' => 'Subscriptions', 'match' => 'employee.subscriptions'],
-                            ['route' => 'employee.follow-ups', 'label' => 'Follow-ups', 'match' => 'employee.follow-ups*'],
-                            ['route' => 'employee.notifications', 'label' => 'Notifications', 'match' => 'employee.notifications'],
+                            ['key' => 'dashboard', 'route' => 'employee.dashboard', 'label' => 'Dashboard', 'match' => 'employee.dashboard', 'params' => []],
+                            ['key' => 'create_order', 'route' => 'employee.orders.create', 'label' => 'Create Order', 'match' => 'employee.orders.create', 'params' => []],
+                            ['key' => 'orders', 'route' => 'employee.orders', 'label' => 'My Orders', 'match' => 'employee.orders*', 'params' => []],
+                            ['key' => 'customers', 'route' => 'employee.customers', 'label' => 'Customers (CRM)', 'match' => 'employee.customers', 'params' => []],
+                            ['key' => 'payments', 'route' => 'employee.payments', 'label' => 'Payments', 'match' => 'employee.payments', 'params' => []],
+                            ['key' => 'subscriptions', 'route' => 'employee.subscriptions', 'label' => 'Subscriptions', 'match' => 'employee.subscriptions', 'params' => []],
+                            ['key' => 'follow_ups', 'route' => 'employee.follow-ups', 'label' => 'Follow-ups', 'match' => 'employee.follow-ups*', 'params' => []],
+                            ['key' => 'team_data', 'route' => 'employee.dashboard', 'label' => 'Team Data', 'match' => 'employee.dashboard*', 'params' => ['view' => 'team_data']],
+                            ['key' => 'reports', 'route' => 'employee.reports', 'label' => 'Reports & Analytics', 'match' => 'employee.reports*', 'params' => []],
+                            ['key' => 'notifications', 'route' => 'employee.notifications', 'label' => 'Notifications', 'match' => 'employee.notifications', 'params' => []],
+                            ['key' => 'settings', 'route' => 'employee.settings', 'label' => 'Settings', 'match' => 'employee.settings*', 'params' => []],
+                            ['key' => 'help', 'route' => 'employee.help', 'label' => 'Help & Docs', 'match' => 'employee.help*', 'params' => []],
                         ];
                     @endphp
 
                     <div class="mt-1 flex flex-col gap-1">
                         @foreach ($menuItems as $item)
-                            <a href="{{ route($item['route']) }}"
-                               class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs($item['match']) ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900' }}">
-                                {{ $item['label'] }}
-                            </a>
+                            @canMenu($item['key'])
+                                <a href="{{ route($item['route'], $item['params']) }}"
+                                   class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs($item['match']) && (empty($item['params']) || request()->query('view') === ($item['params']['view'] ?? null)) ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900' }}">
+                                    {{ $item['label'] }}
+                                </a>
+                            @endcanMenu
                         @endforeach
-
-                        <div class="mt-4 border-t border-neutral-100 pt-3">
-                            <p class="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-neutral-400">Account</p>
-                            <a href="#" class="rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900">Profile & Settings</a>
-                        </div>
                     </div>
                 </nav>
             </div>

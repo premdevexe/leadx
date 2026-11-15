@@ -147,7 +147,7 @@ class OrdersController extends Controller
      */
     public function show(SalesOrder $order): View
     {
-        $order->loadMissing(['team', 'assignedEmployee', 'subscription', 'payments.verifiedByAdmin', 'product']);
+        $order->loadMissing(['team', 'assignedEmployee', 'subscription', 'payments.verifiedByAdmin', 'product', 'refunds.admin']);
 
         $share = $this->whatsapp->prepare($order);
 
@@ -328,10 +328,18 @@ class OrdersController extends Controller
      */
     public function activate(Request $request, SalesOrder $order): RedirectResponse
     {
-        // Activation goes through the decision engine: it enforces the
-        // verified-payment policy, is idempotent (one subscription per order,
-        // keyed by order_id) so duplicate activation is impossible, freezes
-        // the duration snapshot, and creates the calendar expiry event.
+        if ($order->closing_value_status === 'Requested') {
+            return back()->with('error', 'Cannot activate order: Closing Value Approval is pending.');
+        }
+
+        if ($order->closing_value_status === 'Rejected') {
+            return back()->with('error', 'Cannot activate order: Closing Value was rejected.');
+        }
+
+        if ($order->api_key_required_snapshot && ! \App\Services\OrderCredentialService::hasKey($order)) {
+            return back()->with('error', 'Cannot activate order: An API key is required for this product before activation.');
+        }
+
         $subscription = app(\App\Services\SubscriptionActivator::class)
             ->maybeActivate($order, $request->user('admin')?->id);
 
@@ -357,5 +365,149 @@ class OrdersController extends Controller
         $this->whatsapp->logShare($order, $request->user('admin'), $request->input('message'));
 
         return back()->with('status', 'WhatsApp share recorded for '.$order->order_number.'. The server did not send anything - open the link on your device to send it.');
+    }
+
+    /**
+     * POST /admin/orders/{order}/closing-approval/accept
+     */
+    public function acceptClosingApproval(Request $request, SalesOrder $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'adjusted_closing_value' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $update = [
+            'closing_value_status' => 'Accepted',
+            'closing_approval_actioned_at' => now(),
+            'closing_approval_actioned_by' => auth('admin')->id(),
+            'closing_approval_notes' => $data['notes'] ?? null,
+        ];
+
+        if (! empty($data['adjusted_closing_value'])) {
+            $newVal = (float) $data['adjusted_closing_value'];
+            $update['closing_value'] = $newVal;
+            $update['discount_amount'] = round(max(0.0, (float) $order->product_value - $newVal), 2);
+        }
+
+        $order->update($update);
+
+        try {
+            app(\App\Services\NotificationHubService::class)->notifyClosingApprovalDecision(
+                $order,
+                'accepted',
+                $data['notes'] ?? null
+            );
+        } catch (\Throwable) {
+        }
+
+        return back()->with('status', "Closing value for order {$order->order_number} has been Accepted.");
+    }
+
+    /**
+     * POST /admin/orders/{order}/closing-approval/reject
+     */
+    public function rejectClosingApproval(Request $request, SalesOrder $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'rejection_reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $order->update([
+            'closing_value_status' => 'Rejected',
+            'order_status' => 'suspended',
+            'closing_approval_actioned_at' => now(),
+            'closing_approval_actioned_by' => auth('admin')->id(),
+            'closing_approval_notes' => $data['rejection_reason'],
+        ]);
+
+        try {
+            app(\App\Services\NotificationHubService::class)->notifyClosingApprovalDecision(
+                $order,
+                'rejected',
+                $data['rejection_reason']
+            );
+        } catch (\Throwable) {
+        }
+
+        return back()->with('status', "Closing value for order {$order->order_number} has been Rejected.");
+    }
+
+    /**
+     * POST /admin/orders/{order}/cancel (Phase 11)
+     */
+    public function cancelOrder(Request $request, SalesOrder $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'cancellation_reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $order->update([
+            'order_status' => 'cancelled',
+            'cancellation_reason' => $data['cancellation_reason'],
+            'cancelled_at' => now(),
+            'cancelled_by' => auth('admin')->id(),
+        ]);
+
+        if ($order->subscription) {
+            $order->subscription->update(['status' => 'cancelled']);
+        }
+
+        try {
+            app(\App\Services\NotificationHubService::class)->notifyOrderCancelled(
+                $order,
+                $data['cancellation_reason']
+            );
+        } catch (\Throwable) {
+        }
+
+        return back()->with('status', "Order {$order->order_number} has been cancelled.");
+    }
+
+    /**
+     * POST /admin/orders/{order}/refunds (Phase 11)
+     */
+    public function processRefund(Request $request, SalesOrder $order): RedirectResponse
+    {
+        $refundable = $order->remainingRefundable();
+
+        if ($refundable <= 0) {
+            return back()->with('error', 'Cannot process refund: this order has no verified remaining refundable balance.');
+        }
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:'.$refundable],
+            'reason' => ['required', 'string', 'max:1000'],
+            'type' => ['nullable', 'in:full,partial'],
+        ]);
+
+        $amount = round((float) $data['amount'], 2);
+        $type = $data['type'] ?? ($amount >= $refundable ? 'full' : 'partial');
+
+        $refund = $order->refunds()->create([
+            'admin_id' => auth('admin')->id(),
+            'amount' => $amount,
+            'type' => $type,
+            'reason' => $data['reason'],
+        ]);
+
+        // Recalculate remaining
+        $remaining = $order->fresh()->remainingRefundable();
+
+        if ($remaining <= 0.001) {
+            $order->update(['payment_status' => 'refunded']);
+            if ($order->subscription && $order->subscription->status === 'active') {
+                $order->subscription->update(['status' => 'cancelled']);
+            }
+        } else {
+            $order->update(['payment_status' => 'partially_paid']);
+        }
+
+        try {
+            app(\App\Services\NotificationHubService::class)->notifyRefundProcessed($refund);
+        } catch (\Throwable) {
+        }
+
+        return back()->with('status', 'Refund of $'.number_format($amount, 2).' processed successfully.');
     }
 }

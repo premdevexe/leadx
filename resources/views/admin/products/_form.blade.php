@@ -14,6 +14,14 @@
     </div>
 
     <div>
+        <label class="block text-xs font-medium text-neutral-500">Minimum Closing Price (Floor Price) ({{ \App\Models\Setting::currencySymbol() }})</label>
+        <input type="number" step="0.01" min="0" name="minimum_closing_price" value="{{ old('minimum_closing_price', $product->minimum_closing_price ?? 0) }}"
+               class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+        <p class="mt-1 text-[11px] text-neutral-400">Orders closed below this floor trigger Super Admin Closing Approval workflow.</p>
+        @error('minimum_closing_price') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+    </div>
+
+    <div>
         <label class="block text-xs font-medium text-neutral-500">Duration</label>
         <select name="duration" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
             @foreach (\App\Models\SalesOrder::DURATIONS as $code => $label)
@@ -31,6 +39,14 @@
             @endforeach
         </select>
         @error('status') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+    </div>
+
+    <div class="sm:col-span-2 pt-1">
+        <label class="inline-flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="api_key_required" value="1" @checked(old('api_key_required', $product->api_key_required ?? false))
+                   class="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900">
+            <span class="text-xs font-medium text-neutral-700">API Key Required to complete/deliver orders for this product</span>
+        </label>
     </div>
 </div>
 

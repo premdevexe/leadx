@@ -44,11 +44,16 @@ class OrderService
             $productName = $product ? $product->name : ($data['product_name'] ?? null);
             $productPrice = $product ? $product->price : ($data['product_value'] ?? 0);
             $productDuration = $product ? (string) $product->duration : ($data['duration'] ?? '1y');
+            $minClosingPrice = $product ? (float) ($product->minimum_closing_price ?? 0) : 0;
+            $apiKeyRequired = $product ? (bool) ($product->api_key_required ?? false) : false;
 
             $closingValue = array_key_exists('closing_value', $data) && $data['closing_value'] !== ''
                 ? (float) $data['closing_value']
                 : (float) $productPrice;
             $discountAmount = round(max(0.0, (float) $productPrice - $closingValue), 2);
+
+            $needsApproval = $minClosingPrice > 0 && $closingValue < $minClosingPrice;
+            $closingStatus = $needsApproval ? 'Requested' : 'Accepted';
 
             return SalesOrder::create([
                 'order_number' => $orderNumber,
@@ -63,6 +68,10 @@ class OrderService
                 'product_name_snapshot' => $productName,
                 'product_price_snapshot' => $productPrice,
                 'product_duration_snapshot' => $productDuration,
+                'minimum_closing_price_snapshot' => $minClosingPrice,
+                'api_key_required_snapshot' => $apiKeyRequired,
+                'closing_value_status' => $closingStatus,
+                'closing_approval_requested_at' => $needsApproval ? now() : null,
                 'duration' => $productDuration,
                 'product_value' => $productPrice,
                 'discount_amount' => $discountAmount,
@@ -75,6 +84,11 @@ class OrderService
         });
 
         SalesAnalyticsService::invalidateCache();
+
+        app(\App\Services\NotificationHubService::class)->notifyOrderCreated($order);
+        if ($order->closing_value_status === 'Requested') {
+            app(\App\Services\NotificationHubService::class)->notifyClosingApprovalRequested($order);
+        }
 
         // Email triggers (Section 5, all non-blocking — email failure
         // never breaks order creation; each event is admin-toggleable).

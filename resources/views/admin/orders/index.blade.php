@@ -97,6 +97,7 @@
                     <th class="px-4 py-3">Team</th>
                     <th class="px-4 py-3">Employee</th>
                     <th class="px-4 py-3 text-right">Closing</th>
+                    <th class="px-4 py-3">Approval</th>
                     <th class="px-4 py-3">Order</th>
                     <th class="px-4 py-3">Payment</th>
                     <th class="px-4 py-3 text-right">Actions</th>
@@ -121,6 +122,15 @@
                         </td>
                         <td class="px-4 py-3 text-neutral-600">{{ $order->assignedEmployee?->username ?? '—' }}</td>
                         <td class="px-4 py-3 text-right tabular-nums">{{ $currencySymbol }}{{ number_format((float) $order->closing_value, 2) }}</td>
+                        <td class="px-4 py-3">
+                            @if ($order->closing_value_status === 'Requested')
+                                <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">Requested</span>
+                            @elseif ($order->closing_value_status === 'Rejected')
+                                <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-800">Rejected</span>
+                            @else
+                                <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">Accepted</span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3">
                             <span class="rounded-full border px-2 py-0.5 text-xs {{ $statusColors[$order->order_status] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200' }}">
                                 {{ ucfirst(str_replace('_', ' ', $order->order_status)) }}

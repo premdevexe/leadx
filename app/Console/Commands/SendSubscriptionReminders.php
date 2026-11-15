@@ -38,6 +38,10 @@ class SendSubscriptionReminders extends Command
             ->chunk(100, function ($batch) use (&$expiring): void {
                 foreach ($batch as $subscription) {
                     $subscription->team?->notifyNow(new SubscriptionExpiringNotification($subscription));
+                    try {
+                        app(\App\Services\NotificationHubService::class)->notifySubscriptionExpiring($subscription, $expiryDays);
+                    } catch (\Throwable) {
+                    }
                     $subscription->forceFill(['last_expiry_reminder_at' => now()])->save();
                     $expiring++;
                 }

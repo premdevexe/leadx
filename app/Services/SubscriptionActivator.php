@@ -44,8 +44,18 @@ class SubscriptionActivator
      */
     public function maybeActivate(SalesOrder $order, ?int $adminId = null, ?Customer $customer = null): ?Subscription
     {
-        // A cancelled order never activates, no matter the payment state.
+        // A cancelled or suspended order never activates, no matter the payment state.
         if (in_array($order->order_status, ['cancelled', 'suspended'], true)) {
+            return null;
+        }
+
+        // An order with pending or rejected closing approval never activates.
+        if (in_array($order->closing_value_status, ['Requested', 'Rejected'], true)) {
+            return null;
+        }
+
+        // An order requiring an API key cannot activate without a stored customer key.
+        if ($order->api_key_required_snapshot && ! \App\Services\OrderCredentialService::hasKey($order)) {
             return null;
         }
 
@@ -77,6 +87,11 @@ class SubscriptionActivator
         // (e.g. a repeated webhook) never creates a second event.
         if ($subscription && $subscription->status === 'active') {
             $this->calendar->syncCreate($subscription);
+
+            try {
+                app(\App\Services\NotificationHubService::class)->notifySubscriptionActivated($subscription);
+            } catch (\Throwable) {
+            }
         }
 
         return $subscription;

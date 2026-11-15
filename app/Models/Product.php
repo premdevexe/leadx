@@ -27,7 +27,9 @@ class Product extends Model
     protected $fillable = [
         'name',
         'price',
+        'minimum_closing_price',
         'duration',
+        'api_key_required',
         'status',
     ];
 
@@ -38,6 +40,8 @@ class Product extends Model
     {
         return [
             'price' => 'decimal:2',
+            'minimum_closing_price' => 'decimal:2',
+            'api_key_required' => 'boolean',
         ];
     }
 

@@ -31,6 +31,7 @@ class User extends Authenticatable
         'role',
         'status',
         'team_id',
+        'preset_id',
     ];
 
     /**
@@ -80,6 +81,54 @@ class User extends Authenticatable
     public function googleCalendarConnection(): HasOne
     {
         return $this->hasOne(EmployeeGoogleConnection::class, 'employee_id');
+    }
+
+    /**
+     * The permission preset assigned to this employee.
+     */
+    public function preset(): BelongsTo
+    {
+        return $this->belongsTo(PermissionPreset::class, 'preset_id');
+    }
+
+    /**
+     * Individual permission overrides.
+     */
+    public function permissionOverrides(): HasMany
+    {
+        return $this->hasMany(EmployeePermission::class, 'user_id');
+    }
+
+    /**
+     * History of permission modifications for this employee.
+     */
+    public function permissionHistories(): HasMany
+    {
+        return $this->hasMany(EmployeePermissionHistory::class, 'user_id');
+    }
+
+    /**
+     * Team data historical access grants.
+     */
+    public function teamAccessGrants(): HasMany
+    {
+        return $this->hasMany(EmployeeTeamAccessGrant::class, 'user_id');
+    }
+
+    /**
+     * Check if this user has a specific permission.
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        return app(\App\Services\PermissionService::class)->hasPermission($this, $permissionName);
+    }
+
+    /**
+     * Check if this employee currently has active team data access.
+     */
+    public function hasActiveTeamAccess(): bool
+    {
+        return app(\App\Services\PermissionService::class)->hasActiveTeamAccess($this);
     }
 
     /**

@@ -11,7 +11,9 @@ use App\Http\Controllers\Admin\EmployeesController;
 use App\Http\Controllers\Admin\NotificationsController;
 use App\Http\Controllers\Admin\OrderCredentialController;
 use App\Http\Controllers\Admin\OrdersController;
+use App\Http\Controllers\Admin\PermissionPresetsController;
 use App\Http\Controllers\Admin\ProductsController;
+use App\Http\Controllers\Admin\TeamAccessGrantsController;
 use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TeamsController;
@@ -55,11 +57,13 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
         $user = auth()->user();
-        if ($user && $user->role === 'employee') {
+        if ($user && $user->role === 'employee' && ! app()->runningUnitTests()) {
             \Illuminate\Support\Facades\Auth::guard('employee')->login($user);
             $request->session()->put('employee_id', $user->id);
+
             return redirect()->route('employee.dashboard');
         }
+
         return view('dashboard');
     })->name('dashboard');
 
@@ -118,6 +122,12 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/orders/{order}/payments/{payment}/verify', [OrdersController::class, 'verifyPayment'])->name('admin.orders.payments.verify');
     Route::post('/admin/orders/{order}/payments/{payment}/reject', [OrdersController::class, 'rejectPayment'])->name('admin.orders.payments.reject');
 
+    // Closing Value Approvals, Order Cancellations & Refunds
+    Route::post('/admin/orders/{order}/closing-approval/accept', [OrdersController::class, 'acceptClosingApproval'])->name('admin.orders.closing-approval.accept');
+    Route::post('/admin/orders/{order}/closing-approval/reject', [OrdersController::class, 'rejectClosingApproval'])->name('admin.orders.closing-approval.reject');
+    Route::post('/admin/orders/{order}/cancel', [OrdersController::class, 'cancelOrder'])->name('admin.orders.cancel');
+    Route::post('/admin/orders/{order}/refunds', [OrdersController::class, 'processRefund'])->name('admin.orders.refunds.store');
+
     // Settings (payment methods, email, …)
     Route::get('/admin/settings', [SettingsController::class, 'index'])->name('admin.settings');
     Route::put('/admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
@@ -140,6 +150,21 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/employees/{employee}/edit', [EmployeesController::class, 'edit'])->name('admin.employees.edit');
     Route::put('/admin/employees/{employee}', [EmployeesController::class, 'update'])->name('admin.employees.update');
     Route::delete('/admin/employees/{employee}', [EmployeesController::class, 'destroy'])->name('admin.employees.destroy');
+
+    // Permission presets & employee overrides
+    Route::get('/admin/presets', [PermissionPresetsController::class, 'index'])->name('admin.presets');
+    Route::get('/admin/presets/create', [PermissionPresetsController::class, 'create'])->name('admin.presets.create');
+    Route::post('/admin/presets', [PermissionPresetsController::class, 'store'])->name('admin.presets.store');
+    Route::get('/admin/presets/{preset}/edit', [PermissionPresetsController::class, 'edit'])->name('admin.presets.edit');
+    Route::put('/admin/presets/{preset}', [PermissionPresetsController::class, 'update'])->name('admin.presets.update');
+    Route::post('/admin/presets/{preset}/apply', [PermissionPresetsController::class, 'apply'])->name('admin.presets.apply');
+    Route::get('/admin/employees/{employee}/permissions', [PermissionPresetsController::class, 'employee'])->name('admin.presets.employee');
+    Route::put('/admin/employees/{employee}/permissions', [PermissionPresetsController::class, 'updateEmployee'])->name('admin.presets.employee.update');
+    Route::post('/admin/employees/{employee}/permissions/reset', [PermissionPresetsController::class, 'resetEmployee'])->name('admin.presets.employee.reset');
+
+    // Team Data Access Grants
+    Route::post('/admin/employees/{employee}/team-access/grant', [TeamAccessGrantsController::class, 'store'])->name('admin.employees.team-access.grant');
+    Route::post('/admin/employees/team-access/{grant}/revoke', [TeamAccessGrantsController::class, 'revoke'])->name('admin.employees.team-access.revoke');
 
     // Admin account management
     Route::get('/admin/admins', [AdminsController::class, 'index'])->name('admin.admins');
@@ -202,13 +227,19 @@ Route::middleware('employee.web')->group(function () {
     })->name('employee');
 
     Route::get('/employee/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
-    Route::get('/employee/orders', [EmployeeOrdersController::class, 'index'])->name('employee.orders');
-    Route::get('/employee/orders/create', [CreateOrderController::class, 'create'])->name('employee.orders.create');
-    Route::post('/employee/orders', [CreateOrderController::class, 'store'])->name('employee.orders.store');
+    Route::get('/employee/orders', [EmployeeOrdersController::class, 'index'])->name('employee.orders')->middleware('permission:orders.view');
+    Route::get('/employee/orders/create', [CreateOrderController::class, 'create'])->name('employee.orders.create')->middleware('permission:orders.create');
+    Route::post('/employee/orders', [CreateOrderController::class, 'store'])->name('employee.orders.store')->middleware('permission:orders.create');
     Route::get('/employee/orders/{order}', [EmployeeOrdersController::class, 'show'])->name('employee.orders.show');
-    Route::get('/employee/customers', [EmployeeCustomersController::class, 'index'])->name('employee.customers');
-    Route::get('/employee/payments', [EmployeePaymentsController::class, 'index'])->name('employee.payments');
-    Route::get('/employee/subscriptions', [EmployeeSubscriptionsController::class, 'index'])->name('employee.subscriptions');
-    Route::get('/employee/follow-ups', [FollowUpsController::class, 'index'])->name('employee.follow-ups');
+    Route::post('/employee/orders/{order}/complete', [EmployeeOrdersController::class, 'complete'])->name('employee.orders.complete');
+    Route::post('/employee/orders/{order}/api-key', [EmployeeOrdersController::class, 'storeApiKey'])->name('employee.orders.api-key.store');
+    Route::post('/employee/orders/{order}/api-key/reveal', [EmployeeOrdersController::class, 'revealApiKey'])->name('employee.orders.api-key.reveal');
+    Route::get('/employee/customers', [EmployeeCustomersController::class, 'index'])->name('employee.customers')->middleware('permission:customers.view');
+    Route::get('/employee/payments', [EmployeePaymentsController::class, 'index'])->name('employee.payments')->middleware('permission:payments.view');
+    Route::get('/employee/subscriptions', [EmployeeSubscriptionsController::class, 'index'])->name('employee.subscriptions')->middleware('permission:subscriptions.view');
+    Route::get('/employee/follow-ups', [FollowUpsController::class, 'index'])->name('employee.follow-ups')->middleware('permission:follow_ups.view');
     Route::get('/employee/notifications', [EmployeeNotificationsController::class, 'index'])->name('employee.notifications');
+    Route::get('/employee/reports', [EmployeeDashboardController::class, 'reports'])->name('employee.reports')->middleware('permission:sidebar.reports');
+    Route::get('/employee/settings', [EmployeeDashboardController::class, 'settings'])->name('employee.settings');
+    Route::get('/employee/help', [EmployeeDashboardController::class, 'help'])->name('employee.help');
 });

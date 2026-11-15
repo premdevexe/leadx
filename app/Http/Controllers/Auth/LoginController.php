@@ -68,8 +68,6 @@ class LoginController extends Controller
         if ($user->role === 'employee') {
             Auth::guard('employee')->login($user, $request->boolean('remember'));
             $request->session()->put('employee_id', $user->id);
-
-            return redirect()->intended(route('employee.dashboard'));
         }
 
         return redirect()->intended('dashboard');

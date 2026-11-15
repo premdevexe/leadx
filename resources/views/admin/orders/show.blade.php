@@ -40,6 +40,66 @@
         <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>
     @endif
 
+    {{-- Closing Value Approval Banner --}}
+    @if ($order->closing_value_status === 'Requested')
+        <div class="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-5 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-200 text-amber-900 font-bold text-xs">!</span>
+                    <h2 class="text-sm font-bold text-amber-900">Closing Value Approval Requested</h2>
+                </div>
+                <span class="text-xs text-amber-700">Requested {{ $order->closing_approval_requested_at?->diffForHumans() }}</span>
+            </div>
+
+            <p class="text-xs text-amber-800 leading-relaxed">
+                The employee set a closing value of <strong>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }}</strong>,
+                which is below the product's minimum floor price of <strong>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->minimum_closing_price_snapshot, 2) }}</strong>
+                (Catalog Base Price: {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->product_value, 2) }}).
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-amber-200">
+                {{-- Accept Form --}}
+                <form method="POST" action="{{ route('admin.orders.closing-approval.accept', $order) }}" class="space-y-2 bg-white p-3.5 rounded-lg border border-amber-200">
+                    @csrf
+                    <span class="text-xs font-semibold text-emerald-800 block">Option A: Accept Closing Value</span>
+                    <div>
+                        <label class="block text-[11px] text-neutral-500">Adjusted Value (leave blank to accept {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }})</label>
+                        <input type="number" step="0.01" name="adjusted_closing_value" placeholder="{{ $order->closing_value }}" class="mt-0.5 w-full rounded border border-neutral-300 px-2 py-1 text-xs">
+                    </div>
+                    <div>
+                        <input type="text" name="notes" placeholder="Approval notes (optional)" class="w-full rounded border border-neutral-300 px-2 py-1 text-xs">
+                    </div>
+                    <button type="submit" class="w-full rounded-md bg-emerald-700 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800">
+                        Accept Closing Value
+                    </button>
+                </form>
+
+                {{-- Reject Form --}}
+                <form method="POST" action="{{ route('admin.orders.closing-approval.reject', $order) }}" class="space-y-2 bg-white p-3.5 rounded-lg border border-amber-200">
+                    @csrf
+                    <span class="text-xs font-semibold text-red-800 block">Option B: Reject Closing Value</span>
+                    <div>
+                        <label class="block text-[11px] text-neutral-500">Mandatory Rejection Reason</label>
+                        <textarea name="rejection_reason" required rows="2" placeholder="Explain why this closing value is rejected…" class="mt-0.5 w-full rounded border border-neutral-300 px-2 py-1 text-xs"></textarea>
+                    </div>
+                    <button type="submit" onclick="return confirm('Reject this closing value? Order will be suspended.')" class="w-full rounded-md bg-red-700 py-1.5 text-xs font-semibold text-white hover:bg-red-800">
+                        Reject Closing Value
+                    </button>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    {{-- Order Cancellation Banner if Cancelled --}}
+    @if ($order->order_status === 'cancelled')
+        <div class="mt-4 rounded-xl border border-red-300 bg-red-100/70 p-4 text-xs text-red-900">
+            <strong>Order Cancelled:</strong> This order was formally cancelled on {{ $order->cancelled_at?->format('M d, Y H:i') }}.
+            @if ($order->cancellation_reason)
+                <p class="mt-1">Reason: {{ $order->cancellation_reason }}</p>
+            @endif
+        </div>
+    @endif
+
     <div class="mt-5 grid gap-5 lg:grid-cols-2">
         {{-- Left: order details --}}
         <div class="space-y-5">
@@ -188,6 +248,82 @@
                         </div>
                     </div>
                 </form>
+            </div>
+
+            {{-- Refunds Management Card (Phase 11) --}}
+            <div class="rounded-xl border border-neutral-200 bg-white p-5">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-neutral-500">Refunds & Reversals</h2>
+                    <span class="text-xs text-neutral-400">{{ $order->refunds->count() }} refund(s)</span>
+                </div>
+
+                <div class="mt-3 flex items-center justify-between border-b border-neutral-100 pb-3 text-xs">
+                    <div>
+                        <span class="text-neutral-500">Total Refunded:</span>
+                        <strong class="font-medium text-neutral-900">{{ \App\Models\Setting::currencySymbol() }}{{ number_format($order->totalRefunded(), 2) }}</strong>
+                    </div>
+                    <div>
+                        <span class="text-neutral-500">Remaining Refundable:</span>
+                        <strong class="font-medium {{ $order->remainingRefundable() > 0 ? 'text-emerald-700' : 'text-neutral-400' }}">
+                            {{ \App\Models\Setting::currencySymbol() }}{{ number_format($order->remainingRefundable(), 2) }}
+                        </strong>
+                    </div>
+                </div>
+
+                @if ($order->refunds->isNotEmpty())
+                    <div class="mt-3 divide-y divide-neutral-100 text-xs">
+                        @foreach ($order->refunds as $refund)
+                            <div class="py-2.5">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-semibold text-neutral-900">
+                                            {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float)$refund->amount, 2) }}
+                                        </span>
+                                        <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $refund->type === 'full' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800' }}">
+                                            {{ ucfirst($refund->type) }}
+                                        </span>
+                                    </div>
+                                    <span class="text-neutral-400 text-[10px]">{{ $refund->created_at->format('M d, Y H:i') }}</span>
+                                </div>
+                                <p class="mt-1 text-neutral-600 italic">"{{ $refund->reason }}"</p>
+                                <p class="mt-0.5 text-[10px] text-neutral-400">Processed by: {{ $refund->admin?->name ?? 'Super Admin' }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="mt-3 text-xs text-neutral-400">No refunds recorded on this order.</p>
+                @endif
+
+                @if ($order->remainingRefundable() > 0)
+                    <form method="POST" action="{{ route('admin.orders.refunds.store', $order) }}" class="mt-4 border-t border-neutral-100 pt-3 space-y-2">
+                        @csrf
+                        <h3 class="text-xs font-semibold text-neutral-700">Issue Refund</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-neutral-500 mb-0.5">Amount</label>
+                                <input type="number" step="0.01" min="0.01" max="{{ $order->remainingRefundable() }}" name="amount"
+                                       value="{{ old('amount', $order->remainingRefundable()) }}" placeholder="Amount" required
+                                       class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-neutral-500 mb-0.5">Type</label>
+                                <select name="type" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                                    <option value="full">Full Refund</option>
+                                    <option value="partial">Partial Refund</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-neutral-500 mb-0.5">Mandatory Reason</label>
+                            <input type="text" name="reason" placeholder="Reason for refund (chargeback, customer request, etc.)…" required
+                                   class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                        </div>
+                        <button type="submit" onclick="return confirm('Process this refund? This updates financial status and notifies assigned staff.')"
+                                class="w-full rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-700">
+                            Process Refund
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
 
@@ -349,6 +485,27 @@
                     </ul>
                 @endif
             </div>
+
+            {{-- Super Admin Order Cancellation Card (Phase 11) --}}
+            @if ($order->order_status !== 'cancelled')
+                <div class="rounded-xl border border-red-200 bg-white p-5 shadow-xs">
+                    <h2 class="text-sm font-semibold text-red-900">Cancel Order</h2>
+                    <p class="mt-1 text-xs text-neutral-500">Cancelling this order stops any active subscriptions and marks the deal as cancelled.</p>
+
+                    <form method="POST" action="{{ route('admin.orders.cancel', $order) }}" class="mt-3 space-y-3">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-medium text-neutral-700">Mandatory Cancellation Reason</label>
+                            <textarea name="cancellation_reason" required rows="2" placeholder="State reason for order cancellation…"
+                                      class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs focus:border-red-500 focus:outline-none"></textarea>
+                        </div>
+                        <button type="submit" onclick="return confirm('Are you sure you want to cancel this order? This action will suspend subscriptions.')"
+                                class="rounded-lg bg-red-700 px-4 py-2 text-xs font-semibold text-white hover:bg-red-800">
+                            Cancel Order
+                        </button>
+                    </form>
+                </div>
+            @endif
         </div>
     </div>
 @endsection

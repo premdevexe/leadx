@@ -71,11 +71,16 @@ class CreateOrderController extends Controller
         $productPrice = $product ? (float) $product->price : (float) $validated['closing_value'];
         $productDuration = $product ? (string) $product->duration : $validated['duration'];
         $productName = $product ? $product->name : ($validated['product_name'] ?? 'Custom');
+        $minClosingPrice = $product ? (float) ($product->minimum_closing_price ?? 0) : 0;
+        $apiKeyRequired = $product ? (bool) ($product->api_key_required ?? false) : false;
 
         $closingValue = (float) $validated['closing_value'];
         $discountAmount = round(max(0.0, $productPrice - $closingValue), 2);
 
-        $order = DB::transaction(function () use ($numbers, $team, $employee, $product, $productName, $productPrice, $productDuration, $closingValue, $discountAmount, $validated) {
+        $needsApproval = $minClosingPrice > 0 && $closingValue < $minClosingPrice;
+        $closingStatus = $needsApproval ? 'Requested' : 'Accepted';
+
+        $order = DB::transaction(function () use ($numbers, $team, $employee, $product, $productName, $productPrice, $productDuration, $minClosingPrice, $apiKeyRequired, $closingStatus, $needsApproval, $closingValue, $discountAmount, $validated) {
             $orderNumber = $numbers->next($team);
 
             return SalesOrder::create([
@@ -91,6 +96,10 @@ class CreateOrderController extends Controller
                 'product_name_snapshot' => $productName,
                 'product_price_snapshot' => $productPrice,
                 'product_duration_snapshot' => $productDuration,
+                'minimum_closing_price_snapshot' => $minClosingPrice,
+                'api_key_required_snapshot' => $apiKeyRequired,
+                'closing_value_status' => $closingStatus,
+                'closing_approval_requested_at' => $needsApproval ? now() : null,
                 'duration' => $productDuration,
                 'product_value' => $productPrice,
                 'discount_amount' => $discountAmount,
@@ -102,6 +111,15 @@ class CreateOrderController extends Controller
             ]);
         });
 
-        return redirect()->route('employee.orders.show', $order)->with('success', 'Order created successfully.');
+        $message = $needsApproval
+            ? 'Order created successfully. Closing value is below minimum floor price; approval requested from Super Admin.'
+            : 'Order created successfully.';
+
+        app(\App\Services\NotificationHubService::class)->notifyOrderCreated($order);
+        if ($needsApproval) {
+            app(\App\Services\NotificationHubService::class)->notifyClosingApprovalRequested($order);
+        }
+
+        return redirect()->route('employee.orders.show', $order)->with('success', $message);
     }
 }

@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ensure-role-active' => \App\Http\Middleware\EnsureRoleActive::class,
             'team.web' => \App\Http\Middleware\AuthenticateTeamWeb::class,
             'employee.web' => \App\Http\Middleware\AuthenticateEmployeeWeb::class,
+            'permission' => \App\Http\Middleware\EnsureEmployeePermission::class,
         ]);
     })
     ->withCommands()

@@ -92,6 +92,16 @@ class SalesOrder extends Model
         'product_name_snapshot',
         'product_price_snapshot',
         'product_duration_snapshot',
+        'minimum_closing_price_snapshot',
+        'api_key_required_snapshot',
+        'closing_value_status',
+        'closing_approval_requested_at',
+        'closing_approval_actioned_at',
+        'closing_approval_actioned_by',
+        'closing_approval_notes',
+        'cancellation_reason',
+        'cancelled_at',
+        'cancelled_by',
         'duration',
         'product_value',
         'discount_amount',
@@ -111,10 +121,57 @@ class SalesOrder extends Model
         return [
             'product_value' => 'decimal:2',
             'product_price_snapshot' => 'decimal:2',
+            'minimum_closing_price_snapshot' => 'decimal:2',
+            'api_key_required_snapshot' => 'boolean',
             'discount_amount' => 'decimal:2',
             'closing_value' => 'decimal:2',
             'amount_received' => 'decimal:2',
+            'closing_approval_requested_at' => 'datetime',
+            'closing_approval_actioned_at' => 'datetime',
+            'cancelled_at' => 'datetime',
         ];
+    }
+
+    public function closingApprovalAdmin(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'closing_approval_actioned_by');
+    }
+
+    public function cancelledByAdmin(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'cancelled_by');
+    }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class, 'order_id');
+    }
+
+    public function isClosingApprovalPending(): bool
+    {
+        return $this->closing_value_status === 'Requested';
+    }
+
+    public function isClosingApprovalApproved(): bool
+    {
+        return $this->closing_value_status === 'Accepted';
+    }
+
+    public function isClosingApprovalRejected(): bool
+    {
+        return $this->closing_value_status === 'Rejected';
+    }
+
+    public function totalRefunded(): float
+    {
+        return (float) $this->refunds()->sum('amount');
+    }
+
+    public function remainingRefundable(): float
+    {
+        $paid = (float) $this->amount_received > 0 ? (float) $this->amount_received : (float) $this->verifiedPaymentTotal();
+
+        return max(0.0, round($paid - $this->totalRefunded(), 2));
     }
 
     protected static function booted(): void

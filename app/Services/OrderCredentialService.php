@@ -135,7 +135,11 @@ class OrderCredentialService
         }
 
         if ($actor instanceof User) {
-            return (int) ($order->assigned_employee_id ?? 0) === (int) $actor->id;
+            if ((int) ($order->assigned_employee_id ?? 0) !== (int) $actor->id) {
+                return false;
+            }
+
+            return $actor->hasPermission('orders.view_api_key');
         }
 
         return false;

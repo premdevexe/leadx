@@ -15,6 +15,8 @@ class EmployeeService
     public function create(array $data): User
     {
         return DB::transaction(function () use ($data) {
+            $defaultPreset = app(PermissionService::class)->getDefaultPreset();
+
             $user = User::create([
                 'name' => $data['name'],
                 'username' => $data['username'],
@@ -24,6 +26,7 @@ class EmployeeService
                 'role' => $data['role'] ?? 'employee',
                 'status' => $data['status'] ?? 'active',
                 'team_id' => $data['team_id'] ?? null,
+                'preset_id' => $data['preset_id'] ?? $defaultPreset?->id,
             ]);
 
             if (! empty($data['team_id'])) {
@@ -43,7 +46,7 @@ class EmployeeService
     {
         $old = $employee->onlyPublic();
 
-        $employee->fill(Arr::only($data, ['name', 'username', 'email', 'phone', 'password', 'role', 'status']));
+        $employee->fill(Arr::only($data, ['name', 'username', 'email', 'phone', 'password', 'role', 'status', 'preset_id']));
         $employee->save();
 
         if (array_key_exists('team_id', $data)) {

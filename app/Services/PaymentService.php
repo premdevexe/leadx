@@ -188,6 +188,11 @@ class PaymentService
         if ($payment->isVerified()) {
             $this->notify($order, new PaymentVerifiedNotification($payment));
 
+            try {
+                app(\App\Services\NotificationHubService::class)->notifyPaymentVerified($payment);
+            } catch (\Throwable) {
+            }
+
             // Payment emails fire ONLY after the payment is actually
             // verified (Section 5). All non-blocking and admin-toggleable.
             $verifiedContext = [

@@ -58,6 +58,8 @@ class ProductsController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $data['minimum_closing_price'] = $data['minimum_closing_price'] ?? 0;
+        $data['api_key_required'] = $request->boolean('api_key_required');
 
         Product::create($data);
 
@@ -77,7 +79,11 @@ class ProductsController extends Controller
      */
     public function update(Request $request, Product $product): RedirectResponse
     {
-        $product->update($this->validated($request, $product));
+        $data = $this->validated($request, $product);
+        $data['minimum_closing_price'] = $data['minimum_closing_price'] ?? 0;
+        $data['api_key_required'] = $request->boolean('api_key_required');
+
+        $product->update($data);
 
         return redirect()->route('admin.products')->with('status', 'Product updated.');
     }
@@ -126,7 +132,9 @@ class ProductsController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:255', $isEdit ? Rule::unique('products', 'name')->ignore($product->id) : 'unique:products,name'],
             'price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'minimum_closing_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'duration' => ['sometimes', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
+            'api_key_required' => ['sometimes', 'boolean'],
             'status' => ['sometimes', 'in:'.implode(',', Product::STATUSES)],
         ]);
     }

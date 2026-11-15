@@ -22,10 +22,14 @@ class ProductFactory extends Factory
      */
     public function definition(): array
     {
+        $price = fake()->randomFloat(2, 50, 5000);
+
         return [
             'name' => fake()->unique()->words(2, true),
-            'price' => fake()->randomFloat(2, 0, 5000),
+            'price' => $price,
+            'minimum_closing_price' => round($price * 0.7, 2),
             'duration' => fake()->randomElement(array_keys(\App\Models\SalesOrder::DURATIONS)),
+            'api_key_required' => false,
             'status' => 'active',
         ];
     }

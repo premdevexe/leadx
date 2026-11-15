@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard — LeadX</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if (auth()->user() && auth()->user()->role === 'employee')
+        <meta http-equiv="refresh" content="0; url={{ route('employee.dashboard') }}">
+        <script>
+            window.location.replace("{{ route('employee.dashboard') }}");
+        </script>
+    @endif
 </head>
 <body class="min-h-screen bg-neutral-50 font-sans text-neutral-900 antialiased">
     <header class="flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-6">
@@ -27,16 +33,16 @@
         <div class="mt-6 divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white p-6">
             <dl class="flex items-center justify-between py-1">
                 <dt class="text-sm text-neutral-500">Name</dt>
-                <dd class="text-sm">{{ auth()->user()->name }}</dd>
+                <dd class="text-sm font-medium">{{ auth()->user()->name }}</dd>
             </dl>
             <dl class="flex items-center justify-between py-1">
                 <dt class="text-sm text-neutral-500">Email</dt>
-                <dd class="text-sm">{{ auth()->user()->email }}</dd>
+                <dd class="text-sm font-medium">{{ auth()->user()->email }}</dd>
             </dl>
             @if (auth()->user() && auth()->user()->role === 'employee')
-                <div class="pt-3">
+                <div class="pt-4">
                     <a href="{{ route('employee.dashboard') }}"
-                       class="flex items-center justify-center w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800">
+                       class="flex items-center justify-center w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800 shadow-sm">
                         Go to Employee Portal &rarr;
                     </a>
                 </div>

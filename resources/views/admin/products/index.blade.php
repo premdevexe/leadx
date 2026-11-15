@@ -75,7 +75,9 @@
                     <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
                         <th class="px-4 py-3">Name</th>
                         <th class="px-4 py-3">Duration</th>
-                        <th class="px-4 py-3 text-right">Price</th>
+                        <th class="px-4 py-3 text-right">Base Price</th>
+                        <th class="px-4 py-3 text-right">Floor Price</th>
+                        <th class="px-4 py-3">API Key Req.</th>
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3 text-right">Orders</th>
                         <th class="px-4 py-3 text-right">Actions</th>
@@ -92,6 +94,16 @@
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums font-medium text-neutral-900">
                                 {{ $cur }}{{ number_format((float) $product->price, 2) }}
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums text-neutral-600 font-medium">
+                                {{ $cur }}{{ number_format((float) ($product->minimum_closing_price ?? 0), 2) }}
+                            </td>
+                            <td class="px-4 py-3">
+                                @if ($product->api_key_required)
+                                    <span class="inline-flex items-center rounded bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700">Yes</span>
+                                @else
+                                    <span class="text-neutral-400 text-xs">No</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex items-center gap-1.5 text-xs font-medium {{ $product->status === 'active' ? 'text-emerald-700' : 'text-neutral-500' }}">
