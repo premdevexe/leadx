@@ -139,7 +139,7 @@ class PaymentsController extends Controller
             'order_id' => $data['order_id'],
             'payment_method' => $data['payment_method'],
             'amount' => $data['amount'],
-            'currency' => $data['currency'] ?? 'USD',
+            'currency' => $data['currency'] ?? \App\Models\Setting::currency(),
             'transaction_reference' => $data['transaction_reference'] ?? null,
             'payment_date' => isset($data['payment_date']) ? \Illuminate\Support\Carbon::parse($data['payment_date']) : now(),
             'payment_status' => 'pending',

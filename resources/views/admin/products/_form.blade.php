@@ -7,7 +7,7 @@
     </div>
 
     <div>
-        <label class="block text-xs font-medium text-neutral-500">Price</label>
+        <label class="block text-xs font-medium text-neutral-500">Price ({{ \App\Models\Setting::currencySymbol() }})</label>
         <input type="number" step="0.01" min="0" name="price" value="{{ old('price', $product->price) }}"
                class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
         @error('price') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -34,11 +34,11 @@
     </div>
 </div>
 
-<div class="mt-6 flex items-center gap-3">
-    <button type="submit" id="product-submit-btn" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+<div class="mt-6 flex flex-wrap items-center gap-3">
+    <button type="submit" id="product-submit-btn" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
         {{ $product->exists ? 'Save changes' : 'Create product' }}
     </button>
-    <a href="{{ route('admin.products') }}" class="text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
+    <a href="{{ route('admin.products') }}" class="w-full sm:w-auto text-center text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
 </div>
 
 <script>

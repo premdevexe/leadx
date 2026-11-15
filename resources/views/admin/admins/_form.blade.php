@@ -42,9 +42,9 @@
     </div>
 </div>
 
-<div class="mt-6 flex items-center gap-3">
-    <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+<div class="mt-6 flex flex-wrap items-center gap-3">
+    <button type="submit" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
         {{ $isEdit ? 'Save changes' : 'Create admin' }}
     </button>
-    <a href="{{ route('admin.admins') }}" class="text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
+    <a href="{{ route('admin.admins') }}" class="w-full sm:w-auto text-center text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
 </div>

@@ -68,12 +68,12 @@
             {{-- Sentinel so an empty selection still submits user_ids[] (removes all members). --}}
             <input type="hidden" name="user_ids[]" value="">
             @foreach ($employees as $employee)
-                <label class="flex items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm {{ in_array($employee->id, $selectedIds, true) ? 'border-neutral-400 bg-neutral-50' : '' }}">
+                <label class="flex items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm overflow-hidden {{ in_array($employee->id, $selectedIds, true) ? 'border-neutral-400 bg-neutral-50' : '' }}">
                     <input type="checkbox" name="user_ids[]" value="{{ $employee->id }}"
                            @checked(in_array($employee->id, $selectedIds, true))
-                           class="rounded border-neutral-300">
-                    <span class="font-medium text-neutral-800">{{ $employee->username }}</span>
-                    <span class="text-neutral-400">{{ $employee->email }}</span>
+                           class="rounded border-neutral-300 shrink-0">
+                    <span class="font-medium text-neutral-800 shrink-0">{{ $employee->username }}</span>
+                    <span class="text-neutral-400 truncate">{{ $employee->email }}</span>
                 </label>
             @endforeach
         </div>
@@ -81,9 +81,9 @@
     @endif
 </div>
 
-<div class="mt-6 flex items-center gap-3">
-    <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+<div class="mt-6 flex flex-wrap items-center gap-3">
+    <button type="submit" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
         {{ $isEdit ? 'Save changes' : 'Create team' }}
     </button>
-    <a href="{{ route('admin.teams') }}" class="text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
+    <a href="{{ route('admin.teams') }}" class="w-full sm:w-auto text-center text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
 </div>

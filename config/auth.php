@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Admin;
+use App\Models\Team;
 use App\Models\User;
 
 return [
@@ -49,6 +50,18 @@ return [
             'driver' => 'session',
             'provider' => 'admins',
         ],
+
+        // Web team login (session) — shared team portal.
+        'team' => [
+            'driver' => 'session',
+            'provider' => 'teams',
+        ],
+
+        // Web employee login (session) — individual employee portal.
+        'employee' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
     ],
 
     /*
@@ -79,10 +92,10 @@ return [
             'model' => Admin::class,
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'teams' => [
+            'driver' => 'eloquent',
+            'model' => Team::class,
+        ],
     ],
 
     /*

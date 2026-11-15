@@ -153,11 +153,17 @@ class OrdersController extends Controller
 
         $logs = WhatsappShareLog::where('order_id', $order->id)->latest('id')->take(10)->get();
 
+        $credentials = app(\App\Services\OrderCredentialService::class);
+
         return view('admin.orders.show', [
             'order' => $order,
             'share' => $share,
             'logs' => $logs,
             'enabledPaymentMethods' => \App\Models\Setting::enabledPaymentMethods(),
+            // Per-order customer API key status (masked — never the value).
+            'apiKeyStatus' => $credentials->status($order),
+            'apiKeyAvailable' => $credentials->hasKey($order),
+            'revealedKey' => session('order_api_key_reveal'),
         ]);
     }
 
@@ -267,6 +273,22 @@ class OrdersController extends Controller
             'payment_status' => 'pending',
             'admin_notes' => $data['admin_notes'] ?? null,
         ]);
+
+        // A pending payment that still has room to verify prompts the admin
+        // team to check it (non-blocking, admin-toggleable).
+        try {
+            app(\App\Services\EmailService::class)->dispatch('admin.payment_verify', [
+                'order_id'       => $order->id,
+                'order_number'   => $order->order_number,
+                'customer_name'  => $order->customer_name,
+                'customer_email' => $order->customer_email,
+                'team_name'      => $order->team?->team_name,
+                'product_name'   => $order->product_name_snapshot ?? '—',
+                'closing_value'  => number_format((float) $order->closing_value, 2),
+                'payment_method' => $data['payment_method'],
+            ]);
+        } catch (\Throwable) {
+        }
 
         return back()->with('status', 'Payment #'.$payment->id.' of '.number_format((float) $payment->amount, 2).' recorded as pending verification.');
     }

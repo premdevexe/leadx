@@ -9,46 +9,68 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.push-beams')
 </head>
-<body class="min-h-screen bg-neutral-50 font-sans text-neutral-900 antialiased">
-    <div class="relative flex min-h-screen">
-        <div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-neutral-900/40 md:hidden"></div>
+<body class="min-h-screen bg-neutral-50 font-sans text-neutral-900 antialiased overflow-x-clip">
+    <div class="relative flex min-h-screen w-full max-w-full overflow-x-clip">
+        {{-- Mobile Overlay Drawer Backdrop --}}
+        <div id="sidebar-overlay"
+             class="fixed inset-0 z-40 bg-neutral-900/50 backdrop-blur-xs transition-opacity duration-200 hidden md:hidden"
+             aria-hidden="true"></div>
 
+        {{-- Sidebar (Collapsible on Desktop, Overlay Drawer on Mobile) --}}
         <aside id="sidebar"
-               class="fixed inset-y-0 left-0 z-40 w-60 shrink-0 -translate-x-full overflow-hidden border-r border-neutral-200 bg-white transition-[width,transform] duration-200 ease-in-out md:static md:translate-x-0">
-            <div class="flex h-14 items-center gap-2 px-4">
-                <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-sm font-semibold text-white">L</span>
-                <span class="font-semibold tracking-tight">{{ \App\Models\Setting::siteName() }}</span>
-            </div>
-            <nav class="flex flex-col gap-1 px-2 pb-6 pt-4">
-                <p class="px-3 pb-1 text-xs text-neutral-400">Management</p>
-                @php
-                    $menuItems = [
-                        ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'match' => 'admin.dashboard'],
-                        ['route' => 'admin.reports.index', 'label' => 'Reports & Analytics', 'match' => 'admin.reports*'],
-                        ['route' => 'admin.teams', 'label' => 'Teams', 'match' => 'admin.teams*'],
-                        ['route' => 'admin.orders', 'label' => 'Orders', 'match' => 'admin.orders*'],
-                        ['route' => 'admin.products', 'label' => 'Products', 'match' => 'admin.products*'],
-                        ['route' => 'admin.customers', 'label' => 'Customers (CRM)', 'match' => 'admin.customers*'],
-                        ['route' => 'admin.employees', 'label' => 'Employees', 'match' => 'admin.employees*'],
-                        ['route' => 'admin.admins', 'label' => 'Admins', 'match' => 'admin.admins*'],
-                        ['route' => 'admin.notifications', 'label' => 'Send Notification', 'match' => 'admin.notifications*'],
-                        ['route' => 'admin.settings', 'label' => 'Settings', 'match' => 'admin.settings*'],
-                    ];
-                @endphp
+               class="fixed inset-y-0 left-0 z-50 flex h-full w-64 max-w-[85vw] flex-col border-r border-neutral-200 bg-white shadow-2xl transition-transform duration-200 ease-in-out -translate-x-full overflow-x-hidden overflow-y-auto md:sticky md:top-0 md:z-20 md:h-screen md:w-60 md:max-w-none md:shadow-none md:translate-x-0 md:transition-[width] md:duration-200"
+               aria-label="Admin Navigation">
+            <div class="flex h-full w-full flex-col">
+                {{-- Sidebar Header --}}
+                <div class="flex h-14 shrink-0 items-center justify-between border-b border-neutral-100 px-4 md:border-b-0">
+                    <div class="flex items-center gap-2">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-sm font-semibold text-white">L</span>
+                        <span class="font-semibold tracking-tight">{{ \App\Models\Setting::siteName() }}</span>
+                    </div>
+                    <button type="button" id="sidebar-close-btn" class="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 md:hidden" aria-label="Close menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
 
-                @foreach ($menuItems as $item)
-                    <a href="{{ route($item['route']) }}"
-                       class="rounded-lg px-3 py-2 text-sm transition-colors {{ request()->routeIs($item['match']) ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100' }}">
-                        {{ $item['label'] }}
-                    </a>
-                @endforeach
-            </nav>
+                {{-- Sidebar Navigation --}}
+                <nav class="flex-1 overflow-y-auto px-2 pb-6 pt-3">
+                    <p class="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-neutral-400">Management</p>
+                    @php
+                        $menuItems = [
+                            ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'match' => 'admin.dashboard'],
+                            ['route' => 'admin.reports.index', 'label' => 'Reports & Analytics', 'match' => 'admin.reports*'],
+                            ['route' => 'admin.teams', 'label' => 'Teams', 'match' => 'admin.teams*'],
+                            ['route' => 'admin.orders', 'label' => 'Orders', 'match' => 'admin.orders*'],
+                            ['route' => 'admin.products', 'label' => 'Products', 'match' => 'admin.products*'],
+                            ['route' => 'admin.customers', 'label' => 'Customers (CRM)', 'match' => 'admin.customers*'],
+                            ['route' => 'admin.employees', 'label' => 'Employees', 'match' => 'admin.employees*'],
+                            ['route' => 'admin.admins', 'label' => 'Admins', 'match' => 'admin.admins*'],
+                            ['route' => 'admin.notifications', 'label' => 'Send Notification', 'match' => 'admin.notifications*'],
+                            ['route' => 'admin.email.index', 'label' => 'Email Management', 'match' => 'admin.email*'],
+                            ['route' => 'admin.settings', 'label' => 'Settings', 'match' => 'admin.settings*'],
+                        ];
+                    @endphp
+
+                    <div class="mt-1 flex flex-col gap-1">
+                        @foreach ($menuItems as $item)
+                            <a href="{{ route($item['route']) }}"
+                               class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs($item['match']) ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900' }}">
+                                {{ $item['label'] }}
+                            </a>
+                        @endforeach
+                    </div>
+                </nav>
+            </div>
         </aside>
 
+        {{-- Main Column --}}
         <div class="flex min-w-0 flex-1 flex-col">
-            <header class="flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-6">
-                <div class="flex items-center gap-3">
-                    <button type="button" id="sidebar-toggle" aria-label="Toggle menu" class="relative h-9 w-9 rounded-lg border border-neutral-200 text-neutral-700 transition-colors hover:bg-neutral-50">
+            {{-- Fixed Admin Header at the Top --}}
+            <header class="sticky top-0 z-30 flex h-14 shrink-0 w-full items-center justify-between border-b border-neutral-200 bg-white/95 backdrop-blur-sm px-4 sm:px-6">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button type="button" id="sidebar-toggle" aria-label="Toggle menu" class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-700 transition-colors hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-200">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-menu absolute inset-0 m-auto h-5 w-5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                         </svg>
@@ -56,20 +78,21 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
-                    <span class="text-sm text-neutral-500">Admin</span>
+                    <span class="text-xs sm:text-sm font-medium text-neutral-500">Admin</span>
                 </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-sm text-neutral-700">{{ auth('admin')->user()->username }}</span>
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <span class="max-w-[110px] truncate text-xs sm:max-w-xs sm:text-sm text-neutral-700 font-medium">{{ auth('admin')->user()->username }}</span>
                     <form method="POST" action="{{ route('admin.logout') }}">
                         @csrf
-                        <button type="submit" class="rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-700 transition-colors hover:bg-neutral-50">
+                        <button type="submit" class="shrink-0 rounded-lg border border-neutral-200 px-2.5 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm text-neutral-700 transition-colors hover:bg-neutral-50">
                             Log out
                         </button>
                     </form>
                 </div>
             </header>
 
-            <main class="flex-1 p-6 lg:p-8">
+            {{-- Main Content --}}
+            <main class="flex-1 w-full max-w-full p-4 sm:p-6 lg:p-8">
                 <div class="mx-auto w-full max-w-5xl">
                     @yield('content')
                 </div>
@@ -98,8 +121,13 @@
             opacity: 1;
             transform: scale(1);
         }
-        #sidebar.sidebar-collapsed {
-            width: 0 !important;
+
+        @media (min-width: 768px) {
+            #sidebar.sidebar-collapsed {
+                width: 0 !important;
+                border-right-width: 0 !important;
+                overflow: hidden !important;
+            }
         }
     </style>
 
@@ -108,45 +136,112 @@
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
             const toggle = document.getElementById('sidebar-toggle');
+            const closeBtn = document.getElementById('sidebar-close-btn');
+            if (!sidebar || !toggle) return;
+
             const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
 
-            let open = !isMobile(); // mobile starts closed, desktop starts open
+            // Mobile drawer starts closed.
+            let mobileOpen = false;
+
+            // Desktop starts open unless user collapsed it in previous session.
+            let desktopOpen = true;
             try {
-                const saved = localStorage.getItem('leadx-sidebar');
-                if (saved !== null) open = saved === 'open';
+                const saved = localStorage.getItem('leadx-sidebar-desktop');
+                if (saved !== null) desktopOpen = saved === 'open';
             } catch (e) {}
 
-            function apply(openState) {
+            function render() {
                 if (isMobile()) {
+                    // Mobile overlay drawer
                     sidebar.classList.remove('sidebar-collapsed');
-                    sidebar.classList.add('border-r');
-                    sidebar.classList.toggle('-translate-x-full', !openState);
-                    overlay.classList.toggle('hidden', !openState);
+                    if (mobileOpen) {
+                        sidebar.classList.remove('-translate-x-full');
+                        sidebar.classList.add('translate-x-0');
+                        if (overlay) {
+                            overlay.classList.remove('hidden');
+                        }
+                        document.body.classList.add('overflow-hidden');
+                        toggle.classList.add('menu-open');
+                    } else {
+                        sidebar.classList.add('-translate-x-full');
+                        sidebar.classList.remove('translate-x-0');
+                        if (overlay) {
+                            overlay.classList.add('hidden');
+                        }
+                        document.body.classList.remove('overflow-hidden');
+                        toggle.classList.remove('menu-open');
+                    }
                 } else {
-                    sidebar.classList.remove('-translate-x-full');
-                    overlay.classList.add('hidden');
-                    sidebar.classList.toggle('sidebar-collapsed', !openState);
-                    sidebar.classList.toggle('border-r', openState);
+                    // Desktop collapsible sidebar
+                    document.body.classList.remove('overflow-hidden');
+                    if (overlay) {
+                        overlay.classList.add('hidden');
+                    }
+                    sidebar.classList.remove('-translate-x-full', 'translate-x-0');
+                    if (desktopOpen) {
+                        sidebar.classList.remove('sidebar-collapsed');
+                        toggle.classList.add('menu-open');
+                    } else {
+                        sidebar.classList.add('sidebar-collapsed');
+                        toggle.classList.remove('menu-open');
+                    }
                 }
-                toggle.classList.toggle('menu-open', openState);
             }
 
-            function setSidebar(openState) {
-                open = openState;
-                apply(open);
-                try {
-                    localStorage.setItem('leadx-sidebar', open ? 'open' : 'closed');
-                } catch (e) {}
+            function toggleSidebar() {
+                if (isMobile()) {
+                    mobileOpen = !mobileOpen;
+                    render();
+                } else {
+                    desktopOpen = !desktopOpen;
+                    try {
+                        localStorage.setItem('leadx-sidebar-desktop', desktopOpen ? 'open' : 'closed');
+                    } catch (e) {}
+                    render();
+                }
             }
 
-            toggle.addEventListener('click', () => setSidebar(!open));
-            overlay.addEventListener('click', () => setSidebar(false));
+            function closeMobileSidebar() {
+                if (isMobile() && mobileOpen) {
+                    mobileOpen = false;
+                    render();
+                }
+            }
+
+            toggle.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', closeMobileSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeMobileSidebar);
+
+            // Requirement 6: Close the mobile sidebar when a navigation link is clicked
             sidebar.addEventListener('click', (e) => {
-                if (isMobile() && e.target.closest('a')) setSidebar(false);
+                if (isMobile() && e.target.closest('a')) {
+                    closeMobileSidebar();
+                }
             });
-            window.addEventListener('resize', () => apply(open));
 
-            apply(open);
+            // Close on Escape key
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && isMobile() && mobileOpen) {
+                    closeMobileSidebar();
+                }
+            });
+
+            // Handle screen resize across the 768px breakpoint
+            let prevIsMobile = isMobile();
+            window.addEventListener('resize', () => {
+                const currentIsMobile = isMobile();
+                if (currentIsMobile !== prevIsMobile) {
+                    prevIsMobile = currentIsMobile;
+                    if (!currentIsMobile) {
+                        // Switched from mobile to desktop
+                        mobileOpen = false;
+                    }
+                    render();
+                }
+            });
+
+            render();
         })();
     </script>
 </body>

@@ -206,6 +206,25 @@ class FollowUpService
             $this->calendar->syncCreate($followUp, $target);
         }
 
+        // EMPLOYEE (Section 5): when a follow-up assigns a customer to an
+        // employee, notify that employee. Non-blocking and toggleable.
+        if ($employeeId) {
+            try {
+                $employee = User::find($employeeId);
+
+                app(\App\Services\EmailService::class)->dispatch('employee.assigned_customer', [
+                    'customer_name'  => $customer->name,
+                    'customer_email' => $customer->email,
+                    'customer_id'    => $customer->id,
+                    'order_id'       => $order?->id,
+                    'order_number'   => $order?->order_number,
+                    'employee_id'    => $employee->id,
+                    'to_email'       => $employee?->email,
+                ]);
+            } catch (\Throwable) {
+            }
+        }
+
         return $followUp->fresh();
     }
 
@@ -229,6 +248,28 @@ class FollowUpService
         ])->save();
 
         $this->recordHistory($followUp, 'completed', $actor, $notes, null, $outcome);
+
+        // SUPPORT (Section 5): when a customer-facing follow-up (e.g.
+        // technical support) receives a response/resolution, notify the
+        // customer by email. Non-blocking and admin-toggleable.
+        try {
+            $customer = $followUp->customer;
+
+            if ($customer && $customer->email) {
+                app(\App\Services\EmailService::class)->dispatch('support.response', [
+                    'customer_name'    => $customer->name,
+                    'customer_email'   => $customer->email,
+                    'customer_id'      => $customer->id,
+                    'order_id'         => $followUp->order_id,
+                    'order_number'     => $followUp->order?->order_number,
+                    'support_topic'    => $followUp->title,
+                    'support_outcome' => $outcome,
+                    'support_note'     => $notes,
+                    'to_email'         => $customer->email,
+                ]);
+            }
+        } catch (\Throwable) {
+        }
 
         // Module 3: a completion is recorded in LeadX; the Google event is
         // retained as history (not deleted or mutated) unless it was never
@@ -287,13 +328,36 @@ class FollowUpService
      */
     public function markOverdue(): int
     {
-        return FollowUp::query()
+        $count = FollowUp::query()
             ->overdue()
             ->get()
             ->each(function (FollowUp $followUp): void {
                 $followUp->forceFill(['status' => 'overdue'])->save();
+
+                // EMPLOYEE (Section 5): an overdue follow-up pings the
+                // assigned employee so it does not stall. Non-blocking
+                // and admin-toggleable.
+                try {
+                    $employee = $followUp->assigned_employee_id ? \App\Models\User::find($followUp->assigned_employee_id) : null;
+                    $customer = $followUp->customer;
+
+                    if ($employee?->email && $customer) {
+                        app(\App\Services\EmailService::class)->dispatch('employee.followup', [
+                            'customer_name'  => $customer->name,
+                            'customer_email' => $customer->email,
+                            'customer_id'    => $customer->id,
+                            'order_id'       => $followUp->order_id,
+                            'order_number'   => $followUp->order?->order_number,
+                            'employee_id'    => $employee->id,
+                            'to_email'       => $employee->email,
+                        ]);
+                    }
+                } catch (\Throwable) {
+                }
             })
             ->count();
+
+        return $count;
     }
 
     /*

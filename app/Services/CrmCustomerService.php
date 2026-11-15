@@ -28,6 +28,8 @@ class CrmCustomerService
     {
         $name = trim((string) $order->customer_name);
 
+        $isNewCustomer = $this->match($order) === null;
+
         $customer = $this->match($order)
             ?? $this->create($order, $name, $createdByAdminId);
 
@@ -41,6 +43,34 @@ class CrmCustomerService
         $customer->total_purchased = Money::format(Money::toCents($customer->total_purchased) + $verifiedCents);
         $customer->last_purchase_at = now();
         $customer->save();
+
+        // Registration emails fire only when this verified purchase created
+        // a brand-new CRM customer (Section 5). Non-blocking, toggleable.
+        if ($isNewCustomer) {
+            try {
+                app(\App\Services\EmailService::class)->dispatch('customer.registered', [
+                    'customer_name'  => $customer->name,
+                    'customer_email' => $customer->email,
+                    'customer_id'    => $customer->id,
+                    'order_id'       => $order->id,
+                    'order_number'   => $order->order_number,
+                    'to_email'       => $customer->email,
+                ]);
+            } catch (\Throwable) {
+            }
+
+            try {
+                app(\App\Services\EmailService::class)->dispatch('admin.customer_registered', [
+                    'customer_name'  => $customer->name,
+                    'customer_email' => $customer->email,
+                    'customer_id'    => $customer->id,
+                    'order_id'       => $order->id,
+                    'order_number'   => $order->order_number,
+                    'team_name'      => $order->team?->team_name,
+                ]);
+            } catch (\Throwable) {
+            }
+        }
 
         // Back-link the customer on the order's payment context.
         return $customer;

@@ -26,6 +26,10 @@ class WhatsappShareLogRequest extends FormRequest
     {
         return [
             'message' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            // Opt-in flag; authorization is enforced by the controller via
+            // OrderCredentialService::canManage() — accepting it here does
+            // not itself grant access.
+            'include_api_key' => ['sometimes', 'boolean'],
         ];
     }
 }

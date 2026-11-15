@@ -5,10 +5,11 @@
 @php
     $orderStatuses = \App\Models\SalesOrder::STATUSES;
     $paymentStatuses = \App\Models\SalesOrder::PAYMENT_STATUSES;
+    $cur = \App\Models\Setting::currencySymbol();
 @endphp
 
 @section('content')
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-xl font-semibold tracking-tight">Edit Order</h1>
             <p class="mt-1 text-sm text-neutral-500">
@@ -19,7 +20,7 @@
                 @endif
             </p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <a href="{{ route('admin.orders.show', $order) }}" class="text-sm text-neutral-600 hover:text-neutral-900">Cancel & View Order</a>
             <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-600 hover:text-neutral-900">← All orders</a>
         </div>
@@ -93,7 +94,7 @@
                                 data-price="{{ $product->price }}"
                                 data-duration="{{ $product->duration }}"
                                 @selected((string) old('product_id', $order->product_id) === (string) $product->id)>
-                            {{ $product->name }} ({{ number_format((float) $product->price, 2) }} — {{ \App\Models\SalesOrder::DURATIONS[$product->duration] ?? '1 year' }}){{ $product->status !== 'active' ? ' [Inactive]' : '' }}
+                            {{ $product->name }} ({{ $cur }}{{ number_format((float) $product->price, 2) }} — {{ \App\Models\SalesOrder::DURATIONS[$product->duration] ?? '1 year' }}){{ $product->status !== 'active' ? ' [Inactive]' : '' }}
                         </option>
                     @endforeach
                 </select>
@@ -119,14 +120,14 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Product value</label>
+                <label class="block text-xs font-medium text-neutral-500">Product value ({{ $cur }})</label>
                 <input type="number" step="0.01" min="0" id="product-value" name="product_value" value="{{ old('product_value', $order->product_value ?? $order->product_price_snapshot ?? 0) }}"
                        class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
                 @error('product_value') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Closing value</label>
+                <label class="block text-xs font-medium text-neutral-500">Closing value ({{ $cur }})</label>
                 <input type="number" step="0.01" min="0" id="closing-value" name="closing_value" value="{{ old('closing_value', $order->closing_value ?? $order->product_value ?? 0) }}"
                        class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
                 <p class="mt-1 text-xs text-neutral-400">The final deal price you close at. The discount below is auto-calculated from it.</p>
@@ -169,8 +170,8 @@
             </div>
         </div>
 
-        <div class="mt-6 flex items-center justify-between border-t border-neutral-100 pt-5">
-            <div class="flex items-center gap-3">
+        <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-neutral-100 pt-5">
+            <div class="flex flex-wrap items-center gap-3">
                 <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 transition">
                     Update order
                 </button>

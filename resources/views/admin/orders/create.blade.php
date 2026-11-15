@@ -5,6 +5,7 @@
 @php
     $orderStatuses = \App\Models\SalesOrder::STATUSES;
     $paymentStatuses = \App\Models\SalesOrder::PAYMENT_STATUSES;
+    $cur = \App\Models\Setting::currencySymbol();
 @endphp
 
 @section('content')
@@ -67,7 +68,7 @@
                                 data-price="{{ $product->price }}"
                                 data-duration="{{ $product->duration }}"
                                 @selected(old('product_id') === (string) $product->id)>
-                            {{ $product->name }} ({{ number_format((float) $product->price, 2) }} — {{ \App\Models\SalesOrder::DURATIONS[$product->duration] ?? '1 year' }})
+                            {{ $product->name }} ({{ $cur }}{{ number_format((float) $product->price, 2) }} — {{ \App\Models\SalesOrder::DURATIONS[$product->duration] ?? '1 year' }})
                         </option>
                     @endforeach
                 </select>
@@ -91,27 +92,27 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Product value</label>
+                <label class="block text-xs font-medium text-neutral-500">Product value ({{ $cur }})</label>
                 <input type="number" step="0.01" min="0" name="product_value" value="{{ old('product_value', 0) }}"
                        class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Closing value</label>
+                <label class="block text-xs font-medium text-neutral-500">Closing value ({{ $cur }})</label>
                 <input type="number" step="0.01" min="0" id="closing-value" name="closing_value" value="{{ old('closing_value', 0) }}"
                        class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
                 <p class="mt-1 text-xs text-neutral-400">The final deal price. Leave blank to close at full product value.</p>
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Discount amount</label>
+                <label class="block text-xs font-medium text-neutral-500">Discount amount ({{ $cur }})</label>
                 <input type="text" readonly id="discount-amount" name="discount_amount" value="0.00"
                        class="mt-1 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-500 cursor-not-allowed tabular-nums">
                 <p class="mt-1 text-xs text-neutral-400">Auto-calculated: Product value − Closing value. Read-only.</p>
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Amount received</label>
+                <label class="block text-xs font-medium text-neutral-500">Amount received ({{ $cur }})</label>
                 <input type="number" step="0.01" min="0" name="amount_received" value="{{ old('amount_received', 0) }}"
                        class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
             </div>
@@ -149,11 +150,11 @@
             </div>
         </div>
 
-        <div class="mt-6 flex items-center gap-3">
-            <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+            <button type="submit" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
                 Create order
             </button>
-            <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
+            <a href="{{ route('admin.orders') }}" class="w-full sm:w-auto text-center text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
         </div>
     </form>
 

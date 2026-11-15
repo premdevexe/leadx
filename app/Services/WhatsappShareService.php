@@ -192,7 +192,7 @@ class WhatsappShareService
 
         $lines[] = 'Price: '
             . ($price !== null
-                ? config('leadx.currency', '$').number_format((float) $price, 2)
+                ? \App\Models\Setting::currencySymbol().number_format((float) $price, 2)
                 : '—');
         $lines[] = 'Duration: '
             . (\App\Models\SalesOrder::DURATIONS[$order->product_duration_snapshot ?? $order->duration] ?? ($order->product_duration_snapshot ?? $order->duration ?? '—'));

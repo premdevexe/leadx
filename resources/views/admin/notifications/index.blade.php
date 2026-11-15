@@ -50,15 +50,15 @@
             </div>
         </div>
 
-        <div class="mt-6 flex items-center gap-3">
+        <div class="mt-6 flex flex-wrap items-center gap-3">
             <button type="submit"
-                    class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
+                    class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
                 Send notification
             </button>
         </div>
     </form>
 
-    <div class="mt-10 flex flex-wrap items-center justify-between gap-3">
+    <div class="mt-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 class="text-sm font-semibold tracking-tight">Send history</h2>
         <div class="flex flex-wrap items-center gap-3 text-xs text-neutral-400">
             @php $filterKey = $status === 'failed' ? 'failed' : ($status === 'sent' ? 'sent' : 'all'); @endphp

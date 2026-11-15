@@ -7,7 +7,7 @@
 @endphp
 
 @section('content')
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-xl font-semibold tracking-tight">{{ $customer->name }}</h1>
             <p class="mt-0.5 text-sm text-neutral-500">
@@ -63,8 +63,8 @@
             @if ($customer->subscriptions->isEmpty())
                 <p class="mt-3 text-sm text-neutral-400">No active or historical subscriptions recorded for this customer.</p>
             @else
-                <div class="mt-3 overflow-hidden rounded-lg border border-neutral-200">
-                    <table class="w-full text-xs">
+                <div class="mt-3 w-full overflow-x-auto rounded-lg border border-neutral-200">
+                    <table class="w-full min-w-[560px] text-xs whitespace-nowrap">
                         <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
                             <tr>
                                 <th class="px-3 py-2 text-left">Product / Plan</th>
@@ -104,8 +104,8 @@
             @if ($orders->isEmpty())
                 <p class="mt-3 text-sm text-neutral-400">No sales orders found.</p>
             @else
-                <div class="mt-3 overflow-hidden rounded-lg border border-neutral-200">
-                    <table class="w-full text-xs">
+                <div class="mt-3 w-full overflow-x-auto rounded-lg border border-neutral-200">
+                    <table class="w-full min-w-[640px] text-xs whitespace-nowrap">
                         <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
                             <tr>
                                 <th class="px-3 py-2 text-left">Order #</th>

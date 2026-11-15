@@ -117,6 +117,29 @@ class SubscriptionService
         // created if it had never synced). Never blocks the renewal itself.
         $this->calendar->syncUpdate($subscription->fresh());
 
+        // Send renewal confirmation email to the customer (non-blocking).
+        try {
+            $fresh = $subscription->fresh();
+            $customerEmail = $fresh->customer?->email ?? $order->customer_email;
+
+            app(\App\Services\EmailService::class)->dispatch('subscription.renewed', [
+                'subscription_id' => $fresh->id,
+                'order_id'        => $order->id,
+                'customer_id'     => $fresh->customer_id,
+                'customer_name'   => $order->customer_name,
+                'customer_email'  => $customerEmail,
+                'team_name'       => $team?->team_name,
+                'order_number'    => $order->order_number,
+                'product_name'    => $order->product_name_snapshot ?? '—',
+                'expiry_date'     => $fresh->expires_at?->format('M d, Y') ?? '—',
+                'renewal_date'    => $fresh->renewal_date?->format('M d, Y') ?? '—',
+                'billing_cycle'   => $fresh->billing_cycle ?? '—',
+                'to_email'        => $customerEmail,
+            ]);
+        } catch (\Throwable) {
+            // Email failure must never break the renewal.
+        }
+
         return $subscription->fresh();
     }
 

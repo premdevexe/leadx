@@ -178,8 +178,28 @@ class SubscriptionActivator
 
         $order->forceFill(['order_status' => 'active'])->save();
 
-        if ($customer) {
-            $this->notifyCustomer($customer, $order);
+        // Send subscription.activated email to the customer (non-blocking).
+        try {
+            $customerEmail = $customer?->email ?? $order->customer_email;
+
+            app(\App\Services\EmailService::class)->dispatch('subscription.activated', [
+                'subscription_id'  => $subscription->id,
+                'order_id'         => $order->id,
+                'customer_id'      => $customer?->id ?? $order->customer_id,
+                'customer_name'    => $customer?->name ?? $order->customer_name ?? 'Customer',
+                'customer_email'   => $customerEmail,
+                'team_name'        => $subscription->team?->team_name,
+                'order_number'     => $order->order_number,
+                'product_name'     => $order->product_name_snapshot ?? '—',
+                'plan_name'        => $plan?->name ?? '—',
+                'activation_date'  => $subscription->started_at?->format('M d, Y') ?? '—',
+                'expiry_date'      => $expiry->format('M d, Y'),
+                'renewal_date'     => $renewal->format('M d, Y'),
+                'billing_cycle'    => $cycle,
+                'to_email'         => $customerEmail,
+            ]);
+        } catch (\Throwable) {
+            // Email failure must never break subscription activation.
         }
     }
 

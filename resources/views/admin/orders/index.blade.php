@@ -28,10 +28,10 @@
 @endphp
 
 @section('content')
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-xl font-semibold tracking-tight">Orders</h1>
         <a href="{{ route('admin.orders.create') }}"
-           class="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
+           class="inline-flex items-center justify-center rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
             New order
         </a>
     </div>
@@ -81,15 +81,15 @@
                 </select>
             </div>
         </div>
-        <div class="mt-3 flex items-center gap-3">
+        <div class="mt-3 flex flex-wrap items-center gap-3">
             <button type="submit" class="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700">Filter</button>
             <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-500 hover:text-neutral-800">Reset</a>
         </div>
     </form>
 
     {{-- Table --}}
-    <div class="mt-5 overflow-hidden rounded-xl border border-neutral-200 bg-white">
-        <table class="w-full text-sm">
+    <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+        <table class="w-full min-w-[760px] text-sm whitespace-nowrap">
             <thead>
                 <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
                     <th class="px-4 py-3">Order #</th>
@@ -162,7 +162,7 @@
 
     {{-- Pagination --}}
     @if ($orders->hasPages())
-        <div class="mt-4">
+        <div class="mt-4 overflow-x-auto">
             {{ $orders->links() }}
         </div>
     @endif

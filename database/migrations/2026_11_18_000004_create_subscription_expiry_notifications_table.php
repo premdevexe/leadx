@@ -24,6 +24,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('subscription_expiry_notifications')) {
+            // Already present in databases where the table was created
+            // before this migration was recorded — keep the migration
+            // idempotent so `migrate` can catch up.
+            return;
+        }
+
         Schema::create('subscription_expiry_notifications', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('subscription_id');
@@ -35,12 +42,12 @@ return new class extends Migration
             $table->unsignedInteger('recipient_count')->default(0);
             // JSON array of user ids notified — the auditable recipient set.
             $table->text('recipient_user_ids')->nullable();
-            $table->timestamp('sent_at');
+            $table->timestamp('sent_at')->nullable();
 
             $table->timestamps();
 
             // The once-per-expiry-cycle guarantee, enforced at the database.
-            $table->unique(['subscription_id', 'expiry_at']);
+            $table->unique(['subscription_id', 'expiry_at'], 'sub_expiry_uniq');
             $table->foreign('subscription_id')->references('id')->on('subscriptions')->cascadeOnDelete();
         });
     }

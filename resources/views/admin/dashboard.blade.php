@@ -19,72 +19,72 @@
 
     {{-- Financial Metrics Cards --}}
     <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
             <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Total Verified Revenue</div>
-            <div class="mt-2 text-2xl font-bold tabular-nums text-emerald-600">{{ $cur }}{{ $stats['verified_revenue'] }}</div>
+            <div class="mt-2 text-xl sm:text-2xl font-bold tabular-nums text-emerald-600 break-words">{{ $cur }}{{ $stats['verified_revenue'] }}</div>
             <div class="mt-1 text-xs text-neutral-400">Cleared & verified collections</div>
         </div>
 
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
             <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Pending Collections</div>
-            <div class="mt-2 text-2xl font-bold tabular-nums text-amber-600">{{ $cur }}{{ $stats['pending_collections'] }}</div>
+            <div class="mt-2 text-xl sm:text-2xl font-bold tabular-nums text-amber-600 break-words">{{ $cur }}{{ $stats['pending_collections'] }}</div>
             <div class="mt-1 text-xs text-neutral-400">Outstanding closing balance</div>
         </div>
 
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
             <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Total Closing Value</div>
-            <div class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $cur }}{{ $stats['total_closing_value'] }}</div>
+            <div class="mt-2 text-xl sm:text-2xl font-bold tabular-nums text-neutral-900 break-words">{{ $cur }}{{ $stats['total_closing_value'] }}</div>
             <div class="mt-1 text-xs text-neutral-400">Agreed order deal values</div>
         </div>
 
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
             <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Total Discounts</div>
-            <div class="mt-2 text-2xl font-bold tabular-nums text-neutral-700">{{ $cur }}{{ $stats['total_discounts'] }}</div>
+            <div class="mt-2 text-xl sm:text-2xl font-bold tabular-nums text-neutral-700 break-words">{{ $cur }}{{ $stats['total_discounts'] }}</div>
             <div class="mt-1 text-xs text-neutral-400">Catalog price concessions</div>
         </div>
     </div>
 
     {{-- Operational Counts Grid --}}
-    <div class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div class="text-2xl font-semibold tabular-nums tracking-tight">{{ $stats['orders_total'] }}</div>
-            <div class="mt-1 text-sm text-neutral-500">Total orders</div>
+    <div class="mt-4 grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 xl:grid-cols-6">
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
+            <div class="text-xl sm:text-2xl font-semibold tabular-nums tracking-tight">{{ $stats['orders_total'] }}</div>
+            <div class="mt-1 text-xs sm:text-sm text-neutral-500">Total orders</div>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div class="text-2xl font-semibold tabular-nums tracking-tight text-neutral-900">{{ $stats['paying_customers'] }}</div>
-            <div class="mt-1 text-sm text-neutral-500">Paying customers</div>
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
+            <div class="text-xl sm:text-2xl font-semibold tabular-nums tracking-tight text-neutral-900">{{ $stats['paying_customers'] }}</div>
+            <div class="mt-1 text-xs sm:text-sm text-neutral-500">Paying customers</div>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div class="text-2xl font-semibold tabular-nums tracking-tight text-blue-600">{{ $stats['active_subscriptions'] }}</div>
-            <div class="mt-1 text-sm text-neutral-500">Active subscriptions</div>
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
+            <div class="text-xl sm:text-2xl font-semibold tabular-nums tracking-tight text-blue-600">{{ $stats['active_subscriptions'] }}</div>
+            <div class="mt-1 text-xs sm:text-sm text-neutral-500">Active subscriptions</div>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div class="text-2xl font-semibold tabular-nums tracking-tight text-neutral-500">{{ $stats['expired_subscriptions'] }}</div>
-            <div class="mt-1 text-sm text-neutral-500">Expired subscriptions</div>
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
+            <div class="text-xl sm:text-2xl font-semibold tabular-nums tracking-tight text-neutral-500">{{ $stats['expired_subscriptions'] }}</div>
+            <div class="mt-1 text-xs sm:text-sm text-neutral-500">Expired subscriptions</div>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div class="text-2xl font-semibold tabular-nums tracking-tight">{{ $stats['users_total'] }}</div>
-            <div class="mt-1 text-sm text-neutral-500">Employees</div>
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
+            <div class="text-xl sm:text-2xl font-semibold tabular-nums tracking-tight">{{ $stats['users_total'] }}</div>
+            <div class="mt-1 text-xs sm:text-sm text-neutral-500">Employees</div>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div class="text-2xl font-semibold tabular-nums tracking-tight">{{ $stats['teams_total'] }}</div>
-            <div class="mt-1 text-sm text-neutral-500">Teams</div>
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
+            <div class="text-xl sm:text-2xl font-semibold tabular-nums tracking-tight">{{ $stats['teams_total'] }}</div>
+            <div class="mt-1 text-xs sm:text-sm text-neutral-500">Teams</div>
         </div>
     </div>
 
     {{-- Monthly Revenue Trend --}}
     @if (!empty($monthlyReport))
         <div class="mt-8">
-            <div class="mb-3 flex items-center justify-between">
+            <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-sm font-semibold text-neutral-700">Monthly Revenue & Sales Trend</h2>
                     <p class="text-xs text-neutral-400">Verified receipts and active subscriptions over the last 6 months.</p>
                 </div>
             </div>
-            <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-                <table class="w-full text-sm">
+            <div class="w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+                <table class="w-full min-w-[500px] text-sm">
                     <thead>
-                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50 whitespace-nowrap">
                             <th class="px-4 py-3">Month</th>
                             <th class="px-4 py-3 text-right">Orders</th>
                             <th class="px-4 py-3 text-right">Active Subs</th>
@@ -93,7 +93,7 @@
                     </thead>
                     <tbody>
                         @foreach ($monthlyReport as $m)
-                            <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                            <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 whitespace-nowrap">
                                 <td class="px-4 py-3 font-medium text-neutral-900">{{ $m['label'] }}</td>
                                 <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $m['orders'] }}</td>
                                 <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $m['subscriptions'] }}</td>
@@ -108,17 +108,17 @@
 
     {{-- Dynamic Product Analytics --}}
     <div class="mt-8">
-        <div class="mb-3 flex items-center justify-between">
+        <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="text-sm font-semibold text-neutral-700">Dynamic Product Analytics</h2>
                 <p class="text-xs text-neutral-400">Real-time catalog breakdown based on actual order snapshots.</p>
             </div>
             <a href="{{ route('admin.products') }}" class="text-xs font-medium text-neutral-600 hover:text-neutral-900 underline">Manage products →</a>
         </div>
-        <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full text-sm">
+        <div class="w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <table class="w-full min-w-[620px] text-sm">
                 <thead>
-                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50 whitespace-nowrap">
                         <th class="px-4 py-3">Product</th>
                         <th class="px-4 py-3 text-right">Orders</th>
                         <th class="px-4 py-3 text-right">Collected Revenue</th>
@@ -129,7 +129,7 @@
                 </thead>
                 <tbody>
                     @forelse ($productReport as $row)
-                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 whitespace-nowrap">
                             <td class="px-4 py-3 font-medium text-neutral-900">{{ $row['product'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $row['orders'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">{{ $cur }}{{ $row['collected_revenue'] }}</td>
@@ -148,17 +148,17 @@
     {{-- Team Performance Summary --}}
     @if (!empty($teamReport))
         <div class="mt-8">
-            <div class="mb-3 flex items-center justify-between">
+            <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-sm font-semibold text-neutral-700">Team Performance & Collections</h2>
                     <p class="text-xs text-neutral-400">Revenue attribution and order volume across sales teams.</p>
                 </div>
                 <a href="{{ route('admin.teams') }}" class="text-xs font-medium text-neutral-600 hover:text-neutral-900 underline">Manage teams →</a>
             </div>
-            <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-                <table class="w-full text-sm">
+            <div class="w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+                <table class="w-full min-w-[660px] text-sm">
                     <thead>
-                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50 whitespace-nowrap">
                             <th class="px-4 py-3">Team</th>
                             <th class="px-4 py-3">Code</th>
                             <th class="px-4 py-3 text-right">Members</th>
@@ -170,7 +170,7 @@
                     </thead>
                     <tbody>
                         @foreach ($teamReport as $t)
-                            <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                            <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 whitespace-nowrap">
                                 <td class="px-4 py-3 font-medium text-neutral-900">{{ $t['team_name'] }}</td>
                                 <td class="px-4 py-3 font-mono text-xs text-neutral-600">{{ $t['team_code'] }}</td>
                                 <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $t['members_count'] }}</td>
@@ -188,14 +188,14 @@
 
     {{-- Recent Orders --}}
     <div class="mt-8">
-        <div class="mb-3 flex items-center justify-between">
+        <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <h2 class="text-sm font-semibold text-neutral-700">Recent orders</h2>
             <a href="{{ route('admin.orders') }}" class="text-xs font-medium text-neutral-600 hover:text-neutral-900 underline">View all orders →</a>
         </div>
-        <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full text-sm">
+        <div class="w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <table class="w-full min-w-[520px] text-sm">
                 <thead>
-                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50 whitespace-nowrap">
                         <th class="px-4 py-3">Order #</th>
                         <th class="px-4 py-3">Customer</th>
                         <th class="px-4 py-3">Team</th>
@@ -205,7 +205,7 @@
                 </thead>
                 <tbody>
                     @forelse ($recentOrders as $order)
-                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 whitespace-nowrap">
                             <td class="px-4 py-3">
                                 <a href="{{ route('admin.orders.show', $order) }}" class="font-mono text-xs text-neutral-900 hover:text-neutral-500 underline">
                                     {{ $order->order_number ?? '—' }}
@@ -232,10 +232,10 @@
     <div class="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
             <h2 class="mb-3 text-sm font-semibold text-neutral-700">Recent employees</h2>
-            <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-                <table class="w-full text-sm">
+            <div class="w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+                <table class="w-full min-w-[360px] text-sm">
                     <thead>
-                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50 whitespace-nowrap">
                             <th class="px-4 py-3">Username</th>
                             <th class="px-4 py-3">Email</th>
                             <th class="px-4 py-3">Joined</th>
@@ -243,7 +243,7 @@
                     </thead>
                     <tbody>
                         @forelse ($recentUsers as $user)
-                            <tr class="border-b border-neutral-100 last:border-0">
+                            <tr class="border-b border-neutral-100 last:border-0 whitespace-nowrap">
                                 <td class="px-4 py-3 font-medium">{{ $user->username ?? '—' }}</td>
                                 <td class="px-4 py-3 text-neutral-500">{{ $user->email }}</td>
                                 <td class="px-4 py-3 text-neutral-500">{{ $user->created_at->format('M d, Y') }}</td>
@@ -258,10 +258,10 @@
 
         <div>
             <h2 class="mb-3 text-sm font-semibold text-neutral-700">Administrators</h2>
-            <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-                <table class="w-full text-sm">
+            <div class="w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+                <table class="w-full min-w-[360px] text-sm">
                     <thead>
-                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50 whitespace-nowrap">
                             <th class="px-4 py-3">Username</th>
                             <th class="px-4 py-3">Email</th>
                             <th class="px-4 py-3">Added</th>
@@ -269,7 +269,7 @@
                     </thead>
                     <tbody>
                         @forelse ($recentAdmins as $admin)
-                            <tr class="border-b border-neutral-100 last:border-0">
+                            <tr class="border-b border-neutral-100 last:border-0 whitespace-nowrap">
                                 <td class="px-4 py-3 font-medium">{{ $admin->username }}</td>
                                 <td class="px-4 py-3 text-neutral-500">{{ $admin->email }}</td>
                                 <td class="px-4 py-3 text-neutral-500">{{ $admin->created_at?->format('M d, Y') ?? '—' }}</td>

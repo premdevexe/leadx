@@ -88,8 +88,8 @@
             </div>
         </div>
 
-        <div class="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3">
-            <div class="flex items-center gap-2">
+        <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-neutral-100 pt-3">
+            <div class="flex flex-wrap items-center gap-2">
                 <button type="submit" class="rounded-lg bg-neutral-900 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-neutral-800 transition">
                     Apply Filters
                 </button>
@@ -104,7 +104,7 @@
     </form>
 
     {{-- Navigation Tabs --}}
-    <div class="mt-6 flex border-b border-neutral-200 text-sm font-medium">
+    <div class="mt-6 flex overflow-x-auto border-b border-neutral-200 text-sm font-medium whitespace-nowrap scrollbar-none">
         <a href="{{ request()->fullUrlWithQuery(['tab' => 'overview']) }}"
            class="border-b-2 px-4 py-2.5 transition-colors {{ $tab === 'overview' ? 'border-neutral-900 text-neutral-900 font-semibold' : 'border-transparent text-neutral-500 hover:text-neutral-800' }}">
             Overview & Revenue
@@ -131,27 +131,27 @@
     @if ($tab === 'overview')
         <div class="mt-5 space-y-6">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+                <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
                     <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Verified Revenue</div>
-                    <div class="mt-2 text-2xl font-bold tabular-nums text-emerald-600">{{ $cur }}{{ $overview['verified_revenue'] }}</div>
+                    <div class="mt-2 text-xl sm:text-2xl font-bold tabular-nums text-emerald-600 break-words">{{ $cur }}{{ $overview['verified_revenue'] }}</div>
                     <div class="mt-1 text-xs text-neutral-400">Actual collected & cleared</div>
                 </div>
 
-                <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+                <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
                     <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Pending Collections</div>
-                    <div class="mt-2 text-2xl font-bold tabular-nums text-amber-600">{{ $cur }}{{ $overview['pending_collections'] }}</div>
+                    <div class="mt-2 text-xl sm:text-2xl font-bold tabular-nums text-amber-600 break-words">{{ $cur }}{{ $overview['pending_collections'] }}</div>
                     <div class="mt-1 text-xs text-neutral-400">Outstanding ledger balance</div>
                 </div>
 
-                <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+                <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
                     <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Total Closing Value</div>
-                    <div class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $cur }}{{ $overview['total_closing_value'] }}</div>
+                    <div class="mt-2 text-xl sm:text-2xl font-bold tabular-nums text-neutral-900 break-words">{{ $cur }}{{ $overview['total_closing_value'] }}</div>
                     <div class="mt-1 text-xs text-neutral-400">Agreed contract values</div>
                 </div>
 
-                <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+                <div class="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm">
                     <div class="text-xs font-medium uppercase tracking-wider text-neutral-400">Discounts & Concessions</div>
-                    <div class="mt-2 text-2xl font-bold tabular-nums text-neutral-700">{{ $cur }}{{ $overview['total_discounts'] }}</div>
+                    <div class="mt-2 text-xl sm:text-2xl font-bold tabular-nums text-neutral-700 break-words">{{ $cur }}{{ $overview['total_discounts'] }}</div>
                     <div class="mt-1 text-xs text-neutral-400">Catalog list vs closing</div>
                 </div>
             </div>
@@ -204,8 +204,8 @@
 
     {{-- Tab 2: Products --}}
     @if ($tab === 'products')
-        <div class="mt-5 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full text-sm">
+        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <table class="w-full min-w-[640px] text-sm whitespace-nowrap">
                 <thead>
                     <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
                         <th class="px-4 py-3">Product Name</th>
@@ -236,8 +236,8 @@
 
     {{-- Tab 3: Employees --}}
     @if ($tab === 'employees')
-        <div class="mt-5 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full text-sm">
+        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <table class="w-full min-w-[680px] text-sm whitespace-nowrap">
                 <thead>
                     <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
                         <th class="px-4 py-3">Employee</th>
@@ -273,8 +273,8 @@
 
     {{-- Tab 4: Teams --}}
     @if ($tab === 'teams')
-        <div class="mt-5 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full text-sm">
+        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <table class="w-full min-w-[760px] text-sm whitespace-nowrap">
                 <thead>
                     <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
                         <th class="px-4 py-3">Team</th>
@@ -309,8 +309,8 @@
 
     {{-- Tab 5: Orders Ledger --}}
     @if ($tab === 'orders')
-        <div class="mt-5 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full text-sm">
+        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <table class="w-full min-w-[780px] text-sm whitespace-nowrap">
                 <thead>
                     <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
                         <th class="px-4 py-3">Order #</th>
@@ -355,7 +355,7 @@
         </div>
 
         @if ($orders->hasPages())
-            <div class="mt-4">
+            <div class="mt-4 overflow-x-auto">
                 {{ $orders->links() }}
             </div>
         @endif

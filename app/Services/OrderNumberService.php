@@ -39,6 +39,32 @@ class OrderNumberService
     private const MAX_RETRIES = 5;
 
     /**
+     * Preview the next order number for a team without incrementing or locking the sequence ledger.
+     *
+     * This is read-only and safe for form previews / GET requests: it never reserves, increments,
+     * or inserts a sequence row.
+     */
+    public function peekNext(Team $team, ?string $businessTimezone = null): string
+    {
+        $timezone = $businessTimezone ?: config('leadx.business_timezone', 'UTC');
+        $year = (int) Carbon::now($timezone)->format('Y');
+
+        $row = DB::table('order_number_sequences')
+            ->where('team_id', $team->id)
+            ->where('year', $year)
+            ->first(['last_sequence']);
+
+        $previewSequence = $row ? ((int) $row->last_sequence + 1) : 1;
+
+        return sprintf(
+            '%s-%d-%s',
+            $team->team_code,
+            $year,
+            str_pad((string) $previewSequence, self::SEQUENCE_WIDTH, '0', STR_PAD_LEFT)
+        );
+    }
+
+    /**
      * Reserve and return the next order number for a team.
      *
      * This atomically claims the number so a caller can persist it on their

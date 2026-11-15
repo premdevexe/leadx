@@ -8,7 +8,7 @@
 @endphp
 
 @section('content')
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-xl font-semibold tracking-tight">Customers (CRM)</h1>
             <p class="mt-0.5 text-sm text-neutral-500">Verified paying customers promoted through completed, verified purchases.</p>
@@ -57,8 +57,8 @@
             @endif
         </div>
     @else
-        <div class="mt-5 overflow-hidden rounded-xl border border-neutral-200 bg-white">
-            <table class="w-full text-sm">
+        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <table class="w-full min-w-[680px] text-sm whitespace-nowrap">
                 <thead>
                     <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
                         <th class="px-4 py-3">Customer</th>
@@ -111,7 +111,7 @@
         </div>
 
         @if ($customers->hasPages())
-            <div class="mt-4">{{ $customers->links() }}</div>
+            <div class="mt-4 overflow-x-auto">{{ $customers->links() }}</div>
         @endif
     @endif
 @endsection

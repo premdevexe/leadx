@@ -3,7 +3,7 @@
 @section('title', 'Admins')
 
 @section('content')
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-xl font-semibold tracking-tight">Admins</h1>
         <a href="{{ route('admin.admins.create') }}"
            class="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
@@ -20,8 +20,8 @@
         <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>
     @endif
 
-    <div class="mt-5 overflow-hidden rounded-xl border border-neutral-200 bg-white">
-        <table class="w-full text-sm">
+    <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+        <table class="w-full min-w-[680px] text-sm whitespace-nowrap">
             <thead>
                 <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
                     <th class="px-4 py-3">Username</th>

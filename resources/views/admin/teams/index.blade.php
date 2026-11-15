@@ -3,7 +3,7 @@
 @section('title', 'Teams')
 
 @section('content')
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-xl font-semibold tracking-tight">Teams</h1>
         <a href="{{ route('admin.teams.create') }}"
            class="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
@@ -48,7 +48,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-4">
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
                             <span class="text-xs tabular-nums text-neutral-500">
                                 {{ count($team->members) }} {{ count($team->members) === 1 ? 'member' : 'members' }}
                             </span>
@@ -91,8 +91,8 @@
         @if ($unassigned->isEmpty())
             <p class="text-sm text-neutral-400">All employees are assigned to a team</p>
         @else
-            <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-                <table class="w-full text-sm">
+            <div class="w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+                <table class="w-full min-w-[520px] text-sm whitespace-nowrap">
                     <thead>
                         <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
                             <th class="px-4 py-3">Username</th>

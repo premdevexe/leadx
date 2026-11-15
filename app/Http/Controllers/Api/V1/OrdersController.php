@@ -8,9 +8,9 @@ use App\Http\Requests\Order\WhatsappShareLogRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Admin;
 use App\Models\SalesOrder;
-use App\Models\Subscription;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\OrderCredentialService;
 use App\Services\OrderService;
 use App\Services\WhatsappShareService;
 use Illuminate\Http\JsonResponse;
@@ -21,8 +21,11 @@ use Illuminate\Validation\ValidationException;
 
 class OrdersController extends Controller
 {
-    public function __construct(protected OrderService $orders, protected WhatsappShareService $whatsapp)
-    {
+    public function __construct(
+        protected OrderService $orders,
+        protected WhatsappShareService $whatsapp,
+        protected OrderCredentialService $credentials,
+    ) {
     }
 
     /**
@@ -189,13 +192,25 @@ class OrdersController extends Controller
     public function whatsappShareLog(WhatsappShareLogRequest $request, int $order): JsonResponse
     {
         $thisOrder = SalesOrder::with(['team', 'subscription'])->findOrFail($order);
-        $this->orders->assertCanAccess($thisOrder, $request->user('sanctum'));
+        $actor = $request->user('sanctum');
+        $this->orders->assertCanAccess($thisOrder, $actor);
 
-        $log = $this->whatsapp->logShare($thisOrder, $request->user('sanctum'), $request->validated('message'));
+        // An opt-in to share the key is honored only for an actor who may
+        // manage this order's credential; otherwise the share is key-free.
+        $sharedKey = $request->boolean('include_api_key')
+            && $this->credentials->canManage($thisOrder, $actor);
+
+        $log = $this->whatsapp->logShare(
+            $thisOrder,
+            $actor,
+            $request->validated('message'),
+            $sharedKey
+        );
 
         return response()->json([
             'id' => $log->id,
             'status' => $log->status,
+            'shared_api_key' => $log->shared_api_key,
             'message' => 'Share recorded. The server does not send messages; open the generated link to send from your device.',
         ], 201);
     }

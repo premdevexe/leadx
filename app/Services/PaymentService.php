@@ -132,7 +132,7 @@ class PaymentService
             ])->forceFill([
                 'payment_method' => 'gateway',
                 'amount' => $amount ?? $order->closing_value,
-                'currency' => $currency ?? 'USD',
+                'currency' => $currency ?? \App\Models\Setting::currency(),
                 'payment_date' => now(),
                 'payment_status' => $status,
                 'customer_id' => $customer?->id,
@@ -187,6 +187,58 @@ class PaymentService
 
         if ($payment->isVerified()) {
             $this->notify($order, new PaymentVerifiedNotification($payment));
+
+            // Payment emails fire ONLY after the payment is actually
+            // verified (Section 5). All non-blocking and admin-toggleable.
+            $verifiedContext = [
+                'order_id'         => $order->id,
+                'customer_id'      => $order->customer_id,
+                'customer_email'   => $order->customer_email,
+                'customer_name'    => $order->customer_name,
+                'team_name'        => $order->team?->team_name,
+                'order_number'     => $order->order_number,
+                'product_name'     => $order->product_name_snapshot ?? '—',
+                'closing_value'    => number_format((float) $order->closing_value, 2),
+                'payment_method'   => $payment->payment_method,
+                'payment_status'   => 'verified',
+                'amount_received'  => number_format((float) $payment->amount, 2),
+            ];
+
+            try {
+                app(\App\Services\EmailService::class)->dispatch('payment.verified', $verifiedContext + [
+                    'to_email' => $order->customer_email,
+                    'order'    => $order,
+                ]);
+            } catch (\Throwable) {
+                // Email failure must never break the payment pipeline.
+            }
+
+            try {
+                app(\App\Services\EmailService::class)->dispatch('payment.receipt', $verifiedContext + [
+                    'to_email' => $order->customer_email,
+                    'order'    => $order,
+                ]);
+            } catch (\Throwable) {
+            }
+
+            try {
+                app(\App\Services\EmailService::class)->dispatch('team.payment_status', $verifiedContext + [
+                    'team'   => $order->team,
+                    'order'  => $order,
+                    'status' => 'verified',
+                ]);
+            } catch (\Throwable) {
+            }
+
+            try {
+                if ($order->assigned_employee_id) {
+                    app(\App\Services\EmailService::class)->dispatch('employee.payment_update', $verifiedContext + [
+                        'order'    => $order,
+                        'employee' => $order->team ? \App\Models\User::find($order->assigned_employee_id) : null,
+                    ]);
+                }
+            } catch (\Throwable) {
+            }
         }
     }
 
@@ -207,6 +259,32 @@ class PaymentService
         if ($subscription && $subscription->status === 'active' && ! $this->activator->policySatisfied($order)) {
             $subscription->forceFill(['status' => 'suspended'])->save();
             $order->forceFill(['order_status' => 'suspended'])->save();
+        }
+
+        // Failed-payment alerts (non-blocking, admin-toggleable).
+        $failedContext = [
+            'order_id'       => $order->id,
+            'order_number'   => $order->order_number,
+            'customer_name'  => $order->customer_name,
+            'customer_email' => $order->customer_email,
+            'team_name'      => $order->team?->team_name,
+            'product_name'   => $order->product_name_snapshot ?? '—',
+            'closing_value'  => number_format((float) $order->closing_value, 2),
+            'payment_method' => $payment->payment_method,
+        ];
+
+        try {
+            app(\App\Services\EmailService::class)->dispatch('admin.payment.failed', $failedContext);
+        } catch (\Throwable) {
+        }
+
+        try {
+            app(\App\Services\EmailService::class)->dispatch('team.payment_status', $failedContext + [
+                'team'  => $order->team,
+                'order' => $order,
+                'status' => 'failed',
+            ]);
+        } catch (\Throwable) {
         }
     }
 

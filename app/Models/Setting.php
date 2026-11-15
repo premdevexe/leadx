@@ -44,6 +44,7 @@ class Setting extends Model
 
     public const KEY_SITE_NAME = 'site_name';
     public const KEY_CURRENCY = 'currency';
+    public const KEY_EMAIL_REMINDERS = 'email_reminders';
 
     /**
      * The attributes that are mass assignable.
@@ -137,6 +138,75 @@ class Setting extends Model
         if ($name !== '') {
             static::create(['key' => self::KEY_SITE_NAME, 'value' => $name]);
         }
+    }
+
+    /**
+     * Email expiry-reminder configuration (Section 6).
+     *
+     * Returns the full settings array with safe defaults so the
+     * scheduler works even when nothing has been saved yet:
+     *
+     * [
+     *   'enabled'       => true,
+     *   'reminder_days' => [7, 3, 1],
+     *   'reminder_time' => '08:00',
+     *   'notify_customer' => true,
+     *   'notify_team'     => false,
+     * ]
+     *
+     * @return array{enabled: bool, reminder_days: list<int>, reminder_time: string, notify_customer: bool, notify_team: bool}
+     */
+    public static function emailReminders(): array
+    {
+        $value = static::where('key', self::KEY_EMAIL_REMINDERS)->value('value');
+
+        $defaults = [
+            'enabled'         => true,
+            'reminder_days'   => [7, 3, 1],
+            'reminder_time'   => config('leadx.notifications.expiry_reminder_time', '08:00'),
+            'notify_customer' => true,
+            'notify_team'     => false,
+        ];
+
+        if (! is_array($value)) {
+            return $defaults;
+        }
+
+        $days = array_values(array_map('intval', array_filter($value['reminder_days'] ?? [], fn ($d) => $d > 0)));
+
+        return [
+            'enabled'         => (bool) ($value['enabled'] ?? $defaults['enabled']),
+            'reminder_days'   => $days ?: $defaults['reminder_days'],
+            'reminder_time'   => (string) ($value['reminder_time'] ?? $defaults['reminder_time']),
+            'notify_customer' => (bool) ($value['notify_customer'] ?? $defaults['notify_customer']),
+            'notify_team'     => (bool) ($value['notify_team'] ?? $defaults['notify_team']),
+        ];
+    }
+
+    /**
+     * Persist the email reminder settings.
+     *
+     * @param  list<int>|null  $days  Reminder windows; null keeps the default.
+     */
+    public static function setEmailReminders(
+        bool $enabled,
+        ?array $days,
+        string $time,
+        bool $notifyCustomer,
+        bool $notifyTeam,
+    ): void {
+        $current = static::emailReminders();
+
+        static::updateOrCreate(
+            ['key' => self::KEY_EMAIL_REMINDERS],
+            ['value' => [
+                'enabled'         => $enabled,
+                'reminder_days'   => $days ?: $current['reminder_days'],
+                'reminder_time'   => $time,
+                'notify_customer' => $notifyCustomer,
+                'notify_team'     => $notifyTeam,
+            ]]
+        );
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Admin;
+use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Team;
 use App\Models\User;
@@ -103,6 +104,13 @@ class OrderCreationTest extends TestCase
         $paid = \App\Models\SalesOrder::factory()->create([
             'team_id' => $team->id,
             'payment_status' => 'paid',
+        ]);
+        Payment::factory()->create([
+            'order_id' => $paid->id,
+            'amount'    => $paid->amountDue(),
+            'payment_status' => 'paid',
+            'verified_by_admin_id' => Admin::factory()->create()->id,
+            'verified_at' => now(),
         ]);
 
         $this->putJson("/api/v1/orders/{$paid->id}/activate", [], $this->actingAsToken($this->employeeToken($employee)))

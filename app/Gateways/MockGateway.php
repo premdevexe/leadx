@@ -39,7 +39,7 @@ class MockGateway extends AbstractGateway
             'order_reference' => $payload['order_reference'] ?? $payload['order_number'] ?? null,
             'transaction_reference' => $payload['transaction_reference'] ?? null,
             'amount' => isset($payload['amount']) ? (string) $payload['amount'] : null,
-            'currency' => (string) ($payload['currency'] ?? 'USD'),
+            'currency' => (string) ($payload['currency'] ?? \App\Models\Setting::currency()),
             'status' => (string) ($payload['status'] ?? $payload['event_type']),
         ];
 

@@ -63,8 +63,8 @@
             @error('payment_methods') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
         </div>
 
-        <div class="flex items-center gap-3">
-            <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+        <div class="flex flex-wrap items-center gap-3">
+            <button type="submit" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
                 Save settings
             </button>
         </div>

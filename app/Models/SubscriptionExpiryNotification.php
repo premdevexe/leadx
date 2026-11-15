@@ -70,8 +70,10 @@ class SubscriptionExpiryNotification extends Model
      */
     public static function alreadySentForCycle(Subscription $subscription): bool
     {
+        $expiresAt = $subscription->expires_at;
+
         return static::where('subscription_id', $subscription->id)
-            ->where('expiry_at', $subscription->expires_at?->toDateTimeString())
+            ->when($expiresAt, fn ($q) => $q->whereDate('expiry_at', $expiresAt->toDateString()))
             ->exists();
     }
 
@@ -87,11 +89,11 @@ class SubscriptionExpiryNotification extends Model
     {
         return static::create([
             'subscription_id' => $subscription->id,
-            'expiry_at' => $subscription->expires_at,
+            'expiry_at' => $subscription->expires_at?->toDateString(),
             'status' => $status,
             'recipient_count' => count($recipientUserIds),
             'recipient_user_ids' => $recipientUserIds,
-            'sent_at' => $sentAt,
+            'sent_at' => $sentAt->toDateTimeString(),
         ]);
     }
 }

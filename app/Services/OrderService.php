@@ -38,51 +38,85 @@ class OrderService
         // so an unknown or inactive product never burns an order number.
         $product = $this->resolveProduct($data['product_id'] ?? null);
 
-        return DB::transaction(function () use ($team, $employee, $data, $product) {
-            $orderNumber = $this->numbers->next($team);
+        $orderNumber = $this->numbers->next($team);
 
-            $productName = $product ? $product->name : ($data['product_name'] ?? null);
-            $productPrice = $product ? $product->price : ($data['product_value'] ?? 0);
-            $productDuration = $product ? (string) $product->duration : ($data['duration'] ?? '1y');
+        $productName = $product ? $product->name : ($data['product_name'] ?? null);
+        $productPrice = $product ? $product->price : ($data['product_value'] ?? 0);
+        $productDuration = $product ? (string) $product->duration : ($data['duration'] ?? '1y');
 
-            // Closing value is the rep's input — the final deal price. The
-            // discount is *derived*, not typed: it is the gap between the list
-            // price and the closing value. A blank/absent closing value means
-            // the deal closes at list price (no discount). Any client-submitted
-            // discount_amount is ignored so the stored figure can never drift
-            // from product_value − closing_value.
-            $closingValue = array_key_exists('closing_value', $data) && $data['closing_value'] !== ''
-                ? (float) $data['closing_value']
-                : (float) $productPrice;
-            $discountAmount = round(max(0.0, (float) $productPrice - $closingValue), 2);
+        $closingValue = array_key_exists('closing_value', $data) && $data['closing_value'] !== ''
+            ? (float) $data['closing_value']
+            : (float) $productPrice;
+        $discountAmount = round(max(0.0, (float) $productPrice - $closingValue), 2);
 
-            return SalesOrder::create([
-                'order_number' => $orderNumber,
-                'team_id' => $team->id,
-                'team_code_snapshot' => $team->team_code,
-                'assigned_employee_id' => $employee?->id,
-                'customer_name' => $data['customer_name'],
-                'customer_phone' => $data['customer_phone'] ?? null,
-                'customer_email' => $data['customer_email'] ?? null,
-                'product_id' => $product?->id,
-                'product_name' => $productName,
-                'product_name_snapshot' => $productName,
-                'product_price_snapshot' => $productPrice,
-                'product_duration_snapshot' => $productDuration,
-                'duration' => $productDuration,
-                'product_value' => $productPrice,
-                'discount_amount' => $discountAmount,
-                'closing_value' => $closingValue,
-                'amount_received' => $data['amount_received'] ?? 0,
-                'payment_method' => $data['payment_method'] ?? null,
-                'payment_status' => $data['payment_status'] ?? 'pending',
-                'order_status' => $data['order_status'] ?? 'pending',
-            ]);
+        $order = SalesOrder::create([
+            'order_number' => $orderNumber,
+            'team_id' => $team->id,
+            'team_code_snapshot' => $team->team_code,
+            'assigned_employee_id' => $employee?->id,
+            'customer_name' => $data['customer_name'],
+            'customer_phone' => $data['customer_phone'] ?? null,
+            'customer_email' => $data['customer_email'] ?? null,
+            'product_id' => $product?->id,
+            'product_name' => $productName,
+            'product_name_snapshot' => $productName,
+            'product_price_snapshot' => $productPrice,
+            'product_duration_snapshot' => $productDuration,
+            'duration' => $productDuration,
+            'product_value' => $productPrice,
+            'discount_amount' => $discountAmount,
+            'closing_value' => $closingValue,
+            'amount_received' => $data['amount_received'] ?? 0,
+            'payment_method' => $data['payment_method'] ?? null,
+            'payment_status' => $data['payment_status'] ?? 'pending',
+            'order_status' => $data['order_status'] ?? 'pending',
+        ]);
 
-            SalesAnalyticsService::invalidateCache();
+        SalesAnalyticsService::invalidateCache();
 
-            return $order;
-        });
+        // Email triggers (Section 5, all non-blocking — email failure
+        // never breaks order creation; each event is admin-toggleable).
+        $context = [
+            'order_id'         => $order->id,
+            'order_number'     => $order->order_number,
+            'customer_name'    => $order->customer_name,
+            'customer_email'   => $order->customer_email,
+            'team_name'        => $team->team_name,
+            'product_name'     => $order->product_name_snapshot ?? '—',
+            'product_price'    => number_format((float) $order->product_price_snapshot, 2),
+            'product_duration' => $order->product_duration_snapshot ?? '—',
+            'closing_value'    => number_format((float) $order->closing_value, 2),
+            'payment_method'   => $order->payment_method ?? '—',
+            'payment_status'   => $order->payment_status ?? '—',
+        ];
+
+        try {
+            // Customer order confirmation.
+            app(\App\Services\EmailService::class)->dispatch('order.created', $context + ['to_email' => $order->customer_email]);
+        } catch (\Throwable) {
+        }
+
+        try {
+            // Team: new order notification to active team members.
+            app(\App\Services\EmailService::class)->dispatch('team.order_created', $context + ['team' => $team, 'order' => $order]);
+        } catch (\Throwable) {
+        }
+
+        try {
+            // Assigned employee: personal order notification.
+            if ($employee) {
+                app(\App\Services\EmailService::class)->dispatch('employee.order_created', $context + ['order' => $order, 'employee' => $employee]);
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            // Admin: new order visibility.
+            app(\App\Services\EmailService::class)->dispatch('admin.new_order', $context + ['order' => $order]);
+        } catch (\Throwable) {
+        }
+
+        return $order;
     }
 
     /**

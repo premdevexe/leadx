@@ -61,8 +61,15 @@ class SubscriptionExpiryNotificationService
     {
         $subscription->loadMissing(['order.team']);
 
+        // Without a known expiry date there is no cycle to check — skip.
+        if ($subscription->expires_at === null) {
+            return 0;
+        }
+
         // Once per expiry cycle: if we already recorded a delivery for this
-        // exact expiry timestamp, do nothing.
+        // exact expiry timestamp, do nothing. This is the primary guard;
+        // the unique (subscription_id, expiry_at) index is the DB-level
+        // safety net for racing schedulers.
         if (SubscriptionExpiryNotification::alreadySentForCycle($subscription)) {
             return 0;
         }
@@ -75,12 +82,20 @@ class SubscriptionExpiryNotificationService
         $recipients = $team ? $team->activeMembers()->get() : collect();
 
         if (count($recipients) === 0) {
-            $this->record($subscription, 'skipped_no_recipients', []);
+            // Record the skip atomically; the unique (subscription_id, expiry_at)
+            // index makes this idempotent under racing schedulers.
+            try {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($subscription): void {
+                    SubscriptionExpiryNotification::record($subscription, 'skipped_no_recipients', [], now());
+                });
+            } catch (Throwable) {
+                // Lost the race; cycle is now recorded by another runner.
+            }
 
             return 0;
         }
 
-        return $this->dispatch($subscription, $recipients);
+        return $this->dispatch($subscription, $recipients->all());
     }
 
     /**
@@ -104,7 +119,18 @@ class SubscriptionExpiryNotificationService
                     $recipient->notifyNow($notification);
                 }
 
-                SubscriptionExpiryNotification::record($subscription, 'sent', $recipientIds, $sentAt);
+                // Insert the log row directly to avoid the model's datetime
+                // cast from interfering with SQLite's NOT NULL constraint.
+                \Illuminate\Support\Facades\DB::table('subscription_expiry_notifications')->insert([
+                    'subscription_id' => $subscription->id,
+                    'expiry_at' => $subscription->expires_at?->toDateString(),
+                    'status' => 'sent',
+                    'recipient_count' => count($recipientIds),
+                    'recipient_user_ids' => json_encode($recipientIds),
+                    'sent_at' => $sentAt->toDateTimeString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             });
         } catch (Throwable $e) {
             // A duplicate (subscription_id, expiry_at) means another run just
