@@ -2,6 +2,10 @@
 
 @section('title', 'Dashboard')
 
+@php
+    $currencySymbol = \App\Models\Setting::currencySymbol();
+@endphp
+
 @section('content')
     <h1 class="text-xl font-semibold tracking-tight">Team Dashboard</h1>
     <p class="mt-1 text-sm text-neutral-500">{{ $team->team_name }} ({{ $team->team_code }})</p>
@@ -13,15 +17,15 @@
         </div>
         <div class="rounded-xl border border-neutral-200 bg-white p-5">
             <p class="text-xs font-medium text-neutral-500">Closing Value</p>
-            <p class="mt-1 text-2xl font-semibold">{{ $closingValue }}</p>
+            <p class="mt-1 text-2xl font-semibold">{{ $currencySymbol }}{{ $closingValue }}</p>
         </div>
         <div class="rounded-xl border border-neutral-200 bg-white p-5">
             <p class="text-xs font-medium text-neutral-500">Verified Revenue</p>
-            <p class="mt-1 text-2xl font-semibold">{{ $verifiedRevenue }}</p>
+            <p class="mt-1 text-2xl font-semibold">{{ $currencySymbol }}{{ $verifiedRevenue }}</p>
         </div>
         <div class="rounded-xl border border-neutral-200 bg-white p-5">
             <p class="text-xs font-medium text-neutral-500">Pending Collections</p>
-            <p class="mt-1 text-2xl font-semibold">{{ $pendingAmount }}</p>
+            <p class="mt-1 text-2xl font-semibold">{{ $currencySymbol }}{{ $pendingAmount }}</p>
         </div>
         <div class="rounded-xl border border-neutral-200 bg-white p-5">
             <p class="text-xs font-medium text-neutral-500">Active Subscriptions</p>

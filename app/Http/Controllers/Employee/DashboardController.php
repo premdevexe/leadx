@@ -161,6 +161,7 @@ class DashboardController extends Controller
 
         // Load card customization preferences
         $cardPreferences = $this->getCardPreferences($employee->id);
+        $currencySymbol = \App\Models\Setting::currencySymbol();
 
         return view('employee.dashboard', [
             'employee' => $employee,
@@ -180,6 +181,7 @@ class DashboardController extends Controller
             'monthlyClosingValue' => number_format((float) $monthlyClosingValue, 2),
             'recentOrders' => $recentOrders,
             'cardPreferences' => $cardPreferences,
+            'currencySymbol' => $currencySymbol,
         ]);
     }
 

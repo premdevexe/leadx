@@ -3,6 +3,9 @@
 @section('title', 'Employee Dashboard')
 
 @section('content')
+@php
+    $currencySymbol = \App\Models\Setting::currencySymbol();
+@endphp
 <div class="space-y-6">
     {{-- Top Bar & Toggle --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -97,7 +100,7 @@
                     @case('sales_value')
                         <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
                             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">{{ $viewMode === 'team_data' ? 'Team Sales Value' : 'My Sales / Closing Value' }}</p>
-                            <p class="mt-2 text-2xl font-bold text-neutral-900">${{ $closingValue }}</p>
+                            <p class="mt-2 text-2xl font-bold text-neutral-900">{{ $currencySymbol }}{{ $closingValue }}</p>
                             <p class="mt-1 text-[11px] text-neutral-400">Agreed deal values</p>
                         </div>
                         @break
@@ -105,7 +108,7 @@
                     @case('verified_revenue')
                         <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
                             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">{{ $viewMode === 'team_data' ? 'Team Verified Revenue' : 'My Verified Revenue' }}</p>
-                            <p class="mt-2 text-2xl font-bold text-emerald-600">${{ $verifiedRevenue }}</p>
+                            <p class="mt-2 text-2xl font-bold text-emerald-600">{{ $currencySymbol }}{{ $verifiedRevenue }}</p>
                             <p class="mt-1 text-[11px] text-neutral-400">Cleared & verified collections</p>
                         </div>
                         @break
@@ -129,7 +132,7 @@
                     @case('pending_payments')
                         <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
                             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">{{ $viewMode === 'team_data' ? 'Team Pending Payments' : 'My Pending Payments' }}</p>
-                            <p class="mt-2 text-2xl font-bold text-amber-600">{{ $pendingPaymentsCount }} <span class="text-sm font-normal text-neutral-500">(${{ $pendingAmount }})</span></p>
+                            <p class="mt-2 text-2xl font-bold text-amber-600">{{ $pendingPaymentsCount }} <span class="text-sm font-normal text-neutral-500">({{ $currencySymbol }}{{ $pendingAmount }})</span></p>
                             <p class="mt-1 text-[11px] text-neutral-400">Outstanding payment collection</p>
                         </div>
                         @break
@@ -153,7 +156,7 @@
                     @case('monthly_performance')
                         <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
                             <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">Monthly Performance</p>
-                            <p class="mt-2 text-2xl font-bold text-neutral-900">${{ $monthlyClosingValue }}</p>
+                            <p class="mt-2 text-2xl font-bold text-neutral-900">{{ $currencySymbol }}{{ $monthlyClosingValue }}</p>
                             <p class="mt-1 text-[11px] text-neutral-400">{{ $monthlyOrdersCount }} orders this month</p>
                         </div>
                         @break
@@ -190,7 +193,7 @@
                             <tr>
                                 <td class="py-2 font-mono text-xs font-semibold text-neutral-900">{{ $order->order_number }}</td>
                                 <td class="py-2">{{ $order->product?->name ?? 'Standard Plan' }}</td>
-                                <td class="py-2 font-medium text-neutral-900">${{ number_format($order->closing_value, 2) }}</td>
+                                <td class="py-2 font-medium text-neutral-900">{{ $currencySymbol }}{{ number_format($order->closing_value, 2) }}</td>
                                 <td class="py-2">
                                     <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold
                                         {{ $order->payment_status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">

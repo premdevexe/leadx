@@ -53,6 +53,8 @@ class DashboardController extends Controller
             ->where('expires_at', '>', now())
             ->count();
 
+        $currencySymbol = \App\Models\Setting::currencySymbol();
+
         return view('team.dashboard', [
             'team' => $team,
             'memberCount' => $memberCount,
@@ -63,6 +65,7 @@ class DashboardController extends Controller
             'activeSubscriptions' => $activeSubscriptions,
             'expiredSubscriptions' => $expiredSubscriptions,
             'expiringSubscriptions' => $expiringSubscriptions,
+            'currencySymbol' => $currencySymbol,
         ]);
     }
 }
