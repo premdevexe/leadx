@@ -50,6 +50,7 @@
                             ['route' => 'admin.notifications', 'label' => 'Send Notification', 'match' => 'admin.notifications*'],
                             ['route' => 'admin.email.index', 'label' => 'Email Management', 'match' => 'admin.email*'],
                             ['route' => 'admin.settings', 'label' => 'Settings', 'match' => 'admin.settings*'],
+                            ['route' => 'admin.api-settings.index', 'label' => 'API Integrations', 'match' => 'admin.api-settings*'],
                         ];
                     @endphp
 

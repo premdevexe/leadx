@@ -29,6 +29,10 @@ Accept: application/json
 Content-Type: application/json
 ```
 
+### 1.3 Dynamic API Management & Personal Access Tokens
+Super Admins can generate, view, and revoke personal access tokens dynamically from the Admin Panel via **API Integrations** (`/admin/api-settings`).
+Additionally, all external third-party API configurations (Pusher Beams, Google OAuth 2.0, WhatsApp, Payment Gateway & Webhooks) can be edited dynamically in the Admin UI without modifying server `.env` files. Secrets are stored AES-256 encrypted at rest and overlaid at runtime.
+
 ---
 
 ## 2. AUTHENTICATION ENDPOINTS

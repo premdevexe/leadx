@@ -337,6 +337,9 @@ Orchestrated via `App\Services\NotificationHubService` with **non-blocking error
 - `GET/POST/PUT/DELETE /admin/presets`: Permission presets management and employee assignment.
 - `POST/DELETE /admin/employees/{employee}/team-access-grants`: Issue/revoke team data grants.
 - `GET/PUT /admin/settings`: Payment methods, site currency, and system settings.
+- `GET /admin/api-settings`: Dynamic API Integrations & Credentials hub (Pusher, Google, WhatsApp, Payment Gateway, Outbound Webhooks, Sanctum Tokens).
+- `PUT /admin/api-settings/{group}`: Update dynamic third-party credentials with AES-256 rest encryption and runtime config overlay.
+- `POST/DELETE /admin/api-settings/tokens`: Generate and revoke LeadX REST API personal access tokens.
 
 ### 8.2 Employee Routes (`/employee/*`)
 - `GET /employee/dashboard`: 9 dynamic cards gated by `@canCard`, `My Data | Team Data` toggle.

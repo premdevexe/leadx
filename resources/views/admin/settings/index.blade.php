@@ -3,7 +3,26 @@
 @section('title', 'Settings')
 
 @section('content')
-    <h1 class="text-xl font-semibold tracking-tight">Settings</h1>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h1 class="text-xl font-semibold tracking-tight">Settings</h1>
+            <p class="mt-1 text-sm text-neutral-500">Manage site identity, currency, and payment options.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('admin.api-settings.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
+                <svg class="h-4 w-4 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                </svg>
+                API Integrations
+            </a>
+            <a href="{{ route('admin.settings.refund-statuses') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
+                Refund Statuses
+            </a>
+            <a href="{{ route('admin.email.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
+                Email / SMTP
+            </a>
+        </div>
+    </div>
 
     @if (session('status'))
         <div class="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('status') }}</div>

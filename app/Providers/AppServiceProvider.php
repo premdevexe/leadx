@@ -47,5 +47,7 @@ class AppServiceProvider extends ServiceProvider
 
             return app(PermissionService::class)->canViewSidebarMenu($user, $menuKey);
         });
+
+        \App\Models\ApiSetting::bootstrapRuntimeConfig();
     }
 }

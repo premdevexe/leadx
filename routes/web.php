@@ -141,6 +141,17 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/settings/refund-statuses', [\App\Http\Controllers\Admin\RefundStatusesController::class, 'store'])->name('admin.settings.refund-statuses.store');
     Route::put('/admin/settings/refund-statuses/{status}', [\App\Http\Controllers\Admin\RefundStatusesController::class, 'update'])->name('admin.settings.refund-statuses.update');
 
+    // Dynamic API Integrations & Credentials (Pusher, Google, WhatsApp, Payment Gateways, Webhooks, Tokens)
+    Route::get('/admin/api-settings', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'index'])->name('admin.api-settings.index');
+    Route::put('/admin/api-settings/pusher', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updatePusher'])->name('admin.api-settings.pusher.update');
+    Route::put('/admin/api-settings/google', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updateGoogle'])->name('admin.api-settings.google.update');
+    Route::put('/admin/api-settings/whatsapp', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updateWhatsapp'])->name('admin.api-settings.whatsapp.update');
+    Route::put('/admin/api-settings/gateway', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updatePaymentGateway'])->name('admin.api-settings.gateway.update');
+    Route::put('/admin/api-settings/webhook', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'updateWebhook'])->name('admin.api-settings.webhook.update');
+    Route::post('/admin/api-settings/webhook/test', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'testWebhook'])->name('admin.api-settings.webhook.test');
+    Route::post('/admin/api-settings/tokens', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'createToken'])->name('admin.api-settings.tokens.create');
+    Route::delete('/admin/api-settings/tokens/{token}', [\App\Http\Controllers\Admin\ApiSettingsController::class, 'revokeToken'])->name('admin.api-settings.tokens.revoke');
+
     // Email management (SMTP, templates, notification events, logs)
     Route::get('/admin/email', [EmailSettingsController::class, 'index'])->name('admin.email.index');
     Route::put('/admin/email/smtp', [EmailSettingsController::class, 'updateSmtp'])->name('admin.email.smtp.update');
