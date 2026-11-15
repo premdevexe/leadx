@@ -22,7 +22,7 @@
         </form>
     </div>
 
-    <form method="POST" action="{{ route('admin.employees.update', $employee) }}" class="mt-5 rounded-xl border border-neutral-200 bg-white p-5">
+    <form method="POST" action="{{ route('admin.employees.update', $employee) }}" class="mt-5 space-y-5">
         @csrf
         @method('PUT')
         @include('admin.employees._form')

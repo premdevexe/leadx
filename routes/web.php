@@ -277,4 +277,12 @@ Route::middleware('employee.web')->group(function () {
     Route::get('/employee/reports', [EmployeeDashboardController::class, 'reports'])->name('employee.reports')->middleware('permission:sidebar.reports');
     Route::get('/employee/settings', [EmployeeDashboardController::class, 'settings'])->name('employee.settings');
     Route::get('/employee/help', [EmployeeDashboardController::class, 'help'])->name('employee.help');
+
+    // ---- CRM Customer Issues (Employee only) ----
+    Route::get('/employee/customer-issues', [\App\Http\Controllers\Employee\CustomerIssuesController::class, 'index'])->name('employee.customer-issues.index');
+    Route::get('/employee/customer-issues/create', [\App\Http\Controllers\Employee\CustomerIssuesController::class, 'create'])->name('employee.customer-issues.create');
+    Route::post('/employee/customer-issues', [\App\Http\Controllers\Employee\CustomerIssuesController::class, 'store'])->name('employee.customer-issues.store');
+    Route::get('/employee/customer-issues/{customer_issue}', [\App\Http\Controllers\Employee\CustomerIssuesController::class, 'show'])->name('employee.customer-issues.show');
+    Route::get('/employee/customer-issues/{customer_issue}/edit', [\App\Http\Controllers\Employee\CustomerIssuesController::class, 'edit'])->name('employee.customer-issues.edit');
+    Route::put('/employee/customer-issues/{customer_issue}', [\App\Http\Controllers\Employee\CustomerIssuesController::class, 'update'])->name('employee.customer-issues.update');
 });

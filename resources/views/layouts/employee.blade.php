@@ -65,12 +65,12 @@
                                 @canMenu($item['key'])
                                     @php
                                         $params = $item['params'] ?? [];
-                                        if ($currentView === 'team_data' && in_array($item['key'], ['orders', 'subscriptions', 'follow-ups', 'payments', 'customers', 'reports'])) {
+                                        if ($currentView === 'team_data' && in_array($item['key'], ['dashboard', 'orders', 'subscriptions', 'follow-ups', 'payments', 'customers', 'reports'])) {
                                             $params['view'] = 'team_data';
                                         }
                                     @endphp
                                     <a href="{{ route($item['route'], $params) }}"
-                                       class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs($item['match']) && (empty($params) || request()->query('view') === ($params['view'] ?? null)) ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900' }}">
+                                       class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs($item['match']) && (empty($item['params']) || request()->query('view') === ($params['view'] ?? null)) ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900' }}">
                                         {{ $item['label'] }}
                                     </a>
                                 @endcanMenu

@@ -41,6 +41,7 @@ class DashboardController extends Controller
         ['key' => 'calendar', 'route' => 'employee.calendar', 'label' => 'My Google Calendar', 'visible' => true, 'order' => 10, 'match' => 'employee.calendar*', 'params' => []],
         ['key' => 'profile', 'route' => 'employee.profile', 'label' => 'My Profile', 'visible' => true, 'order' => 11, 'match' => 'employee.profile*', 'params' => []],
         ['key' => 'reports', 'route' => 'employee.reports', 'label' => 'My Performance Report', 'visible' => true, 'order' => 12, 'match' => 'employee.reports*', 'params' => []],
+        ['key' => 'customer_issues', 'route' => 'employee.customer-issues.index', 'label' => 'CRM Customer Issues', 'visible' => true, 'order' => 13, 'match' => 'employee.customer-issues*', 'params' => []],
     ];
 
     public function index(Request $request): mixed
