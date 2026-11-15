@@ -15,6 +15,9 @@ class Refund extends Model
         'admin_id',
         'amount',
         'type',
+        'status',
+        'gateway_reference',
+        'processed_at',
         'reason',
     ];
 
@@ -22,6 +25,7 @@ class Refund extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'processed_at' => 'datetime',
         ];
     }
 

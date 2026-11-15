@@ -174,7 +174,7 @@ class EmployeePortalTest extends TestCase
     public function test_employee_can_create_order_with_active_product(): void
     {
         $team = Team::factory()->create();
-        $product = Product::factory()->create(['status' => 'active']);
+        $product = Product::factory()->create(['status' => 'active', 'price' => 200.00, 'minimum_closing_price' => 100.00]);
         $employee = User::factory()->create([
             'role' => 'employee',
             'status' => 'active',
@@ -246,7 +246,7 @@ class EmployeePortalTest extends TestCase
     public function test_employee_order_has_correct_attribution(): void
     {
         $team = Team::factory()->create();
-        $product = Product::factory()->create(['status' => 'active']);
+        $product = Product::factory()->create(['status' => 'active', 'price' => 150.00, 'minimum_closing_price' => 100.00]);
         $employee = User::factory()->create([
             'role' => 'employee',
             'status' => 'active',
@@ -272,7 +272,7 @@ class EmployeePortalTest extends TestCase
     public function test_employee_order_uses_authoritative_product_data(): void
     {
         $team = Team::factory()->create();
-        $product = Product::factory()->create(['status' => 'active']);
+        $product = Product::factory()->create(['status' => 'active', 'price' => 100.00, 'minimum_closing_price' => 50.00]);
         $employee = User::factory()->create([
             'role' => 'employee',
             'status' => 'active',

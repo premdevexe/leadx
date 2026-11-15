@@ -106,7 +106,7 @@ LeadX features a centralized, 3-tier cascade permission engine implemented in `A
 
 ## 4. DATABASE SCHEMA BLUEPRINT & DATA INTEGRITY
 
-The database consists of **18 tables**, fully cross-compatible with SQLite and MySQL:
+The database consists of **22 tables**, fully cross-compatible with SQLite and MySQL:
 
 ```
 ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
@@ -114,23 +114,28 @@ The database consists of **18 tables**, fully cross-compatible with SQLite and M
 │  (code, name)   │       │(role, status,…) │       │  (Admin, Sales) │
 └────────┬────────┘       └────────┬────────┘       └─────────────────┘
          │                         │
-         │                ┌────────┴────────┐
-         │                │ employee_perms  │
-         │                │ (overrides)     │
-         │                └─────────────────┘
+         │                ┌────────┴────────┐       ┌─────────────────┐
+         │                │ employee_perms  │       │ user_ui_prefs   │
+         │                │ (overrides)     │       │ (cards, menus)  │
+         │                └─────────────────┘       └─────────────────┘
          │                         │
 ┌────────▼─────────────────────────▼────────┐       ┌─────────────────┐
 │              sales_orders                 ├──────►│    products     │
 │ - order_number: CLA-2026-000001           │       │ - price         │
 │ - product snapshots (price, duration)     │       │ - min_floor     │
 │ - closing_value_status (Req/Acc/Rej)      │       │ - api_key_req   │
-│ - payment_status (paid, refunded,…)       │       └─────────────────┘
+│ - payment_status (paid, part_refunded,…)  │       └─────────────────┘
 └────────┬─────────────────────────┬────────┘
          │                         │
 ┌────────▼────────┐       ┌────────▼────────┐       ┌─────────────────┐
 │    payments     │       │  subscriptions  │       │     refunds     │
-│ (manual/gateway)│       │ (active/cancel) │       │ (full/partial)  │
-└─────────────────┘       └─────────────────┘       └─────────────────┘
+│ (manual/gateway)│       │ (active/cancel) │       │(partially_ref'd)│
+└─────────────────┘       └─────────────────┘       └────────┬────────┘
+                                                             │
+                                                    ┌────────▼────────┐
+                                                    │ refund_statuses │
+                                                    │(Req/Rec/Proc/…) │
+                                                    └─────────────────┘
 ```
 
 ### 4.1 Core Schema Entities
@@ -140,7 +145,7 @@ The database consists of **18 tables**, fully cross-compatible with SQLite and M
 - Columns: `team_name`, `team_code` (e.g. `CLA`, `GPT`), `status`, `created_at`, `updated_at`.
 - Function: Organizational unit for employee grouping and sequence generation.
 
-#### 2. `users` (Employees)
+#### 2. `users` (Employees & Admins)
 - Primary key: `id`
 - Columns: `name`, `username`, `email`, `phone`, `password`, `role` (`employee`/`admin`), `status` (`active`/`inactive`), `team_id` (foreign key), `preset_id` (foreign key), `remember_token`, timestamps.
 
@@ -155,7 +160,7 @@ The database consists of **18 tables**, fully cross-compatible with SQLite and M
 - Financials: `product_value`, `discount_amount`, `closing_value`, `amount_received`.
 - Approval Workflow: `closing_value_status` (`Requested`, `Accepted`, `Rejected`), `closing_approval_requested_at`, `closing_approval_actioned_at`, `closing_approval_actioned_by`, `closing_approval_notes`.
 - Cancellation: `cancellation_reason`, `cancelled_at`, `cancelled_by`.
-- Statuses: `order_status` (`pending`, `confirmed`, `active`, `suspended`, `cancelled`), `payment_status` (`pending`, `partially_paid`, `paid`, `failed`, `refunded`).
+- Statuses: `order_status` (`pending`, `confirmed`, `active`, `suspended`, `cancelled`), `payment_status` (`pending`, `partially_paid`, `paid`, `partially_refunded`, `failed`, `refunded`).
 
 #### 5. `order_number_sequences`
 - Primary key: `id`
@@ -166,7 +171,7 @@ The database consists of **18 tables**, fully cross-compatible with SQLite and M
 #### 6. `order_api_credentials`
 - Primary key: `id`
 - Columns: `order_id`, `customer_api_key` (`encrypted` cast), `updated_by_type`, `updated_by_id`, timestamps.
-- Security: Customer-supplied key encrypted at rest; display is masked as `sk-•••••••39F2`.
+- Security: Customer-supplied key encrypted at rest; display is masked as `sk-•••••••39F2`. Write access restricted exclusively to Super Admin.
 
 #### 7. `payments`
 - Primary key: `id`
@@ -174,16 +179,31 @@ The database consists of **18 tables**, fully cross-compatible with SQLite and M
 
 #### 8. `subscriptions`
 - Primary key: `id`
-- Columns: `order_id`, `team_id`, `customer_id`, `plan_snapshot`, `price_snapshot`, `amount_paid`, `started_at`, `expires_at`, `renewal_date`, `status` (`pending`, `active`, `suspended`, `expired`, `cancelled`), timestamps.
+- Columns: `order_id`, `team_id`, `customer_id`, `plan_snapshot`, `price_snapshot`, `amount_paid`, `started_at`, `expires_at`, `renewal_date`, `status` (`pending`, `active`, `suspended`, `expired`, `cancelled`), `google_calendar_event_id`, timestamps.
 
 #### 9. `refunds`
 - Primary key: `id`
-- Columns: `order_id`, `admin_id`, `amount`, `type` (`full`/`partial`), `reason`, timestamps.
+- Columns: `order_id`, `admin_id`, `amount`, `type` (`full`/`partial`), `reason`, `status` (`requested`, `recorded`, `processed`, `failed`), timestamps.
 
-#### 10. `crm_customers` & `crm_customer_purchases`
+#### 10. `refund_statuses`
+- Primary key: `id`
+- Columns: `code`, `label`, `is_active`, `sort_order`, timestamps.
+- Function: Super Admin configurable lifecycle statuses for refund tracking.
+
+#### 11. `order_edit_histories` & `order_closing_value_histories`
+- Primary key: `id`
+- Columns: `order_id`, `editor_type`, `editor_id`, `field_name`, `old_value`, `new_value`, `modification_reason`, `notes`, timestamps.
+- Function: Immutable audit trail for administrative changes to accepted closing values, customer details, and order metadata.
+
+#### 12. `user_ui_preferences`
+- Primary key: `id`
+- Columns: `user_id`, `scope` (`dashboard`, `sidebar`), `widget_order` (JSON), `hidden_widgets` (JSON), timestamps.
+- Function: Per-user customization persistence for dashboard metrics and sidebar navigation order/visibility.
+
+#### 13. `crm_customers` & `crm_customer_purchases`
 - Tracks consolidated customer profiles across repeated orders, total lifetime value (in cents), purchase frequencies, and contact channels.
 
-#### 11. `permissions`, `permission_presets`, `permission_preset_items`, `employee_permissions`, `employee_permission_histories`, `employee_team_access_grants`
+#### 14. `permissions`, `permission_presets`, `permission_preset_items`, `employee_permissions`, `employee_permission_histories`, `employee_team_access_grants`
 - Full dynamic permission infrastructure supporting granular module, card, menu, and time-bounded team visibility.
 
 ---
@@ -198,50 +218,59 @@ The database consists of **18 tables**, fully cross-compatible with SQLite and M
   - Concurrency safety verified with zero duplicate numbers under load.
 
 ### 5.2 Floor Price & Closing Value Approval Workflow
-- When an employee submits a closing value lower than `minimum_closing_price`, the order enters the `Requested` state.
-- **Strict 3-State Machine:**
-  - `Requested`: Approval pending; subscription activation and order completion are blocked.
-  - `Accepted`: Super Admin accepts the closing value or applies an `adjusted_closing_value`.
-  - `Rejected`: Super Admin rejects with mandatory reason; order transitions to `suspended`.
+- **Mandatory Floor Price Enforcement:** Server-side validation strictly enforces:
+  `Employee Closing Value >= Product Minimum Closing Price`
+  Any attempt by an employee to submit an order with a closing value below the catalog product's `minimum_closing_price` is **rejected immediately with a validation error**. No invalid approval request or order state is created.
+- **Closing Value Status State Machine:**
+  - `Accepted`: If `closing_value >= product_price`, the deal is immediately accepted with 0 discount.
+  - `Requested`: If `minimum_closing_price <= closing_value < product_price`, the order is recorded in the `Requested` state awaiting Super Admin review. Subscription activation and order completion are blocked until actioned.
+  - `Rejected`: Super Admin rejects the requested closing value with a **mandatory rejection reason**. The order transitions to `suspended`.
+- **Employee Resubmission:** The assigned employee may resubmit a new closing value for a rejected order (provided it satisfies `new_closing_value >= minimum_closing_price`), which moves the order back to `Requested`.
+- **Super Admin Post-Acceptance Modification:** Super Admin can adjust an accepted closing value with a **mandatory audit reason** logged to `order_edit_histories` and `order_closing_value_histories`.
 
 ```
-        Order Created with Closing Value < Minimum Floor Price
-                                  │
-                                  ▼
-                   ┌──────────────────────────────┐
-                   │  Status: 'Requested'         │
-                   │  (Activation Blocked)        │
-                   └──────────────┬───────────────┘
-                                  │
-                 Admin Review Action in Show View
-                                  │
-                ┌─────────────────┴─────────────────┐
-                ▼                                   ▼
- ┌─────────────────────────────┐     ┌─────────────────────────────┐
- │    Option A: ACCEPT         │     │    Option B: REJECT         │
- │ - Optional adjusted value   │     │ - Mandatory rejection reason│
- │ - Status: 'Accepted'        │     │ - Status: 'Rejected'        │
- │ - Auto-recalculates discount│     │ - Order set to 'suspended'  │
- └─────────────────────────────┘     └─────────────────────────────┘
+        Employee Submits Order with Closing Value
+                           │
+             ┌─────────────┴─────────────┐
+             ▼                           ▼
+  Closing Value < Floor       Closing Value >= Floor
+             │                           │
+  [HTTP 422 REJECTED]         ┌──────────┴──────────┐
+  (No record created)         ▼                     ▼
+                     Closing Value = Price   Closing Value < Price
+                              │                     │
+                     Status: 'Accepted'      Status: 'Requested'
+                                                    │
+                                           Super Admin Review
+                                                    │
+                                   ┌────────────────┴────────────────┐
+                                   ▼                                 ▼
+                             Action: ACCEPT                    Action: REJECT
+                                   │                                 │
+                            Status: 'Accepted'                Status: 'Rejected'
+                                   │                                 │
+                        (Admin can Modify with Reason)     (Employee can Resubmit >= Floor)
 ```
 
-### 5.3 Customer API Key Delivery & Order Completion
-- Catalog products with `api_key_required = true` force an order-level gate.
-- Orders requiring an API key cannot be activated or completed until a valid key is stored.
-- **Delivery Flow:**
-  1. Super Admin or authorized Employee enters customer key.
-  2. Plaintext key is encrypted at rest and masked in UI.
-  3. Employee clicks "Complete Order" (gated by `orders.complete`).
-  4. One-click WhatsApp link pre-formats customer credentials for manual device dispatch.
+### 5.3 Super Admin-Only API Key Entry & Masked Display
+- **Strict Role-Based Entry:** Only Super Admin can store, update, or replace customer API credentials. Non-admin entry is blocked (`403 Forbidden`).
+- **Encrypted Storage:** Keys are encrypted at rest via AES-256 (`encrypted` cast).
+- **Masked Presentation:** Employees see only masked representations (`sk-•••••••39F2`).
+- **Permission-Gated Reveal & Copy:**
+  - Reveal key in modal: Gated by `orders.view_api_key` (flashed to session, never exposed in permanent HTML DOM).
+  - Copy key to clipboard: Gated by `orders.copy_api_key`.
+- **Fulfillment Requirement:** Catalog products with `api_key_required = true` block order completion and subscription activation until a Super Admin enters a valid key.
 
-### 5.4 Order Cancellation & Refund Management
-- Super Admin can cancel active orders with mandatory cancellation reasons.
-- All subscriptions tied to cancelled orders transition immediately to `cancelled`.
-- **Refund Logic:**
-  - Validates `amount <= remainingRefundable()`.
-  - Full refund: Transitions order to `payment_status = 'refunded'` and halts active subscriptions.
-  - Partial refund: Transitions order to `payment_status = 'partially_paid'`.
-  - Assigned employee receives immediate notification.
+### 5.4 Order Cancellation, Partial Refund Accounting & Configurable Statuses
+- **Cancellation:** Super Admin can cancel orders with a mandatory reason. Linked subscriptions transition immediately to `cancelled`.
+- **Accurate Refund Accounting:**
+  `Remaining Refundable = Verified Received Payments - Successfully Processed Refunds`
+  Over-refunding is strictly blocked via database row locking (`lockForUpdate()`).
+- **Payment Status Transitions:**
+  - Full refund (`total_refunded == amount_received`): `payment_status = 'refunded'`.
+  - Partial refund (`0 < total_refunded < amount_received`): `payment_status = 'partially_refunded'`.
+  - Failed refund: Does not alter payment status or reduce remaining refundable balance.
+- **Configurable Refund Statuses:** Super Admin can define and manage refund lifecycle statuses (`refund_statuses` table: e.g., `requested`, `recorded`, `processed`, `failed`) via `/admin/refund-statuses`.
 
 ---
 
@@ -260,39 +289,50 @@ Previously, an employee could query or mutate orders belonging to other employee
 
 ---
 
-## 7. MULTI-CHANNEL NOTIFICATION HUB
+## 7. MULTI-CHANNEL NOTIFICATION & CALENDAR SYNC HUB
 
 Orchestrated via `App\Services\NotificationHubService` with **non-blocking error resilience**:
 
 | Event | Target Audience | Channels Dispatched | Description |
 |:---|:---|:---|:---|
 | **Order Created** | Employee & Admin | Database, Pusher Beams | Notifies rep of assignment and admin of new deal |
-| **Closing Approval Requested** | Super Admin | Database, Pusher Beams | Priority alert for deals closed below floor price |
+| **Closing Approval Requested** | Super Admin | Database, Pusher Beams | Priority alert for deals closed below full price |
 | **Closing Approval Decision** | Employee | Database, Pusher Beams | Notifies rep of accept/reject decision and notes |
 | **Payment Verified** | Employee | Database, Pusher Beams, Email | Confirms cleared funds and order progression |
-| **Subscription Activated** | Employee & Admin | Database, Pusher Beams, Email | Signals provisioned service and calendar reminder |
-| **Subscription Expiring** | Employee | Database, Email | Proactive retention notice 7 days prior to expiry |
+| **Subscription Activated** | Employee & Admin | Database, Pusher Beams, Email | Signals provisioned service and Google Calendar sync |
+| **Subscription Expiring (1 Day Before)** | Assigned Rep & Active Team | Database, Email | Proactive retention notice dispatched 1 day prior to expiry |
 | **Order Cancelled** | Employee | Database, Pusher Beams | Informs rep of cancellation and mandatory reason |
 | **Refund Processed** | Employee | Database | Informs rep of partial/full financial reversal |
 
-*Resilience Note: If Pusher Beams or SMTP fails, exceptions are caught cleanly without rolling back transactions or breaking HTTP requests.*
+### 7.1 Automated Subscription Expiry Reminders
+- Daily scheduled job checks all active subscriptions expiring within 24 hours (`expires_at <= now()->addDay()`).
+- Dispatches notifications to the assigned employee and all active members of their team.
+- Built-in idempotency checks prevent duplicate reminders for the same subscription expiration cycle.
+
+### 7.2 Google Calendar Expiry Sync
+- Integrates with Google Calendar API via OAuth2.
+- Upon subscription activation, an expiration calendar event is automatically created on the employee's connected Google Calendar.
+- Changes or cancellations safely update or delete the synchronized calendar entry.
 
 ---
 
 ## 8. COMPLETE ROUTE DIRECTORY
 
 ### 8.1 Super Admin Routes (`/admin/*`)
-- `GET /admin/dashboard`: Executive KPI metrics and recent transactions.
+- `GET /admin/dashboard`: Executive KPI metrics and customizable widgets.
+- `POST/DELETE /admin/dashboard/preferences`: Save or reset dashboard widget ordering and visibility.
 - `GET/POST /admin/orders`: Orders list with advanced filters and new order creation.
 - `GET/PUT /admin/orders/{order}`: Order detail, financial ledger, and update actions.
 - `PUT /admin/orders/{order}/activate`: Manual subscription activation gate.
 - `POST /admin/orders/{order}/payments`: Record manual payment receipt.
 - `POST /admin/orders/{order}/payments/{payment}/verify`: Verify payment.
 - `POST /admin/orders/{order}/payments/{payment}/reject`: Reject payment.
-- `POST /admin/orders/{order}/closing-approval/accept`: Accept floor price closing value.
-- `POST /admin/orders/{order}/closing-approval/reject`: Reject floor price closing value.
+- `POST /admin/orders/{order}/closing-approval/accept`: Accept requested closing value.
+- `POST /admin/orders/{order}/closing-approval/reject`: Reject requested closing value with mandatory reason.
+- `POST /admin/orders/{order}/closing-value/modify`: Modify accepted closing value with mandatory audit reason.
 - `POST /admin/orders/{order}/cancel`: Formally cancel order with mandatory reason.
 - `POST /admin/orders/{order}/refunds`: Process full or partial refund.
+- `GET/POST/PUT /admin/refund-statuses`: Manage configurable refund lifecycle statuses.
 - `GET/POST/PUT/DELETE /admin/products`: Catalog product management with floor pricing.
 - `GET/POST/PUT/DELETE /admin/presets`: Permission presets management and employee assignment.
 - `POST/DELETE /admin/employees/{employee}/team-access-grants`: Issue/revoke team data grants.
@@ -300,13 +340,19 @@ Orchestrated via `App\Services\NotificationHubService` with **non-blocking error
 
 ### 8.2 Employee Routes (`/employee/*`)
 - `GET /employee/dashboard`: 9 dynamic cards gated by `@canCard`, `My Data | Team Data` toggle.
+- `POST/DELETE /employee/dashboard/preferences`: Save or reset custom card ordering and visibility.
+- `POST/DELETE /employee/dashboard/sidebar-preferences`: Save or reset custom sidebar menu ordering and visibility.
+- `GET/PUT /employee/profile`: Employee profile view and self-service contact update.
+- `PUT /employee/profile/password`: Secure password change with current password verification.
+- `GET /employee/calendar`: Personal Google Calendar synchronization view.
+- `GET/POST /employee/calendar/connect`, `POST /employee/calendar/disconnect`: Google OAuth workflow.
 - `GET/POST /employee/orders`: View private orders (or team data if granted) and create new orders.
 - `GET /employee/orders/{order}`: Order detail with customer API key masking.
-- `POST /employee/orders/{order}/api-key`: Enter customer API key.
-- `POST /employee/orders/{order}/api-key/reveal`: Decrypt and display customer API key.
+- `POST /employee/orders/{order}/closing-approval/resubmit`: Resubmit rejected closing value above floor.
+- `POST /employee/orders/{order}/api-key/reveal`: Decrypt and display customer API key (permission-gated).
 - `POST /employee/orders/{order}/api-key/copy`: Copy key to clipboard (permission-logged).
 - `POST /employee/orders/{order}/complete`: Complete order fulfillment.
-- `GET /employee/customers`, `/employee/payments`, `/employee/subscriptions`, `/employee/follow-ups`: Employee-scoped CRM records.
+- `GET /employee/customers`, `/employee/payments`, `/employee/subscriptions`, `/employee/subscriptions/expiring`, `/employee/follow-ups`: Employee-scoped CRM records.
 - `GET /employee/notifications`: In-app notification inbox with auto-read marking.
 - `GET /employee/reports`, `/employee/settings`, `/employee/help`: Employee auxiliary modules.
 
@@ -320,21 +366,27 @@ Orchestrated via `App\Services\NotificationHubService` with **non-blocking error
 ## 9. AUTOMATED TEST SUITE & VERIFICATION RESULTS
 
 The entire application test suite was executed and verified:
-- **Total Passing Tests:** **300+ tests (1,223+ assertions)**
+- **Total Passing Tests:** **330+ tests (1,300+ assertions)**
 - **Regression Count:** **0**
 - **Test Pass Rate:** **100% GREEN**
 
 ```
-   PASS  Tests\Feature\ApiKeyDeliveryAndOrderCompletionTest (5/5)
-   PASS  Tests\Feature\ClosingValueApprovalWorkflowTest (3/3)
+   PASS  Tests\Feature\FloorPriceAndClosingValueWorkflowTest (6/6)
+   PASS  Tests\Feature\ApiKeySecurityAndPermissionsTest (4/4)
+   PASS  Tests\Feature\RefundStatusConfigurationTest (3/3)
+   PASS  Tests\Feature\UiPreferencesAndCustomizationTest (6/6)
+   PASS  Tests\Feature\OrderCancellationAndRefundTest (7/7)
+   PASS  Tests\Feature\ProductManagementEnhancementTest (6/6)
+   PASS  Tests\Feature\OrderDeliveryAndExpiryAutomationTest (16/16)
    PASS  Tests\Feature\DashboardAndSidebarCustomizationTest (5/5)
    PASS  Tests\Feature\EmployeeOrderManagementTest (4/4)
+   PASS  Tests\Feature\ApiKeyDeliveryAndOrderCompletionTest (5/5)
    PASS  Tests\Feature\NotificationsHubTest (7/7)
-   PASS  Tests\Feature\OrderCancellationAndRefundTest (6/6)
-   PASS  Tests\Feature\ProductManagementEnhancementTest (5/5)
    PASS  Tests\Feature\TeamDataAccessTest (4/4)
    PASS  Tests\Feature\PermissionEngineTest (10/10)
    PASS  Tests\Feature\Milestone1SecurityAndAuthTest (27/27)
+   PASS  Tests\Feature\AuthTest (17/17)
+   PASS  Tests\Feature\WebPortal\EmployeePortalTest (18/18)
    PASS  Tests\Feature\Api\OrderCreationTest (5/5)
    PASS  Tests\Feature\Api\OrderNumberSequenceConcurrencyTest (9/9)
    PASS  Tests\Feature\Api\PaymentVerificationTest (9/9)

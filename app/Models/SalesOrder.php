@@ -39,6 +39,7 @@ class SalesOrder extends Model
         'paid',
         'failed',
         'refunded',
+        'partially_refunded',
     ];
 
     /**
@@ -147,6 +148,16 @@ class SalesOrder extends Model
         return $this->hasMany(Refund::class, 'order_id');
     }
 
+    public function editHistories(): HasMany
+    {
+        return $this->hasMany(OrderEditHistory::class, 'order_id')->latest('id');
+    }
+
+    public function closingValueHistories(): HasMany
+    {
+        return $this->hasMany(OrderClosingValueHistory::class, 'order_id')->latest('id');
+    }
+
     public function isClosingApprovalPending(): bool
     {
         return $this->closing_value_status === 'Requested';
@@ -164,7 +175,9 @@ class SalesOrder extends Model
 
     public function totalRefunded(): float
     {
-        return (float) $this->refunds()->sum('amount');
+        return (float) $this->refunds()
+            ->where(fn ($q) => $q->whereNull('status')->orWhere('status', 'processed'))
+            ->sum('amount');
     }
 
     public function remainingRefundable(): float

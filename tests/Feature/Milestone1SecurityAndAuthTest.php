@@ -405,8 +405,9 @@ class Milestone1SecurityAndAuthTest extends TestCase
             'product_id' => $product->id,
         ]);
 
+        $admin = Admin::factory()->create();
         $credentialService = app(OrderCredentialService::class);
-        $credentialService->store($orderB, 'sk-leadx-super-secret-key-12345', $empB);
+        $credentialService->store($orderB, 'sk-leadx-super-secret-key-12345', $admin);
 
         // Employee A cannot manage or reveal Emp B's key
         $this->assertFalse($credentialService->canManage($orderB, $empA));

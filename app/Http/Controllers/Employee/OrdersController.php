@@ -153,18 +153,56 @@ class OrdersController extends Controller
 
     public function storeApiKey(Request $request, SalesOrder $order): \Illuminate\Http\RedirectResponse
     {
+        abort(403, 'Only Super Admin can manually enter or update customer API keys.');
+    }
+
+    /**
+     * POST /employee/orders/{order}/closing-approval/resubmit (Section 4.2)
+     */
+    public function resubmitClosingValue(Request $request, SalesOrder $order): \Illuminate\Http\RedirectResponse
+    {
         /** @var \App\Models\User $employee */
         $employee = $request->user();
 
         abort_if((int) $order->assigned_employee_id !== (int) $employee->id, 403, 'Unauthorized access to this order.');
-        abort_unless($employee->hasPermission('orders.complete'), 403, 'You do not have permission to deliver API keys / complete orders.');
+
+        $minFloor = (float) ($order->minimum_closing_price_snapshot ?? 0);
 
         $data = $request->validate([
-            'api_key' => ['required', 'string'],
+            'closing_value' => ['required', 'numeric', 'min:'.($minFloor > 0 ? $minFloor : 0.01)],
+            'resubmission_notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'closing_value.min' => "The closing value cannot be less than the product minimum floor price of \${$minFloor}.",
         ]);
 
-        $result = app(\App\Services\OrderCredentialService::class)->store($order, $data['api_key'], $employee, $request->ip());
+        $oldVal = (float) $order->closing_value;
+        $newVal = round((float) $data['closing_value'], 2);
+        $productVal = (float) ($order->product_price_snapshot ?? $order->product_value);
+        $discountAmount = round(max(0.0, $productVal - $newVal), 2);
 
-        return back()->with($result['saved'] ? 'status' : 'error', $result['message']);
+        $order->update([
+            'closing_value' => $newVal,
+            'discount_amount' => $discountAmount,
+            'closing_value_status' => 'Requested',
+            'order_status' => $order->order_status === 'suspended' ? 'pending' : $order->order_status,
+            'closing_approval_requested_at' => now(),
+            'closing_approval_notes' => $data['resubmission_notes'] ?? 'Resubmitted after rejection',
+        ]);
+
+        $order->closingValueHistories()->create([
+            'actor_type' => 'employee',
+            'actor_id' => $employee->id,
+            'status' => 'Requested',
+            'previous_value' => $oldVal,
+            'proposed_value' => $newVal,
+            'notes' => $data['resubmission_notes'] ?? 'Resubmitted by employee after rejection',
+        ]);
+
+        try {
+            app(\App\Services\NotificationHubService::class)->notifyClosingApprovalRequested($order);
+        } catch (\Throwable) {
+        }
+
+        return back()->with('status', 'Closing value resubmitted for Super Admin approval.');
     }
 }

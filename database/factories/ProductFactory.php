@@ -27,7 +27,7 @@ class ProductFactory extends Factory
         return [
             'name' => fake()->unique()->words(2, true),
             'price' => $price,
-            'minimum_closing_price' => round($price * 0.7, 2),
+            'minimum_closing_price' => fn (array $attributes) => round(((float) ($attributes['price'] ?? $price)) * 0.7, 2),
             'duration' => fake()->randomElement(array_keys(\App\Models\SalesOrder::DURATIONS)),
             'api_key_required' => false,
             'status' => 'active',

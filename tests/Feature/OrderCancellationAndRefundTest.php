@@ -190,7 +190,7 @@ class OrderCancellationAndRefundTest extends TestCase
         $response->assertSessionHas('status');
 
         $order->refresh();
-        $this->assertEquals('partially_paid', $order->payment_status);
+        $this->assertEquals('partially_refunded', $order->payment_status);
         $this->assertEquals(300.00, $order->totalRefunded());
         $this->assertEquals(700.00, $order->remainingRefundable());
     }
@@ -239,5 +239,38 @@ class OrderCancellationAndRefundTest extends TestCase
 
         $response->assertSessionHas('error');
         $this->assertEquals(0, $order->refunds()->count());
+    }
+
+    public function test_failed_refund_does_not_reduce_remaining_refundable_or_change_status(): void
+    {
+        $order = SalesOrder::factory()->create([
+            'team_id' => $this->team->id,
+            'assigned_employee_id' => $this->employee->id,
+            'closing_value' => 1000.00,
+            'payment_status' => 'paid',
+            'order_status' => 'active',
+        ]);
+
+        Payment::factory()->create([
+            'order_id' => $order->id,
+            'amount' => 1000.00,
+            'payment_status' => 'paid',
+            'verified_at' => now(),
+            'verified_by_admin_id' => $this->admin->id,
+        ]);
+
+        $response = $this->actingAs($this->admin, 'admin')
+            ->post("/admin/orders/{$order->id}/refunds", [
+                'amount' => 300.00,
+                'status' => 'failed',
+                'reason' => 'Gateway rejected refund: card expired.',
+            ]);
+
+        $response->assertSessionHas('status');
+
+        $order->refresh();
+        $this->assertEquals('paid', $order->payment_status);
+        $this->assertEquals(0.00, $order->totalRefunded());
+        $this->assertEquals(1000.00, $order->remainingRefundable());
     }
 }

@@ -105,7 +105,7 @@ class ProductManagementEnhancementTest extends TestCase
             'customer_phone' => '+1234567890',
             'product_id' => $product->id,
             'duration' => '1y',
-            'closing_value' => 850.00, // Above floor of 800
+            'closing_value' => 1000.00, // Full price -> Accepted immediately
         ]);
 
         $response->assertRedirect();
@@ -120,7 +120,7 @@ class ProductManagementEnhancementTest extends TestCase
         $this->assertNull($order->closing_approval_requested_at);
     }
 
-    public function test_order_creation_below_minimum_floor_price_triggers_approval_requested(): void
+    public function test_order_creation_below_minimum_floor_price_is_rejected(): void
     {
         $team = Team::factory()->create();
         $employee = User::factory()->create(['team_id' => $team->id]);
@@ -136,14 +136,38 @@ class ProductManagementEnhancementTest extends TestCase
             'customer_name' => 'Discount Buyer',
             'product_id' => $product->id,
             'duration' => '1y',
-            'closing_value' => 750.00, // Below floor of 800
+            'closing_value' => 750.00, // Below floor of 800 -> must be rejected
+        ]);
+
+        $response->assertSessionHasErrors('closing_value');
+        $this->assertNull(SalesOrder::first());
+    }
+
+    public function test_order_creation_between_floor_and_full_price_triggers_approval_requested(): void
+    {
+        $team = Team::factory()->create();
+        $employee = User::factory()->create(['team_id' => $team->id]);
+        $product = Product::factory()->create([
+            'name' => 'Pro AI License',
+            'price' => 1000.00,
+            'minimum_closing_price' => 800.00,
+            'duration' => '1y',
+            'api_key_required' => true,
+        ]);
+
+        $response = $this->actingAs($employee, 'employee')->post(route('employee.orders.store'), [
+            'customer_name' => 'Discount Buyer',
+            'customer_phone' => '+1234567890',
+            'product_id' => $product->id,
+            'duration' => '1y',
+            'closing_value' => 850.00, // Above floor of 800, below full price 1000
         ]);
 
         $response->assertRedirect();
         $order = SalesOrder::first();
 
         $this->assertNotNull($order);
-        $this->assertEquals(750.00, (float) $order->closing_value);
+        $this->assertEquals(850.00, (float) $order->closing_value);
         $this->assertEquals(800.00, (float) $order->minimum_closing_price_snapshot);
         $this->assertEquals('Requested', $order->closing_value_status);
         $this->assertNotNull($order->closing_approval_requested_at);

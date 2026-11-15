@@ -26,6 +26,7 @@ use App\Http\Controllers\Employee\LoginController as EmployeeLoginController;
 use App\Http\Controllers\Employee\NotificationsController as EmployeeNotificationsController;
 use App\Http\Controllers\Employee\OrdersController as EmployeeOrdersController;
 use App\Http\Controllers\Employee\PaymentsController as EmployeePaymentsController;
+use App\Http\Controllers\Employee\ProfileController as EmployeeProfileController;
 use App\Http\Controllers\Employee\SubscriptionsController as EmployeeSubscriptionsController;
 use App\Http\Controllers\Team\CreateOrderController as TeamCreateOrderController;
 use App\Http\Controllers\Team\CustomersController as TeamCustomersController;
@@ -83,6 +84,8 @@ Route::middleware('admin')->group(function () {
     })->name('admin');
 
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::post('/admin/dashboard/preferences', [DashboardController::class, 'savePreferences'])->name('admin.dashboard.preferences.save');
+    Route::post('/admin/dashboard/preferences/reset', [DashboardController::class, 'resetPreferences'])->name('admin.dashboard.preferences.reset');
     Route::get('/admin/reports', [ReportsController::class, 'index'])->name('admin.reports.index');
 
     // Team management
@@ -125,12 +128,18 @@ Route::middleware('admin')->group(function () {
     // Closing Value Approvals, Order Cancellations & Refunds
     Route::post('/admin/orders/{order}/closing-approval/accept', [OrdersController::class, 'acceptClosingApproval'])->name('admin.orders.closing-approval.accept');
     Route::post('/admin/orders/{order}/closing-approval/reject', [OrdersController::class, 'rejectClosingApproval'])->name('admin.orders.closing-approval.reject');
+    Route::post('/admin/orders/{order}/closing-value/modify', [OrdersController::class, 'modifyAcceptedClosingValue'])->name('admin.orders.closing-value.modify');
     Route::post('/admin/orders/{order}/cancel', [OrdersController::class, 'cancelOrder'])->name('admin.orders.cancel');
     Route::post('/admin/orders/{order}/refunds', [OrdersController::class, 'processRefund'])->name('admin.orders.refunds.store');
 
     // Settings (payment methods, email, …)
     Route::get('/admin/settings', [SettingsController::class, 'index'])->name('admin.settings');
     Route::put('/admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
+
+    // Refund Statuses Configuration (Section 5)
+    Route::get('/admin/settings/refund-statuses', [\App\Http\Controllers\Admin\RefundStatusesController::class, 'index'])->name('admin.settings.refund-statuses');
+    Route::post('/admin/settings/refund-statuses', [\App\Http\Controllers\Admin\RefundStatusesController::class, 'store'])->name('admin.settings.refund-statuses.store');
+    Route::put('/admin/settings/refund-statuses/{status}', [\App\Http\Controllers\Admin\RefundStatusesController::class, 'update'])->name('admin.settings.refund-statuses.update');
 
     // Email management (SMTP, templates, notification events, logs)
     Route::get('/admin/email', [EmailSettingsController::class, 'index'])->name('admin.email.index');
@@ -227,10 +236,22 @@ Route::middleware('employee.web')->group(function () {
     })->name('employee');
 
     Route::get('/employee/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
+    Route::post('/employee/dashboard/preferences', [EmployeeDashboardController::class, 'savePreferences'])->name('employee.dashboard.preferences.save');
+    Route::post('/employee/dashboard/preferences/reset', [EmployeeDashboardController::class, 'resetPreferences'])->name('employee.dashboard.preferences.reset');
+    Route::post('/employee/sidebar/preferences', [EmployeeDashboardController::class, 'saveSidebarPreferences'])->name('employee.sidebar.preferences.save');
+    Route::post('/employee/sidebar/preferences/reset', [EmployeeDashboardController::class, 'resetSidebarPreferences'])->name('employee.sidebar.preferences.reset');
+
+    Route::get('/employee/profile', [EmployeeProfileController::class, 'show'])->name('employee.profile');
+    Route::put('/employee/profile', [EmployeeProfileController::class, 'update'])->name('employee.profile.update');
+    Route::put('/employee/profile/password', [EmployeeProfileController::class, 'updatePassword'])->name('employee.profile.password');
+
+    Route::get('/employee/calendar', [EmployeeDashboardController::class, 'calendar'])->name('employee.calendar');
+    Route::get('/employee/subscriptions/expiring', [EmployeeSubscriptionsController::class, 'expiring'])->name('employee.subscriptions.expiring')->middleware('permission:subscriptions.view');
     Route::get('/employee/orders', [EmployeeOrdersController::class, 'index'])->name('employee.orders')->middleware('permission:orders.view');
     Route::get('/employee/orders/create', [CreateOrderController::class, 'create'])->name('employee.orders.create')->middleware('permission:orders.create');
     Route::post('/employee/orders', [CreateOrderController::class, 'store'])->name('employee.orders.store')->middleware('permission:orders.create');
     Route::get('/employee/orders/{order}', [EmployeeOrdersController::class, 'show'])->name('employee.orders.show');
+    Route::post('/employee/orders/{order}/closing-approval/resubmit', [EmployeeOrdersController::class, 'resubmitClosingValue'])->name('employee.orders.closing-approval.resubmit');
     Route::post('/employee/orders/{order}/complete', [EmployeeOrdersController::class, 'complete'])->name('employee.orders.complete');
     Route::post('/employee/orders/{order}/api-key', [EmployeeOrdersController::class, 'storeApiKey'])->name('employee.orders.api-key.store');
     Route::post('/employee/orders/{order}/api-key/reveal', [EmployeeOrdersController::class, 'revealApiKey'])->name('employee.orders.api-key.reveal');

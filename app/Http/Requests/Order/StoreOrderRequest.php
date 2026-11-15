@@ -58,4 +58,27 @@ class StoreOrderRequest extends FormRequest
 
         return $rules;
     }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $productId = $this->input('product_id');
+            $closingValue = $this->input('closing_value');
+
+            if ($productId && $closingValue !== null && $closingValue !== '') {
+                $product = \App\Models\Product::find($productId);
+                if ($product && (float) ($product->minimum_closing_price ?? 0) > 0) {
+                    if ((float) $closingValue < (float) $product->minimum_closing_price) {
+                        $validator->errors()->add(
+                            'closing_value',
+                            'The closing value cannot be less than the product minimum closing price of ' . number_format((float) $product->minimum_closing_price, 2)
+                        );
+                    }
+                }
+            }
+        });
+    }
 }

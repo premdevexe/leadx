@@ -81,6 +81,13 @@ class SubscriptionExpiryNotificationService
         // non-employee roles are excluded.
         $recipients = $team ? $team->activeMembers()->get() : collect();
 
+        // Always include the order's assigned employee if active
+        if ($subscription->order?->assignedEmployee && $subscription->order->assignedEmployee->status === 'active') {
+            if (! $recipients->contains('id', $subscription->order->assignedEmployee->id)) {
+                $recipients->push($subscription->order->assignedEmployee);
+            }
+        }
+
         if (count($recipients) === 0) {
             // Record the skip atomically; the unique (subscription_id, expiry_at)
             // index makes this idempotent under racing schedulers.
@@ -117,6 +124,11 @@ class SubscriptionExpiryNotificationService
 
                 foreach ($recipients as $recipient) {
                     $recipient->notifyNow($notification);
+                }
+
+                try {
+                    app(\App\Services\NotificationHubService::class)->notifySubscriptionExpiring($subscription, 1);
+                } catch (\Throwable) {
                 }
 
                 // Insert the log row directly to avoid the model's datetime

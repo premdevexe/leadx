@@ -61,7 +61,7 @@
                 {{-- Accept Form --}}
                 <form method="POST" action="{{ route('admin.orders.closing-approval.accept', $order) }}" class="space-y-2 bg-white p-3.5 rounded-lg border border-amber-200">
                     @csrf
-                    <span class="text-xs font-semibold text-emerald-800 block">Option A: Accept Closing Value</span>
+                    <span class="text-xs font-semibold text-emerald-800 block">Option A: Accept</span>
                     <div>
                         <label class="block text-[11px] text-neutral-500">Adjusted Value (leave blank to accept {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }})</label>
                         <input type="number" step="0.01" name="adjusted_closing_value" placeholder="{{ $order->closing_value }}" class="mt-0.5 w-full rounded border border-neutral-300 px-2 py-1 text-xs">
@@ -70,23 +70,54 @@
                         <input type="text" name="notes" placeholder="Approval notes (optional)" class="w-full rounded border border-neutral-300 px-2 py-1 text-xs">
                     </div>
                     <button type="submit" class="w-full rounded-md bg-emerald-700 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800">
-                        Accept Closing Value
+                        Accept
                     </button>
                 </form>
 
                 {{-- Reject Form --}}
                 <form method="POST" action="{{ route('admin.orders.closing-approval.reject', $order) }}" class="space-y-2 bg-white p-3.5 rounded-lg border border-amber-200">
                     @csrf
-                    <span class="text-xs font-semibold text-red-800 block">Option B: Reject Closing Value</span>
+                    <span class="text-xs font-semibold text-red-800 block">Option B: Reject</span>
                     <div>
                         <label class="block text-[11px] text-neutral-500">Mandatory Rejection Reason</label>
                         <textarea name="rejection_reason" required rows="2" placeholder="Explain why this closing value is rejected…" class="mt-0.5 w-full rounded border border-neutral-300 px-2 py-1 text-xs"></textarea>
                     </div>
                     <button type="submit" onclick="return confirm('Reject this closing value? Order will be suspended.')" class="w-full rounded-md bg-red-700 py-1.5 text-xs font-semibold text-white hover:bg-red-800">
-                        Reject Closing Value
+                        Reject
                     </button>
                 </form>
             </div>
+        </div>
+    @endif
+
+    {{-- Modify Accepted Closing Value Card (Section 4.3) --}}
+    @if ($order->closing_value_status === 'Accepted' && $order->order_status !== 'cancelled')
+        <div class="mt-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-xs">
+            <details class="group">
+                <summary class="flex items-center justify-between cursor-pointer list-none text-xs font-semibold text-neutral-700">
+                    <span>Modify Accepted Closing Value</span>
+                    <span class="text-neutral-400 group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <form method="POST" action="{{ route('admin.orders.closing-value.modify', $order) }}" class="mt-3 space-y-2 border-t border-neutral-100 pt-3 text-xs">
+                    @csrf
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-neutral-500">New Closing Value</label>
+                            <input type="number" step="0.01" min="0.01" name="new_closing_value" value="{{ $order->closing_value }}" required
+                                   class="mt-0.5 w-full rounded border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-neutral-500">Mandatory Reason</label>
+                            <input type="text" name="modification_reason" required placeholder="Reason for adjusting accepted value…"
+                                   class="mt-0.5 w-full rounded border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                        </div>
+                    </div>
+                    <button type="submit" onclick="return confirm('Modify accepted closing value? This will recalculate discount and notify the employee.')"
+                            class="rounded bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800">
+                        Update Closing Value
+                    </button>
+                </form>
+            </details>
         </div>
     @endif
 
@@ -505,6 +536,65 @@
                         </button>
                     </form>
                 </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- Audit & History Section (Section 4.2, 4.3, 4.4) --}}
+    <div class="mt-6 grid gap-5 lg:grid-cols-2">
+        {{-- Closing Value Approval History --}}
+        <div class="rounded-xl border border-neutral-200 bg-white p-5">
+            <h2 class="text-sm font-semibold text-neutral-500">Closing Value History</h2>
+            @if ($order->closingValueHistories->isNotEmpty())
+                <div class="mt-3 divide-y divide-neutral-100 text-xs">
+                    @foreach ($order->closingValueHistories as $h)
+                        <div class="py-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold text-neutral-800">
+                                    {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $h->proposed_value, 2) }}
+                                    <span class="ml-1 text-[10px] text-neutral-400 font-normal">({{ ucfirst($h->actor_type) }})</span>
+                                </span>
+                                <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $h->status === 'Accepted' ? 'bg-emerald-100 text-emerald-800' : ($h->status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800') }}">
+                                    {{ $h->status }}
+                                </span>
+                            </div>
+                            @if ($h->notes)
+                                <p class="mt-1 text-neutral-600 italic">"{{ $h->notes }}"</p>
+                            @endif
+                            <p class="mt-0.5 text-[10px] text-neutral-400">{{ $h->created_at->format('M d, Y H:i') }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="mt-2 text-xs text-neutral-400">No closing value history recorded.</p>
+            @endif
+        </div>
+
+        {{-- Order Edit Audit History --}}
+        <div class="rounded-xl border border-neutral-200 bg-white p-5">
+            <h2 class="text-sm font-semibold text-neutral-500">Order Edit Audit History</h2>
+            @if ($order->editHistories->isNotEmpty())
+                <div class="mt-3 divide-y divide-neutral-100 text-xs">
+                    @foreach ($order->editHistories as $eh)
+                        <div class="py-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold text-neutral-800">
+                                    Field: <code class="font-mono text-neutral-600">{{ $eh->field_name }}</code>
+                                </span>
+                                <span class="text-[10px] text-neutral-400">{{ $eh->created_at->format('M d, Y H:i') }}</span>
+                            </div>
+                            <div class="mt-1 text-[11px] text-neutral-600">
+                                <span class="line-through text-neutral-400">{{ $eh->old_value ?? '—' }}</span>
+                                <span class="mx-1">→</span>
+                                <strong class="text-neutral-900">{{ $eh->new_value ?? '—' }}</strong>
+                            </div>
+                            <p class="mt-1 text-neutral-600 italic">"{{ $eh->reason }}"</p>
+                            <p class="mt-0.5 text-[10px] text-neutral-400">Admin: {{ $eh->admin?->name ?? 'Super Admin' }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="mt-2 text-xs text-neutral-400">No admin edits logged yet.</p>
             @endif
         </div>
     </div>

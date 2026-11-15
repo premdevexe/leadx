@@ -147,7 +147,7 @@ class OrdersController extends Controller
      */
     public function show(SalesOrder $order): View
     {
-        $order->loadMissing(['team', 'assignedEmployee', 'subscription', 'payments.verifiedByAdmin', 'product', 'refunds.admin']);
+        $order->loadMissing(['team', 'assignedEmployee', 'subscription', 'payments.verifiedByAdmin', 'product', 'refunds.admin', 'editHistories.admin', 'closingValueHistories']);
 
         $share = $this->whatsapp->prepare($order);
 
@@ -245,7 +245,26 @@ class OrdersController extends Controller
         $data['discount_amount'] = round(max(0.0, $productVal - $closingVal), 2);
         $data['product_value'] = $productVal;
 
-        $order->update($data);
+        $editReason = $request->input('edit_reason', 'Order updated via Admin Panel');
+
+        $order->fill($data);
+        $dirty = $order->getDirty();
+
+        foreach ($dirty as $field => $newValue) {
+            if (in_array($field, ['updated_at'])) {
+                continue;
+            }
+            $oldValue = $order->getOriginal($field);
+            $order->editHistories()->create([
+                'admin_id' => auth('admin')->id(),
+                'field_name' => $field,
+                'old_value' => is_scalar($oldValue) ? (string) $oldValue : json_encode($oldValue),
+                'new_value' => is_scalar($newValue) ? (string) $newValue : json_encode($newValue),
+                'reason' => $editReason,
+            ]);
+        }
+
+        $order->save();
 
         return redirect()
             ->route('admin.orders.show', $order)
@@ -384,6 +403,8 @@ class OrdersController extends Controller
             'closing_approval_notes' => $data['notes'] ?? null,
         ];
 
+        $oldVal = (float) $order->closing_value;
+
         if (! empty($data['adjusted_closing_value'])) {
             $newVal = (float) $data['adjusted_closing_value'];
             $update['closing_value'] = $newVal;
@@ -391,6 +412,15 @@ class OrdersController extends Controller
         }
 
         $order->update($update);
+
+        $order->closingValueHistories()->create([
+            'actor_type' => 'admin',
+            'actor_id' => auth('admin')->id(),
+            'status' => 'Accepted',
+            'previous_value' => $oldVal,
+            'proposed_value' => $order->closing_value,
+            'notes' => $data['notes'] ?? 'Accepted by Super Admin',
+        ]);
 
         try {
             app(\App\Services\NotificationHubService::class)->notifyClosingApprovalDecision(
@@ -413,12 +443,23 @@ class OrdersController extends Controller
             'rejection_reason' => ['required', 'string', 'max:1000'],
         ]);
 
+        $oldVal = (float) $order->closing_value;
+
         $order->update([
             'closing_value_status' => 'Rejected',
             'order_status' => 'suspended',
             'closing_approval_actioned_at' => now(),
             'closing_approval_actioned_by' => auth('admin')->id(),
             'closing_approval_notes' => $data['rejection_reason'],
+        ]);
+
+        $order->closingValueHistories()->create([
+            'actor_type' => 'admin',
+            'actor_id' => auth('admin')->id(),
+            'status' => 'Rejected',
+            'previous_value' => $oldVal,
+            'proposed_value' => $oldVal,
+            'notes' => $data['rejection_reason'],
         ]);
 
         try {
@@ -431,6 +472,58 @@ class OrdersController extends Controller
         }
 
         return back()->with('status', "Closing value for order {$order->order_number} has been Rejected.");
+    }
+
+    /**
+     * POST /admin/orders/{order}/closing-value/modify (Section 4.3)
+     */
+    public function modifyAcceptedClosingValue(Request $request, SalesOrder $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'new_closing_value' => ['required', 'numeric', 'min:0.01'],
+            'modification_reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $oldVal = (float) $order->closing_value;
+        $newVal = round((float) $data['new_closing_value'], 2);
+        $productVal = (float) ($order->product_price_snapshot ?? $order->product_value);
+        $discountAmount = round(max(0.0, $productVal - $newVal), 2);
+
+        $order->update([
+            'closing_value' => $newVal,
+            'discount_amount' => $discountAmount,
+            'closing_approval_actioned_at' => now(),
+            'closing_approval_actioned_by' => auth('admin')->id(),
+            'closing_approval_notes' => $data['modification_reason'],
+        ]);
+
+        $order->closingValueHistories()->create([
+            'actor_type' => 'admin',
+            'actor_id' => auth('admin')->id(),
+            'status' => 'Accepted',
+            'previous_value' => $oldVal,
+            'proposed_value' => $newVal,
+            'notes' => $data['modification_reason'],
+        ]);
+
+        $order->editHistories()->create([
+            'admin_id' => auth('admin')->id(),
+            'field_name' => 'closing_value',
+            'old_value' => (string) $oldVal,
+            'new_value' => (string) $newVal,
+            'reason' => $data['modification_reason'],
+        ]);
+
+        try {
+            app(\App\Services\NotificationHubService::class)->notifyClosingApprovalDecision(
+                $order,
+                'accepted',
+                'Closing value modified by Super Admin: ' . $data['modification_reason']
+            );
+        } catch (\Throwable) {
+        }
+
+        return back()->with('status', "Closing value for order {$order->order_number} modified to \${$newVal}.");
     }
 
     /**
@@ -465,7 +558,7 @@ class OrdersController extends Controller
     }
 
     /**
-     * POST /admin/orders/{order}/refunds (Phase 11)
+     * POST /admin/orders/{order}/refunds (Phase 11 & P0)
      */
     public function processRefund(Request $request, SalesOrder $order): RedirectResponse
     {
@@ -479,35 +572,57 @@ class OrdersController extends Controller
             'amount' => ['required', 'numeric', 'min:0.01', 'max:'.$refundable],
             'reason' => ['required', 'string', 'max:1000'],
             'type' => ['nullable', 'in:full,partial'],
+            'status' => ['nullable', 'string', 'in:requested,recorded,processed,failed'],
+            'gateway_reference' => ['nullable', 'string', 'max:255'],
         ]);
 
         $amount = round((float) $data['amount'], 2);
         $type = $data['type'] ?? ($amount >= $refundable ? 'full' : 'partial');
+        $status = $data['status'] ?? 'processed';
 
-        $refund = $order->refunds()->create([
-            'admin_id' => auth('admin')->id(),
-            'amount' => $amount,
-            'type' => $type,
-            'reason' => $data['reason'],
-        ]);
+        $refund = \Illuminate\Support\Facades\DB::transaction(function () use ($order, $amount, $type, $status, $data, $refundable) {
+            $lockedOrder = SalesOrder::where('id', $order->id)->lockForUpdate()->first();
 
-        // Recalculate remaining
-        $remaining = $order->fresh()->remainingRefundable();
-
-        if ($remaining <= 0.001) {
-            $order->update(['payment_status' => 'refunded']);
-            if ($order->subscription && $order->subscription->status === 'active') {
-                $order->subscription->update(['status' => 'cancelled']);
+            $currentRefundable = $lockedOrder->remainingRefundable();
+            if ($amount > $currentRefundable) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'amount' => 'Refund amount exceeds remaining refundable balance of $' . number_format($currentRefundable, 2),
+                ]);
             }
-        } else {
-            $order->update(['payment_status' => 'partially_paid']);
+
+            $refundRecord = $lockedOrder->refunds()->create([
+                'admin_id' => auth('admin')->id(),
+                'amount' => $amount,
+                'type' => $type,
+                'status' => $status,
+                'gateway_reference' => $data['gateway_reference'] ?? null,
+                'processed_at' => $status === 'processed' ? now() : null,
+                'reason' => $data['reason'],
+            ]);
+
+            if ($status === 'processed') {
+                $remaining = $lockedOrder->fresh()->remainingRefundable();
+
+                if ($remaining <= 0.001) {
+                    $lockedOrder->update(['payment_status' => 'refunded']);
+                    if ($lockedOrder->subscription && $lockedOrder->subscription->status === 'active') {
+                        $lockedOrder->subscription->update(['status' => 'cancelled']);
+                    }
+                } else {
+                    $lockedOrder->update(['payment_status' => 'partially_refunded']);
+                }
+            }
+
+            return $refundRecord;
+        });
+
+        if ($refund->status === 'processed') {
+            try {
+                app(\App\Services\NotificationHubService::class)->notifyRefundProcessed($refund);
+            } catch (\Throwable) {
+            }
         }
 
-        try {
-            app(\App\Services\NotificationHubService::class)->notifyRefundProcessed($refund);
-        } catch (\Throwable) {
-        }
-
-        return back()->with('status', 'Refund of $'.number_format($amount, 2).' processed successfully.');
+        return back()->with('status', 'Refund of $'.number_format($amount, 2).' (status: '.$refund->status.') recorded successfully.');
     }
 }

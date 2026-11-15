@@ -13,6 +13,36 @@
         <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-xs text-red-800">{{ session('error') }}</div>
     @endif
 
+    {{-- Rejection & Resubmission Card (Section 4.2) --}}
+    @if ($order->closing_value_status === 'Rejected' && ! ($isViewOnly ?? false))
+        <div class="mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-xs text-red-900 space-y-3">
+            <div>
+                <strong class="font-bold text-red-800">Closing Value Rejected by Super Admin:</strong>
+                <p class="mt-1 text-red-700 italic">"{{ $order->closing_approval_notes ?? 'Price discount not accepted.' }}"</p>
+            </div>
+
+            <form method="POST" action="{{ route('employee.orders.closing-approval.resubmit', $order) }}" class="space-y-2 pt-2 border-t border-red-200">
+                @csrf
+                <p class="font-semibold text-neutral-800">Adjust & Resubmit Closing Value:</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] text-neutral-600">New Closing Value (Floor: {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) ($order->minimum_closing_price_snapshot ?? 0), 2) }})</label>
+                        <input type="number" step="0.01" min="{{ $order->minimum_closing_price_snapshot ?? 0.01 }}" name="closing_value" value="{{ old('closing_value', $order->closing_value) }}" required
+                               class="mt-0.5 w-full rounded border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-neutral-600">Resubmission Note</label>
+                        <input type="text" name="resubmission_notes" placeholder="Explain adjustment to Admin…"
+                               class="mt-0.5 w-full rounded border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                    </div>
+                </div>
+                <button type="submit" class="rounded bg-neutral-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800">
+                    Resubmit for Approval
+                </button>
+            </form>
+        </div>
+    @endif
+
     @if ($isViewOnly ?? false)
         <div class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/80 p-3 text-xs text-indigo-900 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,20 +149,7 @@
                     </div>
                 </div>
             @else
-                <p class="text-xs text-neutral-500 italic">No customer API key has been stored for this order yet.</p>
-            @endif
-
-            @if (! ($isViewOnly ?? false))
-                @canEmployee('orders.complete')
-                    <form method="POST" action="{{ route('employee.orders.api-key.store', $order) }}" class="mt-4 flex gap-2">
-                        @csrf
-                        <input type="text" name="api_key" required placeholder="Enter customer API key to store/update"
-                               class="flex-1 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
-                        <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800">
-                            Save API Key
-                        </button>
-                    </form>
-                @endcanEmployee
+                <p class="text-xs text-neutral-500 italic">No customer API key has been stored for this order yet (configured by Super Admin).</p>
             @endif
         </div>
     </div>

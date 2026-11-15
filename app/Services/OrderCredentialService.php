@@ -43,6 +43,10 @@ class OrderCredentialService
      */
     public function store(SalesOrder $order, string $plainKey, mixed $actor, ?string $ip = null): array
     {
+        if (! ($actor instanceof \App\Models\Admin)) {
+            return ['credential' => null, 'saved' => false, 'message' => 'Only Super Admin can manually enter or update customer API keys.'];
+        }
+
         $plainKey = trim($plainKey);
 
         if ($plainKey === '') {
@@ -139,7 +143,27 @@ class OrderCredentialService
                 return false;
             }
 
-            return $actor->hasPermission('orders.view_api_key');
+            return $actor->hasPermission('orders.api_key.view') || $actor->hasPermission('orders.view_api_key');
+        }
+
+        return false;
+    }
+
+    /**
+     * May this actor copy the order's customer key?
+     */
+    public function canCopy(SalesOrder $order, mixed $actor): bool
+    {
+        if ($actor instanceof Admin) {
+            return true;
+        }
+
+        if ($actor instanceof User) {
+            if ((int) ($order->assigned_employee_id ?? 0) !== (int) $actor->id) {
+                return false;
+            }
+
+            return $actor->hasPermission('orders.api_key.copy') || $actor->hasPermission('orders.copy_api_key');
         }
 
         return false;

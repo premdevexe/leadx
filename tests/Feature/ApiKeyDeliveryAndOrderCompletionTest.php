@@ -74,11 +74,12 @@ class ApiKeyDeliveryAndOrderCompletionTest extends TestCase
             'order_status' => 'pending',
         ]);
 
-        // Employee stores customer API key
-        $response = $this->actingAs($employee, 'employee')->post(route('employee.orders.api-key.store', $order), [
+        // Super Admin stores customer API key (Section 3.2 Super Admin-Only API key entry)
+        $admin = Admin::factory()->create();
+        $response = $this->actingAs($admin, 'admin')->post(route('admin.orders.api-key.store', $order), [
             'api_key' => 'sk_live_customer_key_xyz987',
         ]);
-        $response->assertSessionHas('status');
+        $response->assertRedirect();
 
         $this->assertTrue(OrderCredentialService::hasKey($order));
 
@@ -112,6 +113,7 @@ class ApiKeyDeliveryAndOrderCompletionTest extends TestCase
 
     public function test_whatsapp_click_to_chat_incorporates_key_safely_when_opted_in(): void
     {
+        $admin = Admin::factory()->create();
         $team = Team::factory()->create();
         $employee = User::factory()->create(['team_id' => $team->id]);
         $order = SalesOrder::factory()->create([
@@ -127,7 +129,7 @@ class ApiKeyDeliveryAndOrderCompletionTest extends TestCase
             'status' => 'active',
         ]);
 
-        app(OrderCredentialService::class)->store($order, 'sk_live_secret_whatsapp_test', $employee);
+        app(OrderCredentialService::class)->store($order, 'sk_live_secret_whatsapp_test', $admin);
 
         $shareService = app(WhatsappShareService::class);
         $result = $shareService->prepare($order, true);

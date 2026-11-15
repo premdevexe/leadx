@@ -52,7 +52,15 @@ class OrderService
                 : (float) $productPrice;
             $discountAmount = round(max(0.0, (float) $productPrice - $closingValue), 2);
 
-            $needsApproval = $minClosingPrice > 0 && $closingValue < $minClosingPrice;
+            // Floor price rule: Employee Closing Value >= Product Minimum Closing Price
+            if ($employee && $product && $minClosingPrice > 0 && $closingValue < $minClosingPrice) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'closing_value' => "The closing value (\${$closingValue}) cannot be less than the product minimum closing price of \${$minClosingPrice}.",
+                ]);
+            }
+
+            // Approval workflow: discount requires approval when submitted by an employee
+            $needsApproval = $employee && $closingValue < (float) $productPrice;
             $closingStatus = $needsApproval ? 'Requested' : 'Accepted';
 
             return SalesOrder::create([
@@ -87,6 +95,14 @@ class OrderService
 
         app(\App\Services\NotificationHubService::class)->notifyOrderCreated($order);
         if ($order->closing_value_status === 'Requested') {
+            $order->closingValueHistories()->create([
+                'actor_type' => 'employee',
+                'actor_id' => $employee?->id,
+                'status' => 'Requested',
+                'previous_value' => $product ? $product->price : null,
+                'proposed_value' => $order->closing_value,
+                'notes' => 'Initial discounted order submission requiring approval.',
+            ]);
             app(\App\Services\NotificationHubService::class)->notifyClosingApprovalRequested($order);
         }
 

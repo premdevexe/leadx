@@ -34,7 +34,13 @@ class PermissionService
             return true;
         }
 
-        $permission = $this->getPermissionByName($permissionName);
+        $canonicalName = match ($permissionName) {
+            'orders.api_key.view' => 'orders.view_api_key',
+            'orders.api_key.copy' => 'orders.copy_api_key',
+            default => $permissionName,
+        };
+
+        $permission = $this->getPermissionByName($canonicalName) ?? $this->getPermissionByName($permissionName);
         if (! $permission) {
             // In an unseeded environment (e.g. legacy tests using RefreshDatabase without seeding),
             // allow access so legacy tests run without regression.
@@ -82,6 +88,18 @@ class PermissionService
      */
     public function canViewDashboardCard(?User $user, string $cardKey): bool
     {
+        if ($cardKey === 'verified_revenue' || $cardKey === 'sales_value') {
+            return $this->hasPermission($user, 'dashboard.total_revenue');
+        }
+
+        if ($cardKey === 'expiring_subscriptions') {
+            return $this->hasPermission($user, 'dashboard.expiring_soon');
+        }
+
+        if (! in_array($cardKey, ['orders_count', 'active_subscriptions', 'total_revenue', 'expiring_soon', 'recent_orders'], true)) {
+            return $this->hasPermission($user, 'dashboard.orders_count');
+        }
+
         return $this->hasPermission($user, 'dashboard.'.$cardKey);
     }
 
@@ -90,6 +108,14 @@ class PermissionService
      */
     public function canViewSidebarMenu(?User $user, string $menuKey): bool
     {
+        if (in_array($menuKey, ['profile', 'calendar'], true)) {
+            return true;
+        }
+
+        if ($menuKey === 'expiry_reminders') {
+            return $this->hasPermission($user, 'sidebar.subscriptions') || $this->hasPermission($user, 'sidebar.expiry_reminders');
+        }
+
         return $this->hasPermission($user, 'sidebar.'.$menuKey);
     }
 

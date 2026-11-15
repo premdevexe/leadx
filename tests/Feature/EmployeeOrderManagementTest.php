@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Admin;
 use App\Models\OrderApiCredential;
 use App\Models\Product;
 use App\Models\SalesOrder;
@@ -39,7 +40,7 @@ class EmployeeOrderManagementTest extends TestCase
             'customer_email' => 'acme@example.com',
             'product_id' => $product->id,
             'duration' => '1y',
-            'closing_value' => 450,
+            'closing_value' => 500, // Full price -> Accepted immediately
         ]);
 
         $order = SalesOrder::first();
@@ -72,6 +73,7 @@ class EmployeeOrderManagementTest extends TestCase
 
     public function test_employee_can_view_masked_key_and_reveal_when_permitted(): void
     {
+        $admin = Admin::factory()->create();
         $team = Team::factory()->create();
         $employee = User::factory()->create(['team_id' => $team->id]);
         $order = SalesOrder::factory()->create([
@@ -79,8 +81,8 @@ class EmployeeOrderManagementTest extends TestCase
             'assigned_employee_id' => $employee->id,
         ]);
 
-        // Store encrypted API key
-        app(OrderCredentialService::class)->store($order, 'sk_live_secretkey123456789', $employee);
+        // Super Admin stores encrypted API key (Section 3.2 Super Admin-Only API key entry)
+        app(OrderCredentialService::class)->store($order, 'sk_live_secretkey123456789', $admin);
 
         // 1. Show page renders masked key
         $response = $this->actingAs($employee, 'employee')->get(route('employee.orders.show', $order));
@@ -98,6 +100,7 @@ class EmployeeOrderManagementTest extends TestCase
 
     public function test_employee_without_reveal_permission_cannot_reveal_api_key(): void
     {
+        $admin = Admin::factory()->create();
         $team = Team::factory()->create();
         $employee = User::factory()->create(['team_id' => $team->id]);
         $order = SalesOrder::factory()->create([
@@ -105,7 +108,7 @@ class EmployeeOrderManagementTest extends TestCase
             'assigned_employee_id' => $employee->id,
         ]);
 
-        app(OrderCredentialService::class)->store($order, 'sk_live_secretkey123456789', $employee);
+        app(OrderCredentialService::class)->store($order, 'sk_live_secretkey123456789', $admin);
 
         // Deny orders.view_api_key
         app(PermissionService::class)->setEmployeeOverride($employee, 'orders.view_api_key', false);

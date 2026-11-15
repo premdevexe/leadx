@@ -75,9 +75,15 @@ class CreateOrderController extends Controller
         $apiKeyRequired = $product ? (bool) ($product->api_key_required ?? false) : false;
 
         $closingValue = (float) $validated['closing_value'];
-        $discountAmount = round(max(0.0, $productPrice - $closingValue), 2);
 
-        $needsApproval = $minClosingPrice > 0 && $closingValue < $minClosingPrice;
+        if ($product && $minClosingPrice > 0 && $closingValue < $minClosingPrice) {
+            return back()->withInput()->withErrors([
+                'closing_value' => "The closing value (\${$closingValue}) cannot be less than the product minimum closing price of \${$minClosingPrice}.",
+            ]);
+        }
+
+        $discountAmount = round(max(0.0, $productPrice - $closingValue), 2);
+        $needsApproval = $product && $closingValue < $productPrice;
         $closingStatus = $needsApproval ? 'Requested' : 'Accepted';
 
         $order = DB::transaction(function () use ($numbers, $team, $employee, $product, $productName, $productPrice, $productDuration, $minClosingPrice, $apiKeyRequired, $closingStatus, $needsApproval, $closingValue, $discountAmount, $validated) {
@@ -112,11 +118,19 @@ class CreateOrderController extends Controller
         });
 
         $message = $needsApproval
-            ? 'Order created successfully. Closing value is below minimum floor price; approval requested from Super Admin.'
+            ? 'Order created successfully. Closing value discount requires Super Admin approval.'
             : 'Order created successfully.';
 
         app(\App\Services\NotificationHubService::class)->notifyOrderCreated($order);
         if ($needsApproval) {
+            $order->closingValueHistories()->create([
+                'actor_type' => 'employee',
+                'actor_id' => $employee->id,
+                'status' => 'Requested',
+                'previous_value' => $product ? $product->price : null,
+                'proposed_value' => $order->closing_value,
+                'notes' => 'Initial discounted order submission requiring approval.',
+            ]);
             app(\App\Services\NotificationHubService::class)->notifyClosingApprovalRequested($order);
         }
 

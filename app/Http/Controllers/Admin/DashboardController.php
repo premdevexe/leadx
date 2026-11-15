@@ -8,13 +8,31 @@ use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\UserUiPreference;
 use App\Services\SalesAnalyticsService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public const DEFAULT_CARDS = [
+        ['key' => 'verified_revenue', 'label' => 'Total Verified Revenue', 'visible' => true, 'order' => 1],
+        ['key' => 'pending_collections', 'label' => 'Pending Collections', 'visible' => true, 'order' => 2],
+        ['key' => 'total_closing_value', 'label' => 'Total Closing Value', 'visible' => true, 'order' => 3],
+        ['key' => 'total_discounts', 'label' => 'Total Discounts', 'visible' => true, 'order' => 4],
+        ['key' => 'orders_total', 'label' => 'Total Orders', 'visible' => true, 'order' => 5],
+        ['key' => 'paying_customers', 'label' => 'Paying Customers', 'visible' => true, 'order' => 6],
+        ['key' => 'active_subscriptions', 'label' => 'Active Subscriptions', 'visible' => true, 'order' => 7],
+        ['key' => 'expired_subscriptions', 'label' => 'Expired Subscriptions', 'visible' => true, 'order' => 8],
+        ['key' => 'users_total', 'label' => 'Employees', 'visible' => true, 'order' => 9],
+        ['key' => 'teams_total', 'label' => 'Teams', 'visible' => true, 'order' => 10],
+        ['key' => 'monthly_trend', 'label' => 'Monthly Revenue & Trend', 'visible' => true, 'order' => 11],
+        ['key' => 'recent_orders', 'label' => 'Recent Orders', 'visible' => true, 'order' => 12],
+        ['key' => 'recent_users', 'label' => 'Recent Employees', 'visible' => true, 'order' => 13],
+    ];
+
     public function __construct(protected SalesAnalyticsService $analytics)
     {
     }
@@ -53,6 +71,9 @@ class DashboardController extends Controller
         $recentUsers = User::latest()->take(5)->get(['id', 'name', 'username', 'email', 'created_at']);
         $recentAdmins = Admin::latest()->take(5)->get(['id', 'name', 'username', 'email', 'created_at']);
 
+        $adminId = $request->user('admin')?->id ?? 1;
+        $cardPreferences = $this->getCardPreferences($adminId);
+
         if ($request->wantsJson()) {
             return response()->json([
                 'stats' => $stats,
@@ -63,6 +84,7 @@ class DashboardController extends Controller
                 'recent_orders' => $recentOrders,
                 'recent_users' => $recentUsers,
                 'recent_admins' => $recentAdmins,
+                'card_preferences' => $cardPreferences,
                 'admin' => $request->user('admin')->only(['id', 'name', 'username', 'email']),
             ]);
         }
@@ -75,7 +97,92 @@ class DashboardController extends Controller
             'monthlyReport',
             'recentOrders',
             'recentUsers',
-            'recentAdmins'
+            'recentAdmins',
+            'cardPreferences'
         ));
+    }
+
+    /**
+     * Save admin dashboard card layout and visibility preferences.
+     */
+    public function savePreferences(Request $request): RedirectResponse|JsonResponse
+    {
+        $adminId = $request->user('admin')?->id ?? 1;
+
+        $validated = $request->validate([
+            'cards' => ['required', 'array'],
+            'cards.*.key' => ['required', 'string'],
+            'cards.*.visible' => ['required'],
+            'cards.*.order' => ['nullable', 'integer'],
+        ]);
+
+        $sanitized = [];
+        foreach ($validated['cards'] as $index => $card) {
+            $sanitized[] = [
+                'key' => (string) $card['key'],
+                'visible' => filter_var($card['visible'], FILTER_VALIDATE_BOOLEAN),
+                'order' => isset($card['order']) ? (int) $card['order'] : ($index + 1),
+                'label' => $card['label'] ?? null,
+            ];
+        }
+
+        UserUiPreference::setPreferences('admin', $adminId, 'dashboard_cards', $sanitized);
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Dashboard preferences saved successfully.']);
+        }
+
+        return back()->with('status', 'Dashboard preferences updated.');
+    }
+
+    /**
+     * Reset admin dashboard preferences to default.
+     */
+    public function resetPreferences(Request $request): RedirectResponse|JsonResponse
+    {
+        $adminId = $request->user('admin')?->id ?? 1;
+
+        UserUiPreference::where('user_type', 'admin')
+            ->where('user_id', $adminId)
+            ->where('category', 'dashboard_cards')
+            ->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Dashboard preferences reset to default.']);
+        }
+
+        return back()->with('status', 'Dashboard preferences reset to default.');
+    }
+
+    /**
+     * Retrieve sorted card preferences merged with defaults.
+     */
+    protected function getCardPreferences(int $adminId): array
+    {
+        $saved = UserUiPreference::getPreferences('admin', $adminId, 'dashboard_cards', []);
+        if (empty($saved)) {
+            return self::DEFAULT_CARDS;
+        }
+
+        $savedByKey = collect($saved)->keyBy('key');
+        $merged = [];
+
+        foreach (self::DEFAULT_CARDS as $default) {
+            if ($savedByKey->has($default['key'])) {
+                $item = $savedByKey->get($default['key']);
+                $merged[] = [
+                    'key' => $default['key'],
+                    'label' => $default['label'],
+                    'visible' => (bool) ($item['visible'] ?? true),
+                    'order' => (int) ($item['order'] ?? $default['order']),
+                ];
+            } else {
+                $merged[] = $default;
+            }
+        }
+
+        usort($merged, fn ($a, $b) => $a['order'] <=> $b['order']);
+
+        return $merged;
     }
 }
