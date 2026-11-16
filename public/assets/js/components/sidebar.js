@@ -1,92 +1,75 @@
-/* ============================================================
-   LeadX — Sidebar module (shared across admin, employee, team)
-   ============================================================ */
-import {
-    $, on, off, hasClass, addClass, removeClass,
-    hide, show, toggle, storageGet, storageSet
-} from '../core/dom.js';
+/* LeadX ? responsive navigation shared by all portals. */
+import { storageGet, storageSet } from '../core/dom.js';
+import { focusFirst, trapFocus, lockScroll, unlockScroll } from '../core/focus.js';
 
 export function initSidebar({ sidebarId, overlayId, toggleId, closeBtnId, localStorageKey, linkSelector = 'a' }) {
-    const sidebar = $(`#${sidebarId}`);
-    const overlay = $(`#${overlayId}`);
-    const toggle = $(`#${toggleId}`);
-    const closeBtn = $(`#${closeBtnId}`);
+    const sidebar = document.getElementById(sidebarId);
+    const overlay = document.getElementById(overlayId);
+    const toggle = document.getElementById(toggleId);
+    const closeBtn = document.getElementById(closeBtnId);
+    if (!sidebar || !toggle || sidebar.dataset.initialized === 'true') return;
+    sidebar.dataset.initialized = 'true';
 
-    if (!sidebar || !toggle) return;
-
-    const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
+    const main = document.querySelector('.main-column');
+    const mainWasInert = main?.inert ?? false;
+    const media = window.matchMedia('(max-width: 767px)');
     let mobileOpen = false;
     let desktopOpen = storageGet(localStorageKey, 'open') === 'open';
+    toggle.setAttribute('aria-controls', sidebar.id);
 
     function render() {
-        if (isMobile()) {
-            sidebar.classList.remove('sidebar-collapsed');
-            if (mobileOpen) {
-                removeClass(sidebar, '-translate-x-full');
-                addClass(sidebar, 'translate-x-0');
-                if (overlay) addClass(overlay, 'visible');
-                document.body.classList.add('overflow-hidden');
-                addClass(toggle, 'menu-open');
-            } else {
-                addClass(sidebar, '-translate-x-full');
-                removeClass(sidebar, 'translate-x-0');
-                if (overlay) removeClass(overlay, 'visible');
-                document.body.classList.remove('overflow-hidden');
-                removeClass(toggle, 'menu-open');
-            }
-        } else {
-            document.body.classList.remove('overflow-hidden');
-            if (overlay) removeClass(overlay, 'visible');
-            removeClass(sidebar, '-translate-x-full', 'translate-x-0');
-            if (desktopOpen) {
-                removeClass(sidebar, 'sidebar-collapsed');
-                addClass(toggle, 'menu-open');
-            } else {
-                addClass(sidebar, 'sidebar-collapsed');
-                removeClass(toggle, 'menu-open');
-            }
-        }
+        const open = media.matches ? mobileOpen : desktopOpen;
+        sidebar.classList.toggle('sidebar-collapsed', !media.matches && !open);
+        sidebar.classList.toggle('-translate-x-full', media.matches && !open);
+        sidebar.classList.toggle('translate-x-0', media.matches && open);
+        sidebar.inert = !open;
+        sidebar.setAttribute('aria-hidden', String(!open));
+        toggle.classList.toggle('menu-open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+        overlay?.classList.toggle('visible', media.matches && open);
+        if (main) main.inert = mainWasInert || (media.matches && open);
+        if (media.matches && open) lockScroll(sidebar);
+        else unlockScroll(sidebar);
     }
 
-    function toggleSidebar() {
-        if (isMobile()) {
-            mobileOpen = !mobileOpen;
+    function closeMobile() {
+        if (!media.matches || !mobileOpen) return;
+        mobileOpen = false;
+        if (main) main.inert = mainWasInert;
+        toggle.focus({ preventScroll: true });
+        render();
+    }
+
+    toggle.addEventListener('click', () => {
+        if (media.matches) {
+            if (mobileOpen) return closeMobile();
+            mobileOpen = true;
             render();
+            focusFirst(sidebar);
         } else {
             desktopOpen = !desktopOpen;
             storageSet(localStorageKey, desktopOpen ? 'open' : 'closed');
             render();
         }
-    }
-
-    function closeMobile() {
-        if (isMobile() && mobileOpen) { mobileOpen = false; render(); }
-    }
-
-    on(toggle, 'click', toggleSidebar);
-    if (overlay) on(overlay, 'click', closeMobile);
-    if (closeBtn) on(closeBtn, 'click', closeMobile);
-
-    // Close sidebar when a nav link is clicked on mobile
-    sidebar.addEventListener('click', (e) => {
-        if (isMobile() && e.target.closest(linkSelector)) closeMobile();
     });
-
-    // Close on Escape
-    on(document, 'keydown', (e) => {
-        if (e.key === 'Escape' && isMobile() && mobileOpen) closeMobile();
+    overlay?.addEventListener('click', closeMobile);
+    closeBtn?.addEventListener('click', closeMobile);
+    sidebar.addEventListener('click', (event) => {
+        if (media.matches && event.target.closest(linkSelector)) closeMobile();
     });
-
-    // Handle resize across breakpoint
-    let prevIsMobile = isMobile();
-    on(window, 'resize', () => {
-        const current = isMobile();
-        if (current !== prevIsMobile) {
-            prevIsMobile = current;
-            if (!current) mobileOpen = false;
-            render();
-        }
+    document.addEventListener('keydown', (event) => {
+        if (!media.matches || !mobileOpen) return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeMobile();
+        } else trapFocus(event, sidebar);
     });
-
+    media.addEventListener('change', () => {
+        mobileOpen = false;
+        if (main) main.inert = mainWasInert;
+        if ((media.matches || !desktopOpen) && sidebar.contains(document.activeElement)) toggle.focus();
+        render();
+    });
     render();
 }

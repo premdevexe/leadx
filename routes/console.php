@@ -15,18 +15,19 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Phase 07: subscription lifecycle maintenance.
-Schedule::command(ProcessSubscriptionsExpiry::class)->dailyAt('00:05');
-Schedule::command(SendSubscriptionReminders::class)->dailyAt('08:00');
+Schedule::command(ProcessSubscriptionsExpiry::class)->dailyAt('00:05')->withoutOverlapping();
+Schedule::command(SendSubscriptionReminders::class)->dailyAt('08:00')->withoutOverlapping();
 
 // Phase 08: follow-up lifecycle maintenance.
-Schedule::command(MarkFollowUpsOverdue::class)->dailyAt('00:10');
+Schedule::command(MarkFollowUpsOverdue::class)->dailyAt('00:10')->withoutOverlapping();
 
 // Order delivery (Section 5): team-only "expires tomorrow" reminder. Fires at
 // the configured notification time; the command itself selects active
 // subscriptions whose expiry date is exactly tomorrow and notifies only the
 // active members of that subscription's team, once per expiry cycle.
 Schedule::command(SendTeamExpiryReminders::class)
-    ->dailyAt((string) config('leadx.notifications.expiry_reminder_time', '07:30'));
+    ->dailyAt((string) config('leadx.notifications.expiry_reminder_time', '07:30'))
+    ->withoutOverlapping();
 
 // Phase 16: email subscription reminders (expiry + renewal). The exact
 // send time is admin-configurable (Admin Settings → Email Reminders →
@@ -48,3 +49,15 @@ Schedule::command(SendEmailSubscriptionReminders::class)
 Schedule::call(function (SubscriptionCalendarService $service): void {
     $service->retryPending();
 })->name('calendar-retry-pending')->dailyAt('01:00')->withoutOverlapping();
+
+// Phase 16: Automated Backup & Disaster Recovery
+Schedule::command('leadx:backup')
+    ->everyMinute()
+    ->when(fn () => now()->format('H:i') === \App\Services\Backup\BackupSettings::get('schedule_time', '02:00'))
+    ->withoutOverlapping()
+    ->name('leadx-automated-backup');
+
+Schedule::command('leadx:backup:prune')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->name('leadx-automated-backup-prune');

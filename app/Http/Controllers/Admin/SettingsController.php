@@ -45,9 +45,13 @@ class SettingsController extends Controller
             'currency' => ['required', 'string', 'in:'.implode(',', array_keys(Setting::CURRENCIES))],
             'payment_methods' => ['array'],
             'payment_methods.*' => ['string', 'in:'.implode(',', array_keys(Setting::PAYMENT_METHODS))],
-            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
-            'logo_transparent' => ['nullable', 'file', 'mimes:png,svg,webp', 'max:2048'],
-            'favicon' => ['nullable', 'file', 'mimes:ico,png,svg,webp', 'max:1024'],
+            // SVG is intentionally excluded: it is an XML format that can
+            // carry <script> and executes in the context of every page that
+            // renders it. A compromised or careless admin could otherwise
+            // XSS all authenticated users through the site logo.
+            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'logo_transparent' => ['nullable', 'file', 'mimes:png,webp', 'max:2048'],
+            'favicon' => ['nullable', 'file', 'mimes:ico,png,webp', 'max:1024'],
             'remove_logo' => ['nullable', 'boolean'],
             'remove_logo_transparent' => ['nullable', 'boolean'],
             'remove_favicon' => ['nullable', 'boolean'],

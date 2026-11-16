@@ -49,6 +49,15 @@ class SubscriptionActivator
             return null;
         }
 
+        // A subscription row must carry a team (subscriptions.team_id is a
+        // NOT NULL FK). Legacy or unattributed orders can have a null
+        // team_id; activating one would throw on the insert. Leave it
+        // pending (return null) instead so the payment still verifies and
+        // the subscription activates once the order is attributed to a team.
+        if ($order->team_id === null) {
+            return null;
+        }
+
         // An order with pending or rejected closing approval never activates.
         if (in_array($order->closing_value_status, ['Requested', 'Rejected'], true)) {
             return null;

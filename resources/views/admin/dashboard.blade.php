@@ -15,7 +15,7 @@
             <p class="text-xs text-neutral-500">Live sales performance, collected revenue, and order intelligence.</p>
         </div>
         <div class="flex items-center gap-3">
-            <button type="button" onclick="document.getElementById('customize-admin-modal').classList.remove('hidden')"
+            <button type="button" data-modal-open="customize-admin-modal"
                     class="btn btn-secondary px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
                 <svg class="h-4 w-4 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -70,6 +70,45 @@
                 <div class="mt-1 text-xs text-neutral-400">Catalog price concessions</div>
             </div>
         @endif
+    </div>
+
+    {{-- Operational Action Pipeline (Phase 16 Upgrade) --}}
+    <div class="mt-4 grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div class="stat-card p-3.5 bg-white rounded-xl border border-neutral-200">
+            <div class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Active Staff</div>
+            <div class="mt-1 text-xl font-bold tabular-nums text-neutral-900">{{ $stats['employees_active'] }} <span class="text-xs font-normal text-neutral-400">/ {{ $stats['employees_total'] }}</span></div>
+            <div class="mt-0.5 text-2xs text-green-600 font-medium">Logged in & verified</div>
+        </div>
+
+        <div class="stat-card p-3.5 bg-white rounded-xl border border-neutral-200">
+            <div class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Pending Orders</div>
+            <div class="mt-1 text-xl font-bold tabular-nums text-neutral-900">{{ $stats['orders_pending'] }}</div>
+            <div class="mt-0.5 text-2xs text-amber-600 font-medium">Awaiting fulfillment</div>
+        </div>
+
+        <div class="stat-card p-3.5 bg-white rounded-xl border border-neutral-200">
+            <div class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Closing Approvals</div>
+            <div class="mt-1 text-xl font-bold tabular-nums text-neutral-900">{{ $stats['closing_approval_requests'] }}</div>
+            <a href="{{ route('admin.orders') }}" class="mt-0.5 text-2xs text-blue-600 hover:underline font-medium block">Review requests &rarr;</a>
+        </div>
+
+        <div class="stat-card p-3.5 bg-white rounded-xl border border-neutral-200">
+            <div class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Pending Payments</div>
+            <div class="mt-1 text-xl font-bold tabular-nums text-neutral-900">{{ $stats['pending_payments_count'] }}</div>
+            <div class="mt-0.5 text-2xs text-neutral-400 font-medium">In gateway / receipt</div>
+        </div>
+
+        <div class="stat-card p-3.5 bg-white rounded-xl border border-neutral-200">
+            <div class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Expiring (30d)</div>
+            <div class="mt-1 text-xl font-bold tabular-nums text-neutral-900">{{ $stats['expiring_subscriptions'] }}</div>
+            <div class="mt-0.5 text-2xs text-amber-600 font-medium">Renewal reminders active</div>
+        </div>
+
+        <div class="stat-card p-3.5 bg-white rounded-xl border border-neutral-200">
+            <div class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Refund Summary</div>
+            <div class="mt-1 text-xl font-bold tabular-nums text-neutral-900">{{ $cur }}{{ number_format($stats['refunds_total'], 2) }}</div>
+            <div class="mt-0.5 text-2xs text-neutral-400 font-medium">{{ $stats['refunds_count'] }} processed refund(s)</div>
+        </div>
     </div>
 
     {{-- Operational Counts Grid --}}
@@ -150,7 +189,7 @@
     <div class="mt-8">
         <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h2 class="text-sm font-semibold text-neutral-800">Dynamic product analytics</h2>
+                <h2 class="text-sm font-semibold text-neutral-800">Dynamic Product Analytics</h2>
                 <p class="text-xs text-neutral-400">Real-time catalog breakdown based on actual order snapshots.</p>
             </div>
             <a href="{{ route('admin.products') }}" class="text-xs font-medium text-neutral-700 underline hover:text-neutral-900">Manage products &rarr;</a>
@@ -190,7 +229,7 @@
         <div class="mt-8">
             <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-sm font-semibold text-neutral-800">Team performance & collections</h2>
+                    <h2 class="text-sm font-semibold text-neutral-800">Team Performance & Collections</h2>
                     <p class="text-xs text-neutral-400">Revenue attribution and order volume across sales teams.</p>
                 </div>
                 <a href="{{ route('admin.teams') }}" class="text-xs font-medium text-neutral-700 underline hover:text-neutral-900">Manage teams &rarr;</a>
@@ -328,12 +367,68 @@
         </div>
     @endif
 
+    {{-- Activity & Notification Intelligence (Phase 16 Upgrade) --}}
+    <div class="mt-8 grid gap-6 lg:grid-cols-2">
+        {{-- Recent Activities --}}
+        <div>
+            <h2 class="mb-3 text-sm font-semibold text-neutral-800">Recent System Activities & Audit</h2>
+            <div class="table-wrapper">
+                <table class="data-table w-full min-w-[360px]">
+                    <thead>
+                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                            <th class="px-4 py-3">Actor</th>
+                            <th class="px-4 py-3">Action / Event</th>
+                            <th class="px-4 py-3 text-right">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($recentActivities as $act)
+                            <tr class="border-b border-neutral-100">
+                                <td class="px-4 py-3 text-xs font-medium text-neutral-900">{{ $act->actor?->name ?? $act->actor?->team_name ?? $act->actor?->username ?? 'System' }}</td>
+                                <td class="px-4 py-3 text-xs text-neutral-700">{{ $act->event }}</td>
+                                <td class="px-4 py-3 text-right text-xs text-neutral-400">{{ $act->created_at->diffForHumans() }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3" class="px-4 py-6 text-center text-neutral-400 text-xs">No recent activity logs recorded</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- Notification Summary --}}
+        <div>
+            <div class="mb-3 flex items-center justify-between">
+                <h2 class="text-sm font-semibold text-neutral-800">Notification Channel Health</h2>
+                <a href="{{ route('admin.notifications') }}" class="text-xs font-medium text-neutral-700 underline hover:text-neutral-900">Push console &rarr;</a>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div class="p-4 bg-white rounded-xl border border-neutral-200">
+                    <div class="text-xs font-semibold text-neutral-500 uppercase">Pusher Beams</div>
+                    <div class="mt-1 text-xl font-bold text-neutral-900 tabular-nums">{{ $notificationSummary['push_total'] }}</div>
+                    <div class="text-xs text-green-600 mt-0.5">{{ $notificationSummary['push_delivered'] }} delivered</div>
+                </div>
+                <div class="p-4 bg-white rounded-xl border border-neutral-200">
+                    <div class="text-xs font-semibold text-neutral-500 uppercase">Email Dispatch</div>
+                    <div class="mt-1 text-xl font-bold text-neutral-900 tabular-nums">{{ $notificationSummary['email_total'] }}</div>
+                    <div class="text-xs text-neutral-500 mt-0.5">{{ $notificationSummary['email_sent'] }} sent @if($notificationSummary['email_failed'] > 0) • <span class="text-red-500">{{ $notificationSummary['email_failed'] }} failed</span>@endif</div>
+                </div>
+            </div>
+            <div class="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200 text-xs text-neutral-600 flex items-center justify-between">
+                <span>Asynchronous Queue Worker Status:</span>
+                <span class="inline-flex items-center gap-1 font-semibold text-neutral-800">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> Active (database driver)
+                </span>
+            </div>
+        </div>
+    </div>
+
     {{-- Customize Modal --}}
-    <div id="customize-admin-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs hidden p-4">
+    <div id="customize-admin-modal" class="leadx-modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs hidden p-4" role="dialog" aria-modal="true" aria-labelledby="customize-admin-title" tabindex="-1">
         <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
             <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <h3 class="text-base font-semibold text-neutral-900">Customize Admin Dashboard Cards</h3>
-                <button type="button" onclick="document.getElementById('customize-admin-modal').classList.add('hidden')" class="modal-close text-neutral-400 hover:text-neutral-600 text-2xl leading-none">&times;</button>
+                <h3 id="customize-admin-title" class="text-base font-semibold text-neutral-900">Customize Admin Dashboard Cards</h3>
+                <button type="button" data-modal-close="customize-admin-modal" aria-label="Close dashboard customization" class="modal-close text-neutral-400 hover:text-neutral-600 text-2xl leading-none">&times;</button>
             </div>
 
             <form action="{{ route('admin.dashboard.preferences.save') }}" method="POST" class="mt-4">
@@ -345,6 +440,7 @@
                             <div class="flex items-center gap-3">
                                 <input type="hidden" name="cards[{{ $index }}][key]" value="{{ $c['key'] }}">
                                 <input type="hidden" name="cards[{{ $index }}][order]" value="{{ $c['order'] ?? ($index + 1) }}">
+                                <input type="hidden" name="cards[{{ $index }}][visible]" value="0">
                                 <label class="flex items-center gap-1.5 cursor-pointer">
                                     <input type="checkbox" name="cards[{{ $index }}][visible]" value="1" {{ ($c['visible'] ?? true) ? 'checked' : '' }} class="rounded border-neutral-300">
                                     <span class="text-xs text-neutral-500">Show</span>
@@ -359,7 +455,7 @@
                         Reset Defaults
                     </button>
                     <div class="flex gap-2">
-                        <button type="button" onclick="document.getElementById('customize-admin-modal').classList.add('hidden')" class="btn btn-secondary px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-50">
+                        <button type="button" data-modal-close="customize-admin-modal" class="btn btn-secondary px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-50">
                             Cancel
                         </button>
                         <button type="submit" class="btn btn-primary px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800">

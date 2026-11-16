@@ -8,15 +8,18 @@
 </head>
 <body>
     <main class="auth-page">
-        <div style="width: 100%; max-width: 42rem;">
+        <div style="width: 100%; max-width: 46rem; padding: 1.5rem 1rem;">
             <div class="auth-card auth-card-wide" style="max-width: 100%;">
                 <div class="auth-brand">
                     <span class="auth-brand-icon">L</span>
                     <span class="auth-brand-text">LeadX Installation</span>
                 </div>
+
+                @include('install.partials.stepper', ['currentStep' => 7])
+
                 <div class="auth-box" style="max-width: none;">
                     <div class="auth-title">Final Verification</div>
-                    <div class="auth-subtitle">Verifying installation health before completing setup.</div>
+                    <div class="auth-subtitle">Verifying installation health and security before completing setup.</div>
 
                     <div style="margin-top: 1.5rem;">
                         <table class="data-table">
@@ -50,15 +53,19 @@
                         </table>
                     </div>
 
-                    <div class="form-actions" style="margin-top: 1.5rem;">
-                        <a href="{{ route('install.config') }}" class="btn btn-secondary">Back</a>
+                    <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                        <a href="{{ route('install.config') }}" class="btn btn-secondary">
+                            &larr; Back
+                        </a>
                         @if ($allPass)
                             <form method="POST" action="{{ route('install.finish') }}" style="display: inline;">
                                 @csrf
-                                <button type="submit" class="btn btn-primary">Complete Installation</button>
+                                <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.5rem;">
+                                    Complete Installation &rarr;
+                                </button>
                             </form>
                         @else
-                            <span style="color: #dc2626; font-size: 14px;">Please resolve the failing checks before finishing.</span>
+                            <span style="color: #dc2626; font-size: 14px; font-weight: 500;">Please resolve the failing checks before finishing.</span>
                         @endif
                     </div>
                 </div>

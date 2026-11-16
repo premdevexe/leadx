@@ -97,4 +97,4 @@
 
 .activity-item-content { flex: 1; min-width: 0; }
 .activity-item-text { font-size: var(--text-sm); color: var(--c-neutral-700); }
-.activity-item-time { font-size: var(--text-xs); color: var(--c-neutral-400); margin-top: var(--sp-0.5); }
+.activity-item-time { font-size: var(--text-xs); color: var(--c-neutral-400); margin-top: var(--sp-0-5); }

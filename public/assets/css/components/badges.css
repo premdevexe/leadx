@@ -60,7 +60,7 @@
 .badge-dot {
     display: inline-flex;
     align-items: center;
-    gap: var(--sp-1.5);
+    gap: var(--sp-1-5);
 }
 .badge-dot::before {
     content: '';
@@ -84,5 +84,5 @@
 .status-pip-neutral { background: var(--c-neutral-400); }
 
 /* Sizes */
-.badge-sm { font-size: 11px; padding: 1px var(--sp-1.5); }
+.badge-sm { font-size: 11px; padding: 1px var(--sp-1-5); }
 .badge-pill { border-radius: var(--radius-full); }

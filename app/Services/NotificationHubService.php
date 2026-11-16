@@ -3,22 +3,22 @@
 namespace App\Services;
 
 use App\Events\NotificationReceived;
-use App\Models\Admin;
+use App\Jobs\SendWebPushNotificationJob;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\SalesOrder;
 use App\Models\Subscription;
 use App\Notifications\ClosingValueApprovalNotification;
 use App\Notifications\GeneralOrderNotification;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Log;
 
 class NotificationHubService
 {
     public function __construct(
         protected BeamsService $beams,
         protected EmailService $email
-    ) {
-    }
+    ) {}
 
     /**
      * Order created event.
@@ -38,7 +38,8 @@ class NotificationHubService
             $this->sendBeamsSafely(
                 title: 'New Order Attributed',
                 body: "Order {$order->order_number} has been assigned to you.",
-                interests: ['employee-'.$employee->id]
+                interests: ['employee-'.$employee->id],
+                deduplicationKey: 'order_created_emp_'.$order->id
             );
 
             $this->broadcastSafely($employee, [
@@ -54,7 +55,8 @@ class NotificationHubService
         $this->sendBeamsSafely(
             title: 'New LeadX Order',
             body: "Order {$order->order_number} created for {$order->customer_name} (\${$order->closing_value}).",
-            interests: ['admin']
+            interests: ['admin'],
+            deduplicationKey: 'order_created_admin_'.$order->id
         );
     }
 
@@ -68,7 +70,8 @@ class NotificationHubService
         $this->sendBeamsSafely(
             title: 'Closing Approval Requested',
             body: "Order {$order->order_number} ({$employeeName}): \${$order->closing_value} is below floor price \${$order->minimum_closing_price_snapshot}.",
-            interests: ['admin']
+            interests: ['admin'],
+            deduplicationKey: 'closing_requested_'.$order->id
         );
     }
 
@@ -87,7 +90,8 @@ class NotificationHubService
         $this->sendBeamsSafely(
             title: $decision === 'accepted' ? 'Closing Value Approved' : 'Closing Value Rejected',
             body: "Super Admin {$decision} closing value for {$order->order_number}.",
-            interests: ['employee-'.$employee->id]
+            interests: ['employee-'.$employee->id],
+            deduplicationKey: 'closing_decision_'.$order->id.'_'.$decision
         );
 
         $this->broadcastSafely($employee, [
@@ -122,7 +126,8 @@ class NotificationHubService
             $this->sendBeamsSafely(
                 title: 'Payment Verified',
                 body: "Payment of \${$payment->amount} verified for {$order->order_number}.",
-                interests: ['employee-'.$employee->id]
+                interests: ['employee-'.$employee->id],
+                deduplicationKey: 'payment_verified_'.$payment->id
             );
 
             $this->broadcastSafely($employee, [
@@ -158,7 +163,8 @@ class NotificationHubService
             $this->sendBeamsSafely(
                 title: 'Subscription Activated',
                 body: "Subscription for {$order->order_number} activated.",
-                interests: ['employee-'.$employee->id, 'admin']
+                interests: ['employee-'.$employee->id, 'admin'],
+                deduplicationKey: 'sub_activated_'.$subscription->id
             );
 
             $this->broadcastSafely($employee, [
@@ -219,7 +225,8 @@ class NotificationHubService
             $this->sendBeamsSafely(
                 title: 'Order Cancelled',
                 body: "Order {$order->order_number} has been cancelled.",
-                interests: ['employee-'.$employee->id]
+                interests: ['employee-'.$employee->id],
+                deduplicationKey: 'order_cancelled_'.$order->id
             );
 
             $this->broadcastSafely($employee, [
@@ -252,6 +259,13 @@ class NotificationHubService
                 action: 'refund'
             ));
 
+            $this->sendBeamsSafely(
+                title: 'Refund Processed',
+                body: "A refund of \${$refund->amount} was processed on order {$order->order_number}.",
+                interests: ['employee-'.$employee->id],
+                deduplicationKey: 'refund_processed_'.$refund->id
+            );
+
             $this->broadcastSafely($employee, [
                 'title' => 'Refund Processed',
                 'message' => "A refund of \${$refund->amount} was processed on order {$order->order_number}.",
@@ -264,21 +278,30 @@ class NotificationHubService
     }
 
     /**
-     * Non-blocking Beams push helper.
+     * Asynchronously publish a Web Push Notification to Pusher Beams via queue.
+     *
+     * Dispatches SendWebPushNotificationJob, which is configured with afterCommit = true
+     * so that push notifications are never dispatched if the surrounding database
+     * transaction rolls back.
      */
-    protected function sendBeamsSafely(string $title, string $body, array $interests): void
+    protected function sendBeamsSafely(string $title, string $body, array $interests, ?string $deduplicationKey = null): void
     {
         try {
-            $this->beams->publishWebNotification($title, $body, $interests);
-        } catch (\Throwable) {
-            // Push notification network or credentials issue never interrupts transactions.
+            SendWebPushNotificationJob::dispatch($title, $body, $interests, $deduplicationKey);
+        } catch (\Throwable $e) {
+            // Queue dispatch failure must never interrupt business transactions.
+            Log::warning('Web push notification job dispatch failed', [
+                'title' => $title,
+                'interests' => $interests,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
     /**
      * Non-blocking Pusher Channels broadcast helper.
      */
-    protected function broadcastSafely(\Illuminate\Contracts\Auth\Authenticatable $user, array $data): void
+    protected function broadcastSafely(Authenticatable $user, array $data): void
     {
         try {
             broadcast(new NotificationReceived($user, $data))->toOthers();

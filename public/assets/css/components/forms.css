@@ -6,7 +6,7 @@
 
 .form-label {
     display: block;
-    margin-bottom: var(--sp-1.5);
+    margin-bottom: var(--sp-1-5);
     font-size: var(--text-sm);
     font-weight: 500;
     color: var(--c-neutral-700);
@@ -189,7 +189,21 @@ input[type="radio"] { border-radius: 50%; }
 }
 .form-switch input:checked + .form-switch-track { background: var(--c-neutral-900); }
 .form-switch input:checked + .form-switch-track::after { transform: translateX(1.25rem); }
-.form-switch input { display: none; }
+.form-switch { position: relative; }
+.form-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.form-switch input:focus-visible + .form-switch-track {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: 3px;
+}
 
 /* Form Actions */
 .form-actions {

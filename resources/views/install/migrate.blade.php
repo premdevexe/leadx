@@ -8,47 +8,54 @@
 </head>
 <body>
     <main class="auth-page">
-        <div style="width: 100%; max-width: 42rem;">
+        <div style="width: 100%; max-width: 46rem; padding: 1.5rem 1rem;">
             <div class="auth-card auth-card-wide" style="max-width: 100%;">
                 <div class="auth-brand">
                     <span class="auth-brand-icon">L</span>
                     <span class="auth-brand-text">LeadX Installation</span>
                 </div>
+
+                @include('install.partials.stepper', ['currentStep' => 4])
+
                 <div class="auth-box" style="max-width: none;">
                     <div class="auth-title">Database Installation</div>
-                    <div class="auth-subtitle">Run database migrations and seed initial data.</div>
+                    <div class="auth-subtitle">Run database migrations and seed initial data safely.</div>
 
                     <div id="migrate-status" style="margin-top: 1.5rem;">
                         <div class="info-box">
-                            <strong>What happens here:</strong>
+                            <strong>Safety & Idempotency Guarantee:</strong>
                             <ul style="margin-top: 0.5rem; margin-left: 1.25rem; list-style: disc;">
-                                <li>Creates all required database tables via migrations</li>
-                                <li>Inserts initial seed data (permissions, settings, etc.)</li>
-                                <li>Does NOT drop or modify existing tables</li>
-                                <li>Existing data will not be affected</li>
+                                <li>Creates required database tables via approved Laravel migrations</li>
+                                <li>Inserts initial seed data (settings, lookup records)</li>
+                                <li><strong>Never drops or wipes tables</strong> (no <code>migrate:fresh</code> or <code>db:wipe</code>)</li>
+                                <li>Existing database data will be preserved completely</li>
                             </ul>
                         </div>
 
-                        <form id="migrate-form" method="POST" action="{{ route('install.run-migrate') }}">
+                        <form id="migrate-form" method="POST" action="{{ route('install.run-migrate') }}" style="margin-top: 1.5rem;">
                             @csrf
                             <input type="hidden" name="force" value="1">
 
                             <div class="form-check" style="margin: 1.25rem 0;">
                                 <input type="checkbox" id="confirm" name="confirm" required>
-                                <label for="confirm" style="font-size: 14px;">I understand this will create database tables and confirm the database is correct.</label>
+                                <label for="confirm" style="font-size: 14px; margin-left: 0.5rem; color: var(--c-neutral-800);">I confirm the database configuration is correct and authorize running forward migrations.</label>
                             </div>
 
-                            <div class="form-actions">
-                                <a href="{{ route('install.database') }}" class="btn btn-secondary">Back</a>
-                                <button type="submit" class="btn btn-primary" id="migrate-btn">Run Migrations</button>
+                            <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                                <a href="{{ route('install.database') }}" class="btn btn-secondary">
+                                    &larr; Back
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="migrate-btn" style="padding: 0.5rem 1.5rem;">
+                                    Run Migrations &rarr;
+                                </button>
                             </div>
                         </form>
                     </div>
 
                     <div id="migrate-result" style="margin-top: 1.5rem; display: none;">
                         <div id="migrate-loading" style="text-align: center; padding: 2rem;">
-                            <div class="spinner spinner-lg" style="margin: 0 auto 1rem;"></div>
-                            <p style="color: #737373;">Running migrations, please wait...</p>
+                            <div style="display: inline-block; width: 2.5rem; height: 2.5rem; border: 3px solid var(--c-neutral-200); border-top-color: var(--c-neutral-900); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                            <p style="color: var(--c-neutral-600); font-weight: 500; margin-top: 1rem;">Executing database migrations, please wait...</p>
                         </div>
                         <div id="migrate-output" style="display: none;"></div>
                     </div>
@@ -56,6 +63,12 @@
             </div>
         </div>
     </main>
+
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 
     <script>
         document.getElementById('migrate-form').addEventListener('submit', async function (e) {
@@ -97,8 +110,13 @@
                                 ${data.seeded ? '<div class="alert-message">Initial data seeded successfully.</div>' : ''}
                             </div>
                         </div>
-                        <div class="form-actions" style="margin-top: 1rem;">
-                            <a href="{{ route('install.admin') }}" class="btn btn-primary">Continue</a>
+                        ${data.migration_output ? `
+                            <div style="margin-top: 1rem; background: var(--c-neutral-900, #171717); color: #22c55e; padding: 0.75rem 1rem; border-radius: var(--radius-md, 6px); font-family: monospace; font-size: 0.75rem; max-height: 180px; overflow-y: auto; white-space: pre-wrap;">
+                                ${data.migration_output}
+                            </div>
+                        ` : ''}
+                        <div style="margin-top: 1.5rem; text-align: right;">
+                            <a href="{{ route('install.admin') }}" class="btn btn-primary" style="padding: 0.5rem 1.5rem;">Continue &rarr;</a>
                         </div>
                     `;
                 } else {
@@ -110,8 +128,9 @@
                                 <div class="alert-message">${data.message}</div>
                             </div>
                         </div>
-                        <div class="form-actions" style="margin-top: 1rem;">
-                            <button type="button" class="btn btn-secondary" onclick="location.reload()">Try Again</button>
+                        <div style="margin-top: 1.5rem; display: flex; justify-content: space-between;">
+                            <button type="button" class="btn btn-secondary" onclick="location.reload()">&larr; Back to Setup</button>
+                            <button type="button" class="btn btn-primary" onclick="location.reload()">Retry Migrations</button>
                         </div>
                     `;
                 }
@@ -120,8 +139,11 @@
                 output.style.display = 'block';
                 output.innerHTML = `
                     <div class="alert alert-danger">
-                        <div class="alert-title">Error</div>
+                        <div class="alert-title">Network Exception</div>
                         <div class="alert-message">${err.message}</div>
+                    </div>
+                    <div style="margin-top: 1.5rem; text-align: right;">
+                        <button type="button" class="btn btn-secondary" onclick="location.reload()">Retry</button>
                     </div>
                 `;
             }

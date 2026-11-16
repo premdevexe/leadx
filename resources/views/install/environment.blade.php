@@ -8,12 +8,15 @@
 </head>
 <body>
     <main class="auth-page">
-        <div style="width: 100%; max-width: 42rem;">
+        <div style="width: 100%; max-width: 46rem; padding: 1.5rem 1rem;">
             <div class="auth-card auth-card-wide" style="max-width: 100%;">
                 <div class="auth-brand">
                     <span class="auth-brand-icon">L</span>
                     <span class="auth-brand-text">LeadX Installation</span>
                 </div>
+
+                @include('install.partials.stepper', ['currentStep' => 2])
+
                 <div class="auth-box" style="max-width: none;">
                     <div class="auth-title">Application Configuration</div>
                     <div class="auth-subtitle">Configure your application settings.</div>
@@ -58,30 +61,47 @@
                             <div class="form-group">
                                 <label for="timezone" class="form-label form-label-required">Timezone</label>
                                 <select id="timezone" name="timezone" class="form-select" required>
-                                    @foreach (timezone_identifiers_list() as $tz)
-                                        <option value="{{ $tz }}" {{ old('timezone', $env['APP_TIMEZONE'] ?? 'UTC') === $tz ? 'selected' : '' }}>{{ $tz }}</option>
+                                    @php
+                                        $currentTz = old('timezone', $env['APP_TIMEZONE'] ?? config('app.timezone', 'UTC'));
+                                        $timezones = [
+                                            'UTC' => 'UTC (Universal Coordinated Time)',
+                                            'Asia/Kolkata' => 'Asia/Kolkata (IST +5:30)',
+                                            'America/New_York' => 'America/New_York (EST/EDT)',
+                                            'America/Chicago' => 'America/Chicago (CST/CDT)',
+                                            'America/Denver' => 'America/Denver (MST/MDT)',
+                                            'America/Los_Angeles' => 'America/Los_Angeles (PST/PDT)',
+                                            'Europe/London' => 'Europe/London (GMT/BST)',
+                                            'Europe/Paris' => 'Europe/Paris (CET/CEST)',
+                                            'Europe/Berlin' => 'Europe/Berlin (CET/CEST)',
+                                            'Asia/Dubai' => 'Asia/Dubai (GST +4:00)',
+                                            'Asia/Singapore' => 'Asia/Singapore (SGT +8:00)',
+                                            'Asia/Tokyo' => 'Asia/Tokyo (JST +9:00)',
+                                            'Australia/Sydney' => 'Australia/Sydney (AEST/AEDT)',
+                                        ];
+                                    @endphp
+                                    @foreach ($timezones as $tz => $label)
+                                        <option value="{{ $tz }}" {{ $currentTz === $tz ? 'selected' : '' }}>{{ $label }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label for="currency" class="form-label form-label-required">Default Currency Code</label>
-                                <input type="text" id="currency" name="currency" value="{{ old('currency', $env['APP_CURRENCY'] ?? 'USD') }}" class="form-input" placeholder="USD, EUR, GBP" required>
-                                <p class="form-hint">ISO 4217 currency code</p>
+                                <input type="text" id="currency" name="currency" value="{{ old('currency', $env['APP_CURRENCY'] ?? 'USD') }}" class="form-input" maxlength="10" placeholder="e.g. USD, EUR, INR" required>
                             </div>
                         </div>
 
-                        <div class="form-row form-row-cols-2">
-                            <div class="form-group">
-                                <label for="currency_symbol" class="form-label">Currency Symbol</label>
-                                <input type="text" id="currency_symbol" name="currency_symbol" value="{{ old('currency_symbol', $env['APP_CURRENCY_SYMBOL'] ?? '$') }}" class="form-input" placeholder="$, €, £, ₹">
-                                <p class="form-hint">Display symbol for prices</p>
-                            </div>
-                            <div class="form-group"></div>
+                        <div class="form-group">
+                            <label for="currency_symbol" class="form-label">Currency Symbol</label>
+                            <input type="text" id="currency_symbol" name="currency_symbol" value="{{ old('currency_symbol', $env['APP_CURRENCY_SYMBOL'] ?? '$') }}" class="form-input" maxlength="10" placeholder="e.g. $, â‚¬, â‚¹">
                         </div>
 
-                        <div class="form-actions">
-                            <a href="{{ route('install.requirements') }}" class="btn btn-secondary">Back</a>
-                            <button type="submit" class="btn btn-primary">Continue</button>
+                        <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                            <a href="{{ route('install.requirements') }}" class="btn btn-secondary">
+                                &larr; Back
+                            </a>
+                            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.5rem;">
+                                Save & Continue &rarr;
+                            </button>
                         </div>
                     </form>
                 </div>

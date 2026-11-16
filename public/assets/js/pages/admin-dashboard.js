@@ -8,8 +8,13 @@ import { initModals, initTriggers } from '../components/modals.js';
 import { initDropdowns } from '../components/dropdowns.js';
 import { initForms } from '../components/forms.js';
 import { initDismissibleAlerts, showToast } from '../components/alerts.js';
+import { initCsrf } from '../core/csrf.js';
+
+let initialized = false;
 
 export function initAdminDashboard() {
+    if (initialized) return;
+    initialized = true;
     initSidebar({
         sidebarId: 'sidebar',
         overlayId: 'sidebar-overlay',
@@ -32,24 +37,18 @@ export function initAdminDashboard() {
 
     // Admin notification bell — redirect to notifications page
     const bell = $('#notification-bell');
-    if (bell) {
+    if (bell?.dataset.notificationsUrl && !$('#notification-dropdown')) {
         bell.addEventListener('click', () => {
-            window.location.href = '/admin/notifications';
+            window.location.assign(bell.dataset.notificationsUrl);
         });
     }
 
     initCsrf();
 }
 
-function initCsrf() {
-    const token = $('meta[name="csrf-token"]')?.content;
-    if (!token) return;
-    const orig = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function (method, url) {
-        this.setRequestHeader('X-CSRF-TOKEN', token);
-        return orig.apply(this, arguments);
-    };
-}
-
 // Auto-run on page load
-document.addEventListener('DOMContentLoaded', initAdminDashboard);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminDashboard);
+} else {
+    initAdminDashboard();
+}

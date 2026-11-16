@@ -1,53 +1,82 @@
-/* ============================================================
-   LeadX — Modal module
-   ============================================================ */
-import { $, $$, on, show, hide, addClass, removeClass } from '../core/dom.js';
+/* LeadX ? accessible shared modal controls. */
+import { focusFirst, trapFocus, lockScroll, unlockScroll } from '../core/focus.js';
+
+const modalSelector = '.modal-overlay, .leadx-modal-backdrop';
+const openModals = [];
+const returnFocus = new WeakMap();
+let initialized = false;
+let triggersInitialized = false;
 
 export function initModals() {
-    // Close buttons
-    $$('[data-modal-close]').forEach((btn) => {
-        on(btn, 'click', () => {
-            const modal = btn.closest('.modal-overlay') || $(`#${btn.dataset.modalClose}`);
-            if (modal) closeModal(modal);
-        });
-    });
+    if (initialized) return;
+    initialized = true;
 
-    // Close on overlay click
-    $$('.modal-overlay').forEach((overlay) => {
-        on(overlay, 'click', (e) => {
-            if (e.target === overlay) closeModal(overlay);
-        });
-    });
-
-    // Close on Escape
-    on(document, 'keydown', (e) => {
-        if (e.key === 'Escape') {
-            const openModal = $('.modal-overlay.active');
-            if (openModal) closeModal(openModal);
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-modal-close]');
+        if (button) {
+            event.preventDefault();
+            closeModal(button.dataset.modalClose || button.closest(modalSelector));
+        } else if (event.target.matches(modalSelector) && event.target.dataset.modalStatic !== 'true') {
+            closeModal(event.target);
         }
+    });
+    document.addEventListener('keydown', (event) => {
+        const modal = openModals.at(-1);
+        if (!modal) return;
+        if (event.key === 'Escape' && modal.dataset.modalStatic !== 'true') {
+            event.preventDefault();
+            closeModal(modal);
+        } else {
+            trapFocus(event, modal);
+        }
+    });
+    document.addEventListener('focusin', (event) => {
+        const modal = openModals.at(-1);
+        if (modal && !modal.contains(event.target)) focusFirst(modal);
     });
 }
 
 export function openModal(id) {
-    const modal = typeof id === 'string' ? $(`#${id}`) : id;
-    if (!modal) return;
-    addClass(modal, 'active');
-    document.body.style.overflow = 'hidden';
+    const modal = typeof id === 'string' ? document.getElementById(id) : id;
+    if (!modal || openModals.includes(modal)) return;
+    initModals();
+    returnFocus.set(modal, document.activeElement);
+    openModals.push(modal);
+    modal.classList.remove('hidden');
+    modal.classList.add('active');
+    modal.hidden = false;
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-hidden', 'false');
+    lockScroll(modal);
+    focusFirst(modal);
 }
 
 export function closeModal(id) {
-    const modal = typeof id === 'string' ? $(`#${id}`) : id;
+    const modal = typeof id === 'string' ? document.getElementById(id) : id;
     if (!modal) return;
-    removeClass(modal, 'active');
-    document.body.style.overflow = '';
+    const index = openModals.indexOf(modal);
+    const wasTopModal = index === openModals.length - 1;
+    if (index >= 0) openModals.splice(index, 1);
+    modal.classList.remove('active');
+    if (!modal.classList.contains('modal-overlay')) modal.classList.add('hidden');
+    unlockScroll(modal);
+    if (index >= 0 && wasTopModal) {
+        const target = returnFocus.get(modal);
+        if (target?.isConnected && !target.closest('[inert]')) target.focus({ preventScroll: true });
+        else if (openModals.length) focusFirst(openModals.at(-1));
+    }
+    modal.setAttribute('aria-hidden', 'true');
+    returnFocus.delete(modal);
 }
 
 export function initTriggers() {
-    // [data-modal-open="modal-id"] opens modal
-    $$('[data-modal-open]').forEach((trigger) => {
-        on(trigger, 'click', () => {
-            const targetId = trigger.dataset.modalOpen;
-            if (targetId) openModal(targetId);
-        });
+    if (triggersInitialized) return;
+    triggersInitialized = true;
+    document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('[data-modal-open]');
+        if (!trigger?.dataset.modalOpen) return;
+        event.preventDefault();
+        openModal(trigger.dataset.modalOpen);
     });
 }

@@ -35,10 +35,10 @@ class AuditLog extends Model
     }
 
     /**
-     * The audited record.
+     * The audited record (user, team, ...).
      */
-    public function auditable(): MorphTo
+    public function actor(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo('actor', 'auditable_type', 'auditable_id');
     }
 }

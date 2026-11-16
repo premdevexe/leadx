@@ -3,30 +3,46 @@
 namespace App\Http\Controllers\Install;
 
 use App\Http\Controllers\Controller;
+use App\Services\Installer\AdminAccountManager;
+use App\Services\Installer\DatabaseManager;
+use App\Services\Installer\EnvironmentManager;
+use App\Services\Installer\InstallationStateManager;
+use App\Services\Installer\RequirementChecker;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
+use Illuminate\View\View;
+use Throwable;
 
 class InstallController extends Controller
 {
-    private function sessionStep(int $step): void
+    public function __construct(
+        protected RequirementChecker $checker,
+        protected DatabaseManager $dbManager,
+        protected EnvironmentManager $envManager,
+        protected AdminAccountManager $adminManager,
+        protected InstallationStateManager $stateManager
+    ) {}
+
+    protected function sessionStep(int $step): void
     {
         session(['install_step' => $step]);
     }
 
-    private function step(): int
+    protected function isInstalled(): bool
     {
-        return (int) (session('install_step') ?? 1);
+        return $this->stateManager->isInstalled();
     }
 
     // ── Step 1: Environment Requirements ──────────────────────
 
-    public function requirements(Request $request)
+    public function requirements(Request $request): View|RedirectResponse|JsonResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
@@ -36,7 +52,7 @@ class InstallController extends Controller
 
         $checks = [
             'PHP >= 8.2' => [
-                'pass' => version_compare(PHP_VERSION, '8.2.0', '>='),
+                'pass' => version_compare(PHP_VERSION, RequirementChecker::MIN_PHP_VERSION, '>='),
                 'value' => PHP_VERSION,
             ],
             'Laravel 12' => [
@@ -85,14 +101,22 @@ class InstallController extends Controller
             ],
         ];
 
-        $allPass = ! in_array(false, array_column($checks, 'pass'));
+        $allPass = ! in_array(false, array_column($checks, 'pass'), true);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'all_pass' => $allPass,
+                'checks' => $checks,
+            ]);
+        }
 
         return view('install.requirements', compact('checks', 'allPass'));
     }
 
     // ── Step 2: Application Configuration ─────────────────────
 
-    public function environment(Request $request)
+    public function environment(Request $request): View|RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
@@ -100,14 +124,12 @@ class InstallController extends Controller
 
         $this->sessionStep(2);
 
-        $env = $this->readEnv();
+        $env = $this->envManager->read();
 
-        return view('install.environment', [
-            'env' => $env,
-        ]);
+        return view('install.environment', compact('env'));
     }
 
-    public function saveEnvironment(Request $request)
+    public function saveEnvironment(Request $request): RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
@@ -125,22 +147,21 @@ class InstallController extends Controller
             'app_url.url' => 'Please enter a valid URL.',
         ]);
 
-        $env = $this->readEnv();
-        $env['APP_NAME'] = $validated['app_name'];
-        $env['APP_URL'] = rtrim($validated['app_url'], '/');
-        $env['APP_TIMEZONE'] = $validated['timezone'];
-        $env['APP_CURRENCY'] = strtoupper($validated['currency']);
-        $env['APP_CURRENCY_SYMBOL'] = $validated['currency_symbol'] ?? '$';
-        $env['APP_LOCALE'] = 'en';
-
-        $this->writeEnv($env);
+        $this->envManager->update([
+            'APP_NAME' => $validated['app_name'],
+            'APP_URL' => rtrim($validated['app_url'], '/'),
+            'APP_TIMEZONE' => $validated['timezone'],
+            'APP_CURRENCY' => strtoupper($validated['currency']),
+            'APP_CURRENCY_SYMBOL' => $validated['currency_symbol'] ?? '$',
+            'APP_LOCALE' => 'en',
+        ]);
 
         return redirect()->route('install.database');
     }
 
     // ── Step 3: Database Configuration ────────────────────────
 
-    public function database(Request $request)
+    public function database(Request $request): View|RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
@@ -148,22 +169,23 @@ class InstallController extends Controller
 
         $this->sessionStep(3);
 
-        $env = $this->readEnv();
+        $env = $this->envManager->read();
         $testResult = session('db_test_result');
 
-        return view('install.database', [
-            'env' => $env,
-            'testResult' => $testResult,
-        ]);
+        return view('install.database', compact('env', 'testResult'));
     }
 
-    public function testDatabase(Request $request)
+    public function testDatabase(Request $request): JsonResponse|RedirectResponse
     {
         if ($this->isInstalled()) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Already installed.'], 403);
+            }
+
             return redirect('/');
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'db_host' => 'required|string|max:255',
             'db_port' => 'required|integer|min:1|max:65535',
             'db_database' => 'required|string|max:255',
@@ -171,70 +193,51 @@ class InstallController extends Controller
             'db_password' => 'nullable|string',
         ]);
 
-        try {
-            $config = [
-                'driver' => 'mysql',
-                'host' => $request->input('db_host', '127.0.0.1'),
-                'port' => $request->input('db_port', 3306),
-                'database' => $request->input('db_database'),
-                'username' => $request->input('db_username'),
-                'password' => $request->input('db_password', ''),
-                'charset' => 'utf8mb4',
-                'collation' => 'utf8mb4_unicode_ci',
-                'prefix' => '',
-                'strict' => true,
-                'engine' => null,
-            ];
-
-            DB::purge('install_test');
-            Config::set('database.connections.install_test', $config);
-
-            DB::connection('install_test')->getPdo();
-
-            // Try to read existing tables
-            $tables = [];
-            try {
-                $tables = DB::connection('install_test')
-                    ->select('SHOW TABLES');
-                $tables = array_map(fn($t) => array_values((array) $t)[0] ?? null, $tables);
-                $tables = array_filter($tables);
-            } catch (\Throwable $e) {
-                // User may not have SHOW TABLES privilege; that's fine
+        // The wizard is unauthenticated: never allow it to be used as a
+        // network probe against arbitrary hosts, and only allow the
+        // application's database to be re-aimed at safe locations.
+        if ($error = $this->dbManager->validateDbTarget($validated['db_host'], $validated['db_port'], $validated['db_database'])) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $error], 422);
             }
 
-            $result = [
-                'success' => true,
-                'message' => 'Database connection successful.',
-                'tables' => array_values($tables),
-                'table_count' => count($tables),
-            ];
-        } catch (\Throwable $e) {
-            $result = [
+            return back()->withInput()->with('db_test_result', [
                 'success' => false,
-                'message' => 'Connection failed: ' . $this->sanitizeDbError($e->getMessage()),
-                'tables' => [],
-                'table_count' => 0,
-            ];
+                'message' => $error,
+            ]);
         }
 
-        // Persist form values in session so user doesn't re-type them
+        $result = $this->dbManager->testConnection([
+            'host' => $validated['db_host'],
+            'port' => $validated['db_port'],
+            'database' => $validated['db_database'],
+            'username' => $validated['db_username'],
+            'password' => $validated['db_password'] ?? '',
+        ]);
+
+        // If AJAX call, return JSON response immediately
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json($result);
+        }
+
+        // Persist form values in session for traditional form post
         $request->session()->flash('db_form_values', [
-            'db_host' => $request->input('db_host'),
-            'db_port' => $request->input('db_port'),
-            'db_database' => $request->input('db_database'),
-            'db_username' => $request->input('db_username'),
+            'db_host' => $validated['db_host'],
+            'db_port' => $validated['db_port'],
+            'db_database' => $validated['db_database'],
+            'db_username' => $validated['db_username'],
         ]);
 
         return back()->with('db_test_result', $result);
     }
 
-    public function saveDatabase(Request $request)
+    public function saveDatabase(Request $request): RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'db_host' => 'required|string|max:255',
             'db_port' => 'required|integer|min:1|max:65535',
             'db_database' => 'required|string|max:255',
@@ -242,22 +245,33 @@ class InstallController extends Controller
             'db_password' => 'nullable|string',
         ]);
 
-        $env = $this->readEnv();
-        $env['DB_CONNECTION'] = 'mysql';
-        $env['DB_HOST'] = $request->input('db_host', '127.0.0.1');
-        $env['DB_PORT'] = $request->input('db_port', 3306);
-        $env['DB_DATABASE'] = $request->input('db_database');
-        $env['DB_USERNAME'] = $request->input('db_username');
-        $env['DB_PASSWORD'] = $request->input('db_password', '');
+        if ($error = $this->dbManager->validateDbTarget($validated['db_host'], $validated['db_port'], $validated['db_database'])) {
+            return back()->withInput()->with('error', $error);
+        }
 
-        $this->writeEnv($env);
+        // Atomically update .env without touching other keys
+        $this->envManager->update([
+            'DB_CONNECTION' => 'mysql',
+            'DB_HOST' => $validated['db_host'],
+            'DB_PORT' => $validated['db_port'],
+            'DB_DATABASE' => $validated['db_database'],
+            'DB_USERNAME' => $validated['db_username'],
+            'DB_PASSWORD' => $validated['db_password'] ?? '',
+        ]);
+
+        // Refresh in-memory config
+        Config::set('database.connections.mysql.host', $validated['db_host']);
+        Config::set('database.connections.mysql.port', $validated['db_port']);
+        Config::set('database.connections.mysql.database', $validated['db_database']);
+        Config::set('database.connections.mysql.username', $validated['db_username']);
+        Config::set('database.connections.mysql.password', $validated['db_password'] ?? '');
 
         return redirect()->route('install.migrate');
     }
 
-    // ── Step 4: Database Installation ─────────────────────────
+    // ── Step 4: Database Installation (Migrations) ────────────
 
-    public function migrate(Request $request)
+    public function migrate(Request $request): View|RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
@@ -268,10 +282,10 @@ class InstallController extends Controller
         return view('install.migrate');
     }
 
-    public function runMigrations(Request $request)
+    public function runMigrations(Request $request): JsonResponse
     {
         if ($this->isInstalled()) {
-            return response()->json(['success' => false, 'message' => 'Already installed.']);
+            return response()->json(['success' => false, 'message' => 'Already installed.'], 403);
         }
 
         $request->validate([
@@ -279,15 +293,14 @@ class InstallController extends Controller
         ]);
 
         try {
-            // Refresh database configuration
-            Artisan::call('config:clear', []);
+            // Reconnect database cleanly
+            DB::purge('mysql');
 
-            // Run migrations
+            // Run migrations forward safely (never migrate:fresh or reset)
             Artisan::call('migrate', ['--force' => true]);
-
             $output = Artisan::output();
 
-            // Seed database if seeder exists
+            // Seed database idempotently if seeder exists
             $seeded = false;
             if (file_exists(database_path('seeders/DatabaseSeeder.php'))) {
                 Artisan::call('db:seed', ['--force' => true]);
@@ -300,17 +313,17 @@ class InstallController extends Controller
                 'migration_output' => $output,
                 'seeded' => $seeded,
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Migration failed: ' . $e->getMessage(),
-            ]);
+                'message' => 'Migration failed: ' . $this->dbManager->sanitizeDbError($e->getMessage()),
+            ], 422);
         }
     }
 
     // ── Step 5: Initial Super Admin Setup ─────────────────────
 
-    public function admin(Request $request)
+    public function admin(Request $request): View|RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
@@ -321,10 +334,18 @@ class InstallController extends Controller
         return view('install.admin');
     }
 
-    public function saveAdmin(Request $request)
+    public function saveAdmin(Request $request): RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
+        }
+
+        // A live system already has admin accounts (e.g. after unlock via the
+        // recovery center). The wizard must not let an unauthenticated visitor
+        // mint a new admin — refuse the step entirely.
+        if ($this->adminManager->hasAdminAccount()) {
+            return back()->withInput()
+                ->with('error', 'An admin account already exists. To change credentials, unlock the installer and use the admin recovery center instead of the wizard.');
         }
 
         $validated = $request->validate([
@@ -337,43 +358,21 @@ class InstallController extends Controller
             'password.confirmed' => 'Password confirmation does not match.',
         ]);
 
-        try {
-            // 1. Create or update Admin in admins table (for /admin/login)
-            \App\Models\Admin::updateOrCreate(
-                ['email' => $validated['email']],
-                [
-                    'name' => $validated['name'],
-                    'username' => $validated['username'],
-                    'password' => $validated['password'],
-                    'email_verified_at' => now(),
-                ]
-            );
+        $result = $this->adminManager->createOrUpdateAdmin($validated);
 
-            // 2. Also create or update User in users table (for general /login)
-            \App\Models\User::updateOrCreate(
-                ['email' => $validated['email']],
-                [
-                    'name' => $validated['name'],
-                    'username' => $validated['username'],
-                    'password' => $validated['password'],
-                    'role' => 'admin',
-                    'status' => 'active',
-                    'email_verified_at' => now(),
-                ]
-            );
-
-            $request->session()->put('admin_created', true);
-            $request->session()->put('admin_email', $validated['email']);
-
-            return redirect()->route('install.config');
-        } catch (\Throwable $e) {
-            return back()->withInput()->with('error', 'Failed to create admin: ' . $e->getMessage());
+        if (! $result['success']) {
+            return back()->withInput()->with('error', 'Failed to create admin: ' . $result['error']);
         }
+
+        $request->session()->put('admin_created', true);
+        $request->session()->put('admin_email', $validated['email']);
+
+        return redirect()->route('install.config');
     }
 
     // ── Step 6: System Configuration ──────────────────────────
 
-    public function config(Request $request)
+    public function config(Request $request): View|RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
@@ -384,7 +383,7 @@ class InstallController extends Controller
         return view('install.config');
     }
 
-    public function saveConfig(Request $request)
+    public function saveConfig(Request $request): RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
@@ -404,53 +403,56 @@ class InstallController extends Controller
             'pusher_app_cluster' => 'nullable|string|max:64',
             'google_client_id' => 'nullable|string|max:255',
             'google_client_secret' => 'nullable|string|max:255',
-            'queue_driver' => 'nullable|in:sync,database,redis,rabbitmq',
+            // rabbitmq is not a supported Laravel queue driver; picking it
+            // would write QUEUE_CONNECTION=rabbitmq and silently break every
+            // queued email/push. Keep only real drivers.
+            'queue_driver' => 'nullable|in:sync,database,redis,beanstalkd,sqs',
             'scheduler_enabled' => 'nullable|in:1,0',
         ]);
 
-        $env = $this->readEnv();
+        $appName = $this->envManager->get('APP_NAME', 'LeadX');
 
-        // Mail settings
-        $env['MAIL_MAILER'] = $request->input('mail_mailer', 'log');
-        $env['MAIL_HOST'] = $request->input('mail_host', '');
-        $env['MAIL_PORT'] = $request->input('mail_port', '');
-        $env['MAIL_USERNAME'] = $request->input('mail_username', '');
-        $env['MAIL_PASSWORD'] = $request->input('mail_password', '');
-        $env['MAIL_ENCRYPTION'] = $request->input('mail_encryption', '');
-        $env['MAIL_FROM_ADDRESS'] = $request->input('mail_from_address', '');
-        $env['MAIL_FROM_NAME'] = $env['APP_NAME'];
+        // Mark the wizard as in progress from its final configuration step,
+        // so the completion screen stays reachable (and a refresh of it works)
+        // even after finish() locks the application.
+        $request->session()->put('install_in_progress', true);
 
-        // Pusher settings
-        $env['PUSHER_APP_ID'] = $request->input('pusher_app_id', '');
-        $env['PUSHER_APP_KEY'] = $request->input('pusher_app_key', '');
-        $env['PUSHER_APP_SECRET'] = $request->input('pusher_app_secret', '');
-        $env['PUSHER_APP_CLUSTER'] = $request->input('pusher_app_cluster', '');
+        $updates = [
+            'MAIL_MAILER' => $request->input('mail_mailer', 'log'),
+            'MAIL_HOST' => $request->input('mail_host', ''),
+            'MAIL_PORT' => $request->input('mail_port', ''),
+            'MAIL_USERNAME' => $request->input('mail_username', ''),
+            'MAIL_PASSWORD' => $request->input('mail_password', ''),
+            'MAIL_ENCRYPTION' => $request->input('mail_encryption', ''),
+            'MAIL_FROM_ADDRESS' => $request->input('mail_from_address', ''),
+            'MAIL_FROM_NAME' => $appName,
+            'PUSHER_APP_ID' => $request->input('pusher_app_id', ''),
+            'PUSHER_APP_KEY' => $request->input('pusher_app_key', ''),
+            'PUSHER_APP_SECRET' => $request->input('pusher_app_secret', ''),
+            'PUSHER_APP_CLUSTER' => $request->input('pusher_app_cluster', ''),
+            'GOOGLE_CLIENT_ID' => $request->input('google_client_id', ''),
+            'GOOGLE_CLIENT_SECRET' => $request->input('google_client_secret', ''),
+            'QUEUE_CONNECTION' => $request->input('queue_driver', 'sync'),
+            'INSTALL_SCHEDULER' => $request->input('scheduler_enabled', '0') === '1' ? '1' : '0',
+        ];
 
-        // Google Calendar
-        $env['GOOGLE_CLIENT_ID'] = $request->input('google_client_id', '');
-        $env['GOOGLE_CLIENT_SECRET'] = $request->input('google_client_secret', '');
-
-        // Queue
-        $env['QUEUE_CONNECTION'] = $request->input('queue_driver', 'sync');
-
-        // Scheduler
-        $schedulerEnabled = $request->input('scheduler_enabled', '0') === '1';
-        $env['INSTALL_SCHEDULER'] = $schedulerEnabled ? '1' : '0';
-
-        $this->writeEnv($env);
+        $this->envManager->update($updates);
 
         return redirect()->route('install.verify');
     }
 
     // ── Step 7: Final Verification ────────────────────────────
 
-    public function verify(Request $request)
+    public function verify(Request $request): View|RedirectResponse
     {
         if ($this->isInstalled()) {
             return redirect('/');
         }
 
         $this->sessionStep(7);
+
+        // Ensure APP_KEY exists without overwriting
+        $this->envManager->ensureAppKey();
 
         $checks = [
             'Database connectivity' => $this->checkDbConnection(),
@@ -464,124 +466,114 @@ class InstallController extends Controller
                 'value' => 'storage/framework/cache',
             ],
             'Application key set' => [
-                'pass' => ! empty(env('APP_KEY')),
-                'value' => ! empty(env('APP_KEY')) ? 'APP_KEY configured' : 'Missing APP_KEY',
+                'pass' => ! empty(config('app.key')) || ! empty(env('APP_KEY')),
+                'value' => (! empty(config('app.key')) || ! empty(env('APP_KEY'))) ? 'APP_KEY configured' : 'Missing APP_KEY',
             ],
             'Required directories exist' => $this->checkRequiredDirs(),
             'Admin account exists' => $this->checkAdminExists(),
             'Routes available' => $this->checkRoutes(),
         ];
 
-        $allPass = ! in_array(false, array_column($checks, 'pass'));
+        $allPass = ! in_array(false, array_column($checks, 'pass'), true);
 
         return view('install.verify', compact('checks', 'allPass'));
     }
 
-    // ── Step 8: Finalize ──────────────────────────────────────
+    // ── Step 8: Finalize & Lock ───────────────────────────────
 
-    public function finish(Request $request)
+    public function finish(Request $request): View|RedirectResponse
     {
-        if ($this->isInstalled()) {
+        // If already locked and user is just visiting finish directly without active install session
+        if ($this->isInstalled() && ! $request->session()->has('install_in_progress')) {
             return redirect('/');
         }
 
         $this->sessionStep(8);
 
         try {
-            // Create installation lock
-            File::put(storage_path('app/installed.lock'), now()->toDateTimeString() . "\n");
+            // Lock the installer across multi-locations
+            $this->stateManager->lock([
+                'installed_by' => $request->session()->get('admin_email', 'installer_wizard'),
+                'installed_at' => now()->toIso8601String(),
+                'ip' => $request->ip(),
+            ]);
 
-            // Clear all caches
+            // Clear all application caches
             Artisan::call('config:clear');
             Artisan::call('route:clear');
             Artisan::call('view:clear');
             Artisan::call('cache:clear');
 
-            // Optimize for production
-            Artisan::call('config:cache');
-            Artisan::call('route:cache');
-            Artisan::call('view:cache');
-
-            // Set up scheduler if requested
+            // Log scheduler notice if requested
             if (env('INSTALL_SCHEDULER') === '1') {
-                $this->addSchedulerCron();
+                $command = 'php ' . base_path('artisan') . ' schedule:run --no-interaction';
+                File::append(storage_path('logs/install.log'), "[Scheduler] Add to crontab: * * * * * $command\n");
             }
 
-            // Clean up session
+            // If a non-sync queue driver was chosen, web-push and email jobs
+            // queue on the "notifications" queue — a worker NOT started with
+            // that queue will never process them (silent loss). Warn loudly.
+            $queueDriver = env('QUEUE_CONNECTION', 'sync');
+            if ($queueDriver !== 'sync') {
+                $workerCmd = "php " . base_path('artisan') . " queue:work database --queue=notifications,default --tries=3 --timeout=30";
+                File::append(storage_path('logs/install.log'), "[Queue] Start a worker for the notifications queue: $workerCmd\n");
+                $request->session()->flash('queue_warning', [
+                    'driver' => $queueDriver,
+                    'worker_command' => 'php artisan queue:work '.($queueDriver === 'database' ? 'database' : $queueDriver).' --queue=notifications,default --tries=3 --timeout=30',
+                ]);
+            }
+
+            // Retrieve admin email for success screen and clean up transient session keys
             $adminEmail = $request->session()->get('admin_email') ?? \App\Models\Admin::first()?->email;
-            $request->session()->forget(['install_step', 'db_test_result', 'db_form_values', 'admin_created', 'admin_email']);
-
-            return view('install.finish', [
-                'admin_email' => $adminEmail,
+            // Transient wizard markers are cleared now that the install is
+            // complete and the app is locked, so a repeated POST /install/finish
+            // redirects to '/' instead of re-running finalization.
+            $request->session()->forget([
+                'install_step',
+                'db_test_result',
+                'db_form_values',
+                'admin_created',
+                'admin_email',
+                'install_in_progress',
             ]);
-        } catch (\Throwable $e) {
+
+            return view('install.finish', compact('adminEmail'));
+        } catch (Throwable $e) {
+            // The wizard is unauthenticated: log the real diagnostic, show a
+            // generic message so internal paths and PDO error text never
+            // reach a random visitor.
+            Log::error('Installer finalization failed', ['exception' => $e]);
+
             return redirect()->route('install.verify')
-                ->with('error', 'Installation finalization encountered an issue: ' . $e->getMessage());
+                ->with('error', 'Installation finalization encountered an issue. See the application logs for details.');
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────
+    // ── Internal Diagnostics Helpers ──────────────────────────
 
-    private function isInstalled(): bool
-    {
-        return File::exists(storage_path('app/installed.lock'));
-    }
-
-    private function readEnv(): array
-    {
-        $env = [];
-        if (File::exists(base_path('.env'))) {
-            $lines = File::lines(base_path('.env'));
-            foreach ($lines as $line) {
-                $line = trim($line);
-                if ($line && ! str_starts_with($line, '#') && str_contains($line, '=')) {
-                    [$key, $value] = explode('=', $line, 2);
-                    $env[trim($key)] = trim($value);
-                }
-            }
-        }
-        return $env;
-    }
-
-    private function writeEnv(array $env): void
-    {
-        $lines = [];
-        foreach ($env as $key => $value) {
-            $value = str_replace(['"', "'"], '', $value);
-            $lines[] = $key . '=' . $value;
-        }
-        File::put(base_path('.env'), implode("\n", $lines) . "\n");
-    }
-
-    private function sanitizeDbError(string $message): string
-    {
-        // Strip credentials from error messages before displaying
-        $message = preg_replace('/Unknown database \'[^\']*\'/', 'Unknown database (name hidden)', $message);
-        $message = preg_replace('/Access denied for user \'[^\']*\'/', 'Access denied for user (credentials hidden)', $message);
-        return $message;
-    }
-
-    private function checkDbConnection(): array
+    protected function checkDbConnection(): array
     {
         try {
             DB::connection()->getPdo();
+
             return ['pass' => true, 'value' => 'Connected to ' . Config::get('database.connections.mysql.database')];
-        } catch (\Throwable $e) {
-            return ['pass' => false, 'value' => $this->sanitizeDbError($e->getMessage())];
+        } catch (Throwable $e) {
+            return ['pass' => false, 'value' => $this->dbManager->sanitizeDbError($e->getMessage())];
         }
     }
 
-    private function checkMigrations(): array
+    protected function checkMigrations(): array
     {
         try {
             $count = DB::table('migrations')->count();
+
             return ['pass' => $count > 0, 'value' => $count . ' migrations applied'];
-        } catch (\Throwable $e) {
+        } catch (Throwable) {
             return ['pass' => false, 'value' => 'Could not read migrations table'];
         }
     }
 
-    private function checkRequiredDirs(): array
+    protected function checkRequiredDirs(): array
     {
         $dirs = [
             storage_path('app'),
@@ -607,30 +599,25 @@ class InstallController extends Controller
         return ['pass' => true, 'value' => 'All directories exist and are writable'];
     }
 
-    private function checkAdminExists(): array
+    protected function checkAdminExists(): array
     {
         try {
             $count = \App\Models\Admin::count() + \App\Models\User::where('role', 'admin')->count();
+
             return ['pass' => $count > 0, 'value' => $count . ' admin user(s) found'];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ['pass' => false, 'value' => 'Could not query admin accounts: ' . $e->getMessage()];
         }
     }
 
-    private function checkRoutes(): array
+    protected function checkRoutes(): array
     {
         try {
-            $count = count(\Illuminate\Support\Facades\Route::getRoutes());
+            $count = count(Route::getRoutes());
+
             return ['pass' => $count > 0, 'value' => $count . ' routes registered'];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ['pass' => false, 'value' => 'Route check failed: ' . $e->getMessage()];
         }
-    }
-
-    private function addSchedulerCron(): void
-    {
-        // We don't auto-add system cron from PHP, but we log the command
-        $command = 'php ' . base_path('artisan') . ' schedule:run --no-interaction';
-        File::append(storage_path('logs/install.log'), "[Scheduler] Add this to your crontab:\n* * * * * $command\n");
     }
 }

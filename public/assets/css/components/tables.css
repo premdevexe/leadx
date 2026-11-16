@@ -53,8 +53,8 @@
 
 /* Table in card */
 .card .table-wrapper { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
-.card .data-table thead th { padding: var(--sp-2.5) var(--sp-4); }
-.card .data-table tbody td { padding: var(--sp-2.5) var(--sp-4); }
+.card .data-table thead th { padding: var(--sp-2-5) var(--sp-4); }
+.card .data-table tbody td { padding: var(--sp-2-5) var(--sp-4); }
 
 /* Table actions */
 .table-actions {
@@ -67,7 +67,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: var(--sp-1.5);
+    padding: var(--sp-1-5);
     border-radius: var(--radius-md);
     color: var(--c-neutral-500);
     transition: background var(--transition-fast), color var(--transition-fast);

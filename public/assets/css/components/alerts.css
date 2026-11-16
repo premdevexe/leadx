@@ -20,7 +20,7 @@
 }
 
 .alert-content { flex: 1; }
-.alert-title { font-weight: 600; margin-bottom: var(--sp-0.5); }
+.alert-title { font-weight: 600; margin-bottom: var(--sp-0-5); }
 .alert-message { color: var(--c-neutral-600); }
 
 .alert-close {
@@ -93,7 +93,7 @@
 .toast.visible { transform: translateY(0); opacity: 1; }
 .toast.hiding { transform: translateY(100px); opacity: 0; }
 
-.toast-title { font-weight: 600; margin-bottom: var(--sp-0.5); }
+.toast-title { font-weight: 600; margin-bottom: var(--sp-0-5); }
 .toast-message { color: var(--c-neutral-400); font-size: var(--text-xs); }
 
 /* Inline validation / error box */

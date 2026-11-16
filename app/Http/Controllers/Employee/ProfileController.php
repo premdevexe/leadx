@@ -77,6 +77,14 @@ class ProfileController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        // A password change revokes every previously-issued API token,
+        // except the one that performed this very request (so the session
+        // doing the change stays valid). With no current token (normal web
+        // flow) this deletes all of the employee's tokens.
+        $currentTokenId = $employee->currentAccessToken()?->id;
+
+        $employee->tokens()->where('id', '!=', $currentTokenId ?? 0)->delete();
+
         return back()->with('status', 'Password changed successfully.');
     }
 }

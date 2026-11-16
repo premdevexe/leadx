@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\EmployeesController;
 use App\Http\Controllers\Admin\NotificationsController;
 use App\Http\Controllers\Admin\OrderCredentialController;
 use App\Http\Controllers\Admin\OrdersController;
+use App\Http\Controllers\Admin\PermissionDefinitionsController;
 use App\Http\Controllers\Admin\PermissionPresetsController;
 use App\Http\Controllers\Admin\ProductsController;
 use App\Http\Controllers\Admin\RefundStatusesController;
@@ -212,6 +213,11 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/employees/{employee}/team-access/grant', [TeamAccessGrantsController::class, 'store'])->name('admin.employees.team-access.grant');
     Route::post('/admin/employees/team-access/{grant}/revoke', [TeamAccessGrantsController::class, 'revoke'])->name('admin.employees.team-access.revoke');
 
+    // Permission definitions
+    Route::get('/admin/permissions', [PermissionDefinitionsController::class, 'index'])->name('admin.permissions.index');
+    Route::post('/admin/permissions', [PermissionDefinitionsController::class, 'store'])->name('admin.permissions.store');
+    Route::delete('/admin/permissions/{permission}', [PermissionDefinitionsController::class, 'destroy'])->name('admin.permissions.destroy');
+
     // Admin account management
     Route::get('/admin/admins', [AdminsController::class, 'index'])->name('admin.admins');
     Route::get('/admin/admins/create', [AdminsController::class, 'create'])->name('admin.admins.create');
@@ -228,6 +234,22 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/notifications', [NotificationsController::class, 'store'])->name('admin.notifications.store');
     Route::post('/admin/notifications/{log}/resend', [NotificationsController::class, 'resend'])->name('admin.notifications.resend');
     Route::delete('/admin/notifications', [NotificationsController::class, 'clear'])->name('admin.notifications.clear');
+
+    // ── Installer Recovery & Diagnostics ────────────────────────
+    Route::get('/admin/installer/recovery', [\App\Http\Controllers\Admin\InstallRecoveryController::class, 'index'])->name('admin.installer.recovery');
+    Route::post('/admin/installer/recovery/action', [\App\Http\Controllers\Admin\InstallRecoveryController::class, 'performAction'])->name('admin.installer.recovery.action');
+
+    // ── Backup & Disaster Recovery (Phase 16) ───────────────────
+    Route::get('/admin/backups', [\App\Http\Controllers\Admin\BackupController::class, 'index'])->name('admin.backups.index');
+    Route::post('/admin/backups', [\App\Http\Controllers\Admin\BackupController::class, 'store'])->name('admin.backups.store');
+    Route::get('/admin/backups/restore', [\App\Http\Controllers\Admin\BackupController::class, 'restoreView'])->name('admin.backups.restore');
+    Route::post('/admin/backups/restore', [\App\Http\Controllers\Admin\BackupController::class, 'performRestore'])->name('admin.backups.restore.perform');
+    Route::get('/admin/backups/settings', [\App\Http\Controllers\Admin\BackupController::class, 'settings'])->name('admin.backups.settings');
+    Route::put('/admin/backups/settings', [\App\Http\Controllers\Admin\BackupController::class, 'updateSettings'])->name('admin.backups.settings.update');
+    Route::get('/admin/backups/{backup}', [\App\Http\Controllers\Admin\BackupController::class, 'show'])->name('admin.backups.show');
+    Route::post('/admin/backups/{backup}/verify', [\App\Http\Controllers\Admin\BackupController::class, 'verify'])->name('admin.backups.verify');
+    Route::get('/admin/backups/{backup}/download', [\App\Http\Controllers\Admin\BackupController::class, 'download'])->name('admin.backups.download');
+    Route::delete('/admin/backups/{backup}', [\App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('admin.backups.destroy');
 
     Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
 });
@@ -254,6 +276,15 @@ Route::middleware('team.web')->group(function () {
     Route::get('/team/customers', [TeamCustomersController::class, 'index'])->name('team.customers');
     Route::get('/team/payments', [TeamPaymentsController::class, 'index'])->name('team.payments');
     Route::get('/team/subscriptions', [TeamSubscriptionsController::class, 'index'])->name('team.subscriptions');
+    Route::post('/team/subscriptions/{subscription}/renew', [TeamSubscriptionsController::class, 'renew'])->name('team.subscriptions.renew');
+    Route::post('/team/subscriptions/{subscription}/cancel', [TeamSubscriptionsController::class, 'cancel'])->name('team.subscriptions.cancel');
+    Route::get('/team/follow-ups', [\App\Http\Controllers\Team\FollowUpsController::class, 'index'])->name('team.follow-ups');
+    Route::get('/team/follow-ups/create', [\App\Http\Controllers\Team\FollowUpsController::class, 'create'])->name('team.follow-ups.create');
+    Route::post('/team/follow-ups', [\App\Http\Controllers\Team\FollowUpsController::class, 'store'])->name('team.follow-ups.store');
+    Route::get('/team/follow-ups/{followUp}', [\App\Http\Controllers\Team\FollowUpsController::class, 'show'])->name('team.follow-ups.show');
+    Route::post('/team/follow-ups/{followUp}/complete', [\App\Http\Controllers\Team\FollowUpsController::class, 'complete'])->name('team.follow-ups.complete');
+    Route::post('/team/follow-ups/{followUp}/reschedule', [\App\Http\Controllers\Team\FollowUpsController::class, 'reschedule'])->name('team.follow-ups.reschedule');
+    Route::post('/team/follow-ups/{followUp}/cancel', [\App\Http\Controllers\Team\FollowUpsController::class, 'cancel'])->name('team.follow-ups.cancel');
     Route::get('/team/members', [TeamMembersController::class, 'index'])->name('team.members');
     Route::get('/team/notifications', [TeamNotificationsController::class, 'index'])->name('team.notifications');
 });
@@ -302,6 +333,12 @@ Route::middleware('employee.web')->group(function () {
     Route::get('/employee/payments', [EmployeePaymentsController::class, 'index'])->name('employee.payments')->middleware('permission:payments.view');
     Route::get('/employee/subscriptions', [EmployeeSubscriptionsController::class, 'index'])->name('employee.subscriptions')->middleware('permission:subscriptions.view');
     Route::get('/employee/follow-ups', [FollowUpsController::class, 'index'])->name('employee.follow-ups')->middleware('permission:follow_ups.view');
+    Route::get('/employee/follow-ups/create', [FollowUpsController::class, 'create'])->name('employee.follow-ups.create')->middleware('permission:follow_ups.create');
+    Route::post('/employee/follow-ups', [FollowUpsController::class, 'store'])->name('employee.follow-ups.store')->middleware('permission:follow_ups.create');
+    Route::get('/employee/follow-ups/{followUp}', [FollowUpsController::class, 'show'])->name('employee.follow-ups.show')->middleware('permission:follow_ups.view');
+    Route::post('/employee/follow-ups/{followUp}/complete', [FollowUpsController::class, 'complete'])->name('employee.follow-ups.complete')->middleware('permission:follow_ups.edit');
+    Route::post('/employee/follow-ups/{followUp}/reschedule', [FollowUpsController::class, 'reschedule'])->name('employee.follow-ups.reschedule')->middleware('permission:follow_ups.edit');
+    Route::post('/employee/follow-ups/{followUp}/cancel', [FollowUpsController::class, 'cancel'])->name('employee.follow-ups.cancel')->middleware('permission:follow_ups.edit');
     Route::get('/employee/notifications', [EmployeeNotificationsController::class, 'index'])->name('employee.notifications');
     Route::get('/employee/reports', [EmployeeDashboardController::class, 'reports'])->name('employee.reports')->middleware('permission:sidebar.reports');
     Route::get('/employee/settings', [EmployeeDashboardController::class, 'settings'])->name('employee.settings');

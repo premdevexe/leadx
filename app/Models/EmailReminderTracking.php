@@ -13,6 +13,7 @@ class EmailReminderTracking extends Model
         'subscription_id',
         'type',
         'days_before',
+        'cycle_at',
         'scheduled_at',
         'sent_at',
         'status',
@@ -22,6 +23,7 @@ class EmailReminderTracking extends Model
     protected function casts(): array
     {
         return [
+            'cycle_at' => 'datetime',
             'scheduled_at' => 'datetime',
             'sent_at' => 'datetime',
         ];

@@ -48,7 +48,7 @@ export function createEl(tag, attrs = {}, children = []) {
     for (const [key, val] of Object.entries(attrs)) {
         if (key === 'text') el.textContent = val;
         else if (key === 'html') el.innerHTML = val;
-        else if (key.startsWith('data-')) el.dataset[key.slice(5)] = val;
+        else if (key.startsWith('data-')) el.setAttribute(key, val);
         else if (key === 'className') el.className = val;
         else el.setAttribute(key, val);
     }

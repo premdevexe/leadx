@@ -3,8 +3,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build:css": "cp -r public/assets/css public/build/css 2>/dev/null; cp -r public/assets/css/* public/build/ 2>/dev/null; echo 'CSS ready'",
-        "build": "cp -r public/assets/css public/build/css 2>/dev/null; echo 'Assets ready'",
+        "build:css": "node scripts/build-css.mjs",
+        "build": "node scripts/build-css.mjs",
         "dev": "echo 'No build step needed — assets are in public/assets/'"
     },
     "devDependencies": {

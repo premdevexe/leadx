@@ -7,6 +7,7 @@ use App\Models\EmailReminderTracking;
 use App\Models\Setting;
 use App\Models\Subscription;
 use Illuminate\Console\Command;
+use Illuminate\Database\QueryException;
 
 /**
  * Send subscription expiry and renewal reminder emails per the
@@ -16,11 +17,13 @@ use Illuminate\Console\Command;
  * / scopeRenewalDue + the subscription's stored dates) — no second
  * expiry system is introduced.
  *
- * Exactly-once delivery per subscription, per reminder window:
- * the unique (subscription_id, type, days_before) index on
- * email_reminder_tracking makes a repeated scheduler run a no-op.
- * A renewed subscription gets a new expires_at, so the new cycle's
- * windows can fire again.
+ * Exactly-once delivery per subscription, per reminder window, PER expiry
+ * cycle: the unique (subscription_id, type, days_before, cycle_at) index on
+ * email_reminder_tracking makes a repeated scheduler run a no-op within a
+ * cycle. cycle_at anchors the subscription's current expiry cycle
+ * (expires_at for expiry reminders, renewal_date for renewal reminders),
+ * so a renewed subscription — which gets a fresh expires_at — can have the
+ * new cycle's windows fire again.
  *
  * Scheduled: `email:subscription-reminders` in routes/console.php.
  */
@@ -103,9 +106,9 @@ class SendEmailSubscriptionReminders extends Command
 
     /**
      * Walk one reminder window, skipping every subscription that already
-     * has a tracking row for this (type, days_before) pair. Sends the
-     * customer email when enabled, and the team follow-up email when the
-     * team toggle is on.
+     * has a tracking row for this (type, days_before, cycle) triple. Sends
+     * the customer email when enabled, and the team follow-up email when
+     * the team toggle is on.
      */
     protected function dispatchForBatch(
         \Illuminate\Database\Eloquent\Builder $query,
@@ -119,11 +122,28 @@ class SendEmailSubscriptionReminders extends Command
 
         $query->chunk(100, function ($batch) use ($type, $customerEvent, $daysBefore, $config, &$sent): void {
             foreach ($batch as $subscription) {
-                // The once-per-window guard (database-enforced).
-                if (EmailReminderTracking::where('subscription_id', $subscription->id)
-                    ->where('type', $type)
-                    ->where('days_before', $daysBefore)
-                    ->exists()) {
+                // Cycle anchor: which expiry cycle this reminder belongs to.
+                // Expiry reminders key off expires_at; renewal reminders key
+                // off renewal_date. A renewed subscription gets a fresh
+                // anchor, so its next cycle's windows fire again.
+                $cycleAt = $type === 'renewal'
+                    ? $subscription->renewal_date
+                    : $subscription->expires_at;
+
+                if ($cycleAt === null) {
+                    // No date to anchor a cycle to; nothing to remind about.
+                    continue;
+                }
+
+                // Atomically claim the (subscription, type, window, cycle)
+                // tracking row BEFORE sending: two overlapping scheduler runs
+                // both claim, and exactly one wins. The loser skips instead of
+                // double-sending (a lost claim surfaces as a unique-key hit,
+                // which firstOrCreate swallows and reports via 'created').
+                $claimed = $this->claim($subscription, $type, $daysBefore, $cycleAt);
+
+                if (! $claimed['created']) {
+                    // Another run already owns this window — idempotent no-op.
                     continue;
                 }
 
@@ -132,7 +152,10 @@ class SendEmailSubscriptionReminders extends Command
                 $customerEmail = $customer?->email ?? $order?->customer_email;
 
                 if (! $customerEmail) {
-                    $this->recordSkipped($subscription, $type, $daysBefore, 'no_customer_email');
+                    $claimed['row']->update([
+                        'status' => 'skipped',
+                        'skip_reason' => 'no_customer_email',
+                    ]);
 
                     continue;
                 }
@@ -170,34 +193,62 @@ class SendEmailSubscriptionReminders extends Command
                     }
                 }
 
-                $this->recordSent($subscription, $type, $daysBefore);
+                $claimed['row']->update([
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                ]);
             }
         });
 
         return $sent;
     }
 
-    protected function recordSent(Subscription $subscription, string $type, int $daysBefore): void
-    {
-        EmailReminderTracking::create([
+    /**
+     * Atomically claim the tracking row for this (subscription, type, window,
+     * cycle) before any email is sent.
+     *
+     * Two overlapping scheduler runs can both reach the same subscription in
+     * the same window; the unique email_reminder_cycle_uniq index guarantees
+     * exactly one insert wins, so only the winner sends. A concurrent loser
+     * hits the unique key on its insert — firstOrCreate surfaces that as a
+     * "not created" result instead of a fatal QueryException, so overlapping
+     * runs stay idempotent and the batch loop never aborts mid-chunk.
+     *
+     * @return array{created: bool, row: EmailReminderTracking}
+     */
+    protected function claim(
+        Subscription $subscription,
+        string $type,
+        int $daysBefore,
+        \DateTimeInterface $cycleAt,
+    ): array {
+        $search = [
             'subscription_id' => $subscription->id,
-            'type'            => $type,
-            'days_before'     => $daysBefore,
-            'scheduled_at'    => now(),
-            'sent_at'         => now(),
-            'status'          => 'sent',
-        ]);
-    }
+            'type' => $type,
+            'days_before' => $daysBefore,
+            'cycle_at' => $cycleAt,
+        ];
 
-    protected function recordSkipped(Subscription $subscription, string $type, int $daysBefore, string $reason): void
-    {
-        EmailReminderTracking::create([
-            'subscription_id' => $subscription->id,
-            'type'            => $type,
-            'days_before'     => $daysBefore,
-            'scheduled_at'    => now(),
-            'status'          => 'skipped',
-            'skip_reason'     => $reason,
-        ]);
+        try {
+            $row = EmailReminderTracking::firstOrCreate($search, [
+                'scheduled_at' => now(),
+                'status' => 'pending',
+            ]);
+
+            // firstOrCreate reports created=false when the unique index
+            // already owned this row.
+            return ['created' => $row->wasRecentlyCreated, 'row' => $row];
+        } catch (QueryException $e) {
+            if (! $e->isUniqueConstraintViolation()) {
+                throw $e;
+            }
+
+            // Lost the insert race to a concurrent scheduler run — that run
+            // now owns the window; treat it as a no-op instead of aborting
+            // the whole chunk.
+            $row = EmailReminderTracking::where($search)->first() ?? new EmailReminderTracking($search);
+
+            return ['created' => false, 'row' => $row];
+        }
     }
 }

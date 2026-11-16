@@ -202,11 +202,14 @@ class SubscriptionCalendarService
     {
         $count = 0;
 
+        // chunkById: syncCreate() stamps google_event_id, which evicts rows
+        // from the whereNull('google_event_id') predicate — offset chunk()
+        // would skip every other row on large batches.
         Subscription::whereIn('calendar_sync_status', ['pending', 'not_connected', 'sync_error'])
             ->whereNotNull('expires_at')
             ->whereIn('status', ['active', 'expired'])
             ->whereNull('google_event_id') // only rows without a live event
-            ->chunk(100, function ($batch) use (&$count): void {
+            ->chunkById(100, function ($batch) use (&$count): void {
                 foreach ($batch as $subscription) {
                     if ($subscription->hasCalendarEvent()) {
                         continue; // already has one — skip.

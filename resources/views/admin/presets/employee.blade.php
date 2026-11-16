@@ -40,11 +40,13 @@
                 @method('PUT')
                 <div class="flex items-center gap-2">
                     <select name="preset_id" class="flex-1 rounded-lg border border-neutral-300 py-1.5 px-3 text-xs text-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-900">
-                        @foreach ($presets as $p)
+                        @forelse ($presets as $p)
                             <option value="{{ $p->id }}" {{ $employee->preset_id == $p->id ? 'selected' : '' }}>
                                 {{ $p->name }} {{ $p->is_default ? '(Default)' : '' }}
                             </option>
-                        @endforeach
+                        @empty
+                            <option value="">No presets available</option>
+                        @endforelse
                     </select>
                     <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800">
                         Change Preset

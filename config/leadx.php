@@ -152,4 +152,20 @@ return [
         'auto_create_on_verified_purchase' => (bool) env('LEADX_CRM_AUTO_CREATE', true),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Backup & Disaster Recovery (Phase 16)
+    |--------------------------------------------------------------------------
+    */
+    'backup' => [
+        'disk' => env('LEADX_BACKUP_DISK', 'local'),
+        'retention_days' => (int) env('LEADX_BACKUP_RETENTION_DAYS', 30),
+        'schedule_time' => env('LEADX_BACKUP_SCHEDULE_TIME', '02:00'),
+        'encryption_key' => env('LEADX_BACKUP_ENCRYPTION_KEY'),
+        'remote' => [
+            's3_bucket' => env('LEADX_BACKUP_S3_BUCKET'),
+            's3_endpoint' => env('LEADX_BACKUP_S3_ENDPOINT'),
+        ],
+    ],
+
 ];

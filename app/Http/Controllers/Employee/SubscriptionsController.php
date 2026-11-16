@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Employee;
 use App\Http\Controllers\Controller;
 use App\Models\EmployeeTeamAccessGrant;
 use App\Models\Subscription;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SubscriptionsController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         /** @var \App\Models\User $employee */
         $employee = $request->user();
@@ -21,7 +22,7 @@ class SubscriptionsController extends Controller
         $isExpiringOnly = $request->query('filter') === 'expiring';
 
         $baseQuery = Subscription::query()
-            ->with(['order.product', 'order.team', 'plan']);
+            ->with(['order.product', 'order.team', 'order.assignedEmployee', 'plan']);
 
         if ($viewMode === 'team_data') {
             if (! $hasTeamAccess || ! $employee->team_id) {
@@ -58,7 +59,7 @@ class SubscriptionsController extends Controller
             $baseQuery->orderByDesc('id');
         }
 
-        $subscriptions = $baseQuery->paginate(20)->appends(['view' => $viewMode]);
+        $subscriptions = $baseQuery->paginate(20)->appends(['view' => $viewMode, 'filter' => $isExpiringOnly ? 'expiring' : null]);
 
         return view('employee.subscriptions.index', [
             'subscriptions' => $subscriptions,
@@ -70,9 +71,9 @@ class SubscriptionsController extends Controller
         ]);
     }
 
-    public function expiring(Request $request): View
+    public function expiring(Request $request): View|RedirectResponse
     {
-        $request->merge(['filter' => 'expiring']);
+        $request->query->set('filter', 'expiring');
         return $this->index($request);
     }
 }

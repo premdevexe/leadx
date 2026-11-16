@@ -52,8 +52,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
     border-radius: var(--radius-md);
     color: var(--c-neutral-500);
     transition: background var(--transition-fast), color var(--transition-fast);
@@ -77,3 +78,15 @@
 .modal-lg { max-width: 48rem; }
 .modal-xl { max-width: 64rem; }
 .modal-full { max-width: calc(100vw - var(--sp-8)); max-height: calc(100vh - var(--sp-8)); }
+
+/* Keep long dialogs and their close controls reachable on short viewports. */
+.leadx-modal-backdrop {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.leadx-modal-panel {
+    max-height: calc(100dvh - var(--sp-8));
+    overflow-y: auto;
+    margin-block: auto;
+}
+.modal-footer { flex-wrap: wrap; }

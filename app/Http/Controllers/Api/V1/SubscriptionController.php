@@ -44,7 +44,9 @@ class SubscriptionController extends Controller
             $query->where('team_id', $request->integer('team_id'));
         }
 
-        return SubscriptionResource::collection($query->latest()->get());
+        // Bounded to 200 (see OrdersController index) so the payload stops
+        // growing without limit as subscription data accumulates.
+        return SubscriptionResource::collection($query->latest()->take(200)->get());
     }
 
     /**
@@ -111,12 +113,18 @@ class SubscriptionController extends Controller
             ]);
         }
 
-        // Renew/cancel additionally require team ownership or admin — an
-        // employee can see their team's subscriptions but only a team
-        // account or admin may mutate them.
+        // Renew/cancel require team ownership or admin — an individual
+        // employee can VIEW their team's subscriptions but may never
+        // mutate them (mutation is reserved for the team account or an
+        // admin).
         if (! $actor instanceof Admin) {
-            if (($actor instanceof Team && (int) $actor->id !== (int) $subscription->team_id)
-                || ($actor instanceof User && (int) ($actor->team_id ?? 0) !== (int) $subscription->team_id)) {
+            if ($actor instanceof User) {
+                throw ValidationException::withMessages([
+                    'subscription' => 'Only a team account or admin may renew or cancel a subscription.',
+                ]);
+            }
+
+            if ($actor instanceof Team && (int) $actor->id !== (int) $subscription->team_id) {
                 throw ValidationException::withMessages([
                     'subscription' => 'You may not modify subscriptions outside your team.',
                 ]);

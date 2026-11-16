@@ -20,7 +20,7 @@
 
         <div class="flex items-center gap-3">
             {{-- Customize Button --}}
-            <button type="button" onclick="document.getElementById('customize-employee-modal').classList.remove('hidden')"
+            <button type="button" data-modal-open="customize-employee-modal"
                     class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                 <svg class="h-4 w-4 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -142,7 +142,7 @@
 
                     @case('expiring_subscriptions')
                         <div class="card p-5">
-                            <p class="text-xs font-medium text-neutral-500">Expiring in 30 days</p>
+                            <p class="text-xs font-medium text-neutral-500">Expiring in 30 Days</p>
                             <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $expiringSubscriptions }}</p>
                             <p class="mt-1 text-xs text-neutral-400">Requires renewal outreach</p>
                         </div>
@@ -253,12 +253,107 @@
         </div>
     </div>
 
+    {{-- Follow-ups & Expiry Reminders Intelligence (Phase 16 Upgrade) --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {{-- Follow-up Tasks --}}
+        <div class="card p-5">
+            <div class="flex items-center justify-between border-b border-neutral-100 pb-3 mb-3">
+                <div>
+                    <h2 class="text-sm font-semibold text-neutral-900">Upcoming Client Follow-ups</h2>
+                    <p class="text-xs text-neutral-400">Scheduled touchpoints & retention tasks</p>
+                </div>
+                <a href="{{ route('employee.follow-ups') }}" class="text-xs text-neutral-700 underline hover:text-neutral-900">
+                    All tasks &rarr;
+                </a>
+            </div>
+            <div class="divide-y divide-neutral-100 text-xs">
+                @forelse($recentFollowUps as $fu)
+                    <div class="py-2.5 flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-neutral-900">{{ $fu->title }}</div>
+                            <div class="text-neutral-500 mt-0.5">
+                                Customer: <span class="font-semibold text-neutral-700">{{ $fu->customer?->name ?? 'Client' }}</span>
+                                • Priority: <span class="capitalize font-medium">{{ $fu->priority }}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="badge badge-warning text-2xs">{{ $fu->scheduled_at ? $fu->scheduled_at->format('M d, H:i') : 'Pending' }}</span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="py-6 text-center text-neutral-400 text-xs">No upcoming follow-ups scheduled</div>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- Expiry Reminders --}}
+        <div class="card p-5">
+            <div class="flex items-center justify-between border-b border-neutral-100 pb-3 mb-3">
+                <div>
+                    <h2 class="text-sm font-semibold text-neutral-900">Expiring Subscriptions (30 Days)</h2>
+                    <p class="text-xs text-neutral-400">Accounts due for renewal outreach</p>
+                </div>
+                <a href="{{ route('employee.subscriptions.expiring') }}" class="text-xs text-neutral-700 underline hover:text-neutral-900">
+                    Expiry center &rarr;
+                </a>
+            </div>
+            <div class="divide-y divide-neutral-100 text-xs">
+                @forelse($expiringSubscriptionsList as $sub)
+                    <div class="py-2.5 flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-neutral-900">{{ $sub->order?->order_number ?? ('Sub #' . $sub->id) }}</div>
+                            <div class="text-neutral-500 mt-0.5">
+                                Plan: <span class="font-semibold text-neutral-700">{{ $sub->plan_snapshot ?? 'Custom' }}</span>
+                                • Customer: <span class="text-neutral-700">{{ $sub->customer?->name ?? $sub->order?->customer_name }}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="badge badge-danger text-2xs">Expires {{ $sub->expires_at?->format('M d, Y') }}</span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="py-6 text-center text-neutral-400 text-xs">No subscriptions expiring in the next 30 days</div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    {{-- Monthly Performance Breakdown --}}
+    @if(!empty($monthlySalesChart))
+        <div class="card p-5 mt-6">
+            <div class="mb-3">
+                <h2 class="text-sm font-semibold text-neutral-900">6-Month Sales Trajectory</h2>
+                <p class="text-xs text-neutral-400">Orders written and total agreed closing values</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-neutral-600">
+                    <thead class="border-b border-neutral-100 text-xs uppercase text-neutral-400 bg-neutral-50">
+                        <tr>
+                            <th class="py-2.5 px-3">Period</th>
+                            <th class="py-2.5 px-3 text-right">Orders Written</th>
+                            <th class="py-2.5 px-3 text-right">Total Closing Value</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-neutral-50">
+                        @foreach($monthlySalesChart as $entry)
+                            <tr>
+                                <td class="py-2.5 px-3 font-semibold text-neutral-900">{{ $entry['month'] }}</td>
+                                <td class="py-2.5 px-3 text-right tabular-nums">{{ $entry['orders'] }}</td>
+                                <td class="py-2.5 px-3 text-right tabular-nums font-bold text-neutral-900">{{ $currencySymbol }}{{ number_format($entry['closing_value'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     {{-- Customize Modal --}}
-    <div id="customize-employee-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 hidden p-4">
+    <div id="customize-employee-modal" class="leadx-modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 hidden p-4" role="dialog" aria-modal="true" aria-labelledby="customize-employee-title">
         <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-md">
             <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <h3 class="text-base font-semibold text-neutral-900">Customize Dashboard Metric Cards</h3>
-                <button type="button" onclick="document.getElementById('customize-employee-modal').classList.add('hidden')" class="text-neutral-400 hover:text-neutral-600">
+                <h3 id="customize-employee-title" class="text-base font-semibold text-neutral-900">Customize Dashboard Metric Cards</h3>
+                <button type="button" data-modal-close aria-label="Close dashboard customization" class="text-neutral-400 hover:text-neutral-600">
                     &#x2715;
                 </button>
             </div>
@@ -274,6 +369,7 @@
                                 <div class="flex items-center gap-3">
                                     <input type="hidden" name="cards[{{ $index }}][key]" value="{{ $c['key'] }}">
                                     <input type="hidden" name="cards[{{ $index }}][order]" value="{{ $c['order'] ?? ($index + 1) }}">
+                                    <input type="hidden" name="cards[{{ $index }}][visible]" value="0">
                                     <label class="inline-flex items-center gap-1.5 cursor-pointer">
                                         <input type="checkbox" name="cards[{{ $index }}][visible]" value="1" {{ ($c['visible'] ?? true) ? 'checked' : '' }}>
                                         <span class="text-xs text-neutral-500">Show</span>
@@ -289,7 +385,7 @@
                         Reset Defaults
                     </button>
                     <div class="flex gap-2">
-                        <button type="button" onclick="document.getElementById('customize-employee-modal').classList.add('hidden')" class="btn btn-secondary">Cancel</button>
+                        <button type="button" data-modal-close class="btn btn-secondary">Cancel</button>
                         <button type="submit" class="btn btn-primary">Save Layout</button>
                     </div>
                 </div>

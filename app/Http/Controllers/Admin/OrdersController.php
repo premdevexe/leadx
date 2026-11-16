@@ -545,16 +545,25 @@ class OrdersController extends Controller
             'cancellation_reason' => ['required', 'string', 'max:1000'],
         ]);
 
-        $order->update([
-            'order_status' => 'cancelled',
-            'cancellation_reason' => $data['cancellation_reason'],
-            'cancelled_at' => now(),
-            'cancelled_by' => auth('admin')->id(),
-        ]);
+        // Both writes must land or neither: a crash between them would leave
+        // an "active" subscription on a cancelled order.
+        $reason = $data['cancellation_reason'];
+        $cancelledBy = auth('admin')->id();
 
-        if ($order->subscription) {
-            $order->subscription->update(['status' => 'cancelled']);
-        }
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $reason, $cancelledBy): void {
+            $locked = \App\Models\SalesOrder::where('id', $order->id)->lockForUpdate()->first();
+
+            $locked->update([
+                'order_status' => 'cancelled',
+                'cancellation_reason' => $reason,
+                'cancelled_at' => now(),
+                'cancelled_by' => $cancelledBy,
+            ]);
+
+            if ($locked->subscription) {
+                $locked->subscription->update(['status' => 'cancelled']);
+            }
+        });
 
         try {
             app(\App\Services\NotificationHubService::class)->notifyOrderCancelled(

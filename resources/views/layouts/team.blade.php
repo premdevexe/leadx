@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Team Dashboard') — {{ \App\Models\Setting::siteName() }}</title>
     @if (\App\Models\Setting::faviconUrl())
         <link rel="icon" href="{{ \App\Models\Setting::faviconUrl() }}">
@@ -12,6 +13,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v={{ file_exists(public_path('assets/css/app.css')) ? filemtime(public_path('assets/css/app.css')) : time() }}">
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="app-shell">
         <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
 
@@ -44,6 +46,7 @@
                             ['route' => 'team.orders.create', 'label' => 'Create Order', 'match' => 'team.orders.create'],
                             ['route' => 'team.orders', 'label' => 'Orders', 'match' => 'team.orders*'],
                             ['route' => 'team.customers', 'label' => 'Customers', 'match' => 'team.customers'],
+                            ['route' => 'team.follow-ups', 'label' => 'Follow-ups', 'match' => 'team.follow-ups*'],
                             ['route' => 'team.payments', 'label' => 'Payments', 'match' => 'team.payments'],
                             ['route' => 'team.subscriptions', 'label' => 'Subscriptions', 'match' => 'team.subscriptions'],
                             ['route' => 'team.members', 'label' => 'Team Members', 'match' => 'team.members'],
@@ -53,19 +56,14 @@
 
                     <div class="sidebar-menu mt-1">
                         @foreach ($menuItems as $item)
+                            @php $isActive = request()->routeIs($item['match']) && !($item['route'] === 'team.orders' && request()->routeIs('team.orders.create')); @endphp
                             <a href="{{ route($item['route']) }}"
-                               class="sidebar-link {{ request()->routeIs($item['match']) ? 'active' : '' }}">
+                               @if($isActive) aria-current="page" @endif
+                               class="sidebar-link {{ $isActive ? 'active' : '' }}">
                                 {{ $item['label'] }}
                             </a>
                         @endforeach
 
-                        <div class="sidebar-divider">
-                            <p class="sidebar-section-title">Account</p>
-                            <a href="{{ route('team.dashboard') }}"
-                               class="sidebar-link {{ request()->routeIs('team.dashboard') && request()->routeIs('team.profile*') ? 'active' : '' }}">
-                                Profile & Settings
-                            </a>
-                        </div>
                     </div>
                 </nav>
             </div>
@@ -74,7 +72,7 @@
         <div class="main-column">
             <header class="page-header">
                 <div class="header-left">
-                    <button type="button" id="sidebar-toggle" aria-label="Toggle menu" class="sidebar-toggle-btn">
+                    <button type="button" id="sidebar-toggle" aria-label="Toggle menu" aria-controls="sidebar" class="sidebar-toggle-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-menu h-5 w-5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                         </svg>
@@ -107,7 +105,7 @@
                 </div>
             </header>
 
-            <main class="page-content">
+            <main id="main-content" class="page-content" tabindex="-1">
                 <div class="page-content-inner">
                     @yield('content')
                 </div>

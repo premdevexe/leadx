@@ -8,15 +8,18 @@
 </head>
 <body>
     <main class="auth-page">
-        <div style="width: 100%; max-width: 42rem;">
+        <div style="width: 100%; max-width: 46rem; padding: 1.5rem 1rem;">
             <div class="auth-card auth-card-wide" style="max-width: 100%;">
                 <div class="auth-brand">
                     <span class="auth-brand-icon">L</span>
                     <span class="auth-brand-text">LeadX Installation</span>
                 </div>
+
+                @include('install.partials.stepper', ['currentStep' => 6])
+
                 <div class="auth-box" style="max-width: none;">
                     <div class="auth-title">System Configuration</div>
-                    <div class="auth-subtitle">Configure optional integrations. You can skip these and configure them later from Settings.</div>
+                    <div class="auth-subtitle">Configure optional integrations. You can skip these and configure them later from Admin Settings.</div>
 
                     @php
                         $errorMessages = [];
@@ -42,19 +45,18 @@
                     <form method="POST" action="{{ route('install.config') }}" style="margin-top: 1.5rem;">
                         @csrf
 
-                        <div class="settings-section">
-                            <div class="settings-section-header" style="padding: var(--sp-3) var(--sp-4);">
-                                <div>
-                                    <div class="settings-section-title" style="font-size: 14px;">SMTP / Email</div>
-                                    <div class="settings-section-desc">Configure outgoing email (optional — can be set later)</div>
-                                </div>
+                        <!-- SMTP / Email Section -->
+                        <div class="settings-section" style="border: 1px solid var(--c-neutral-200); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+                            <div class="settings-section-header" style="margin-bottom: 1rem;">
+                                <div class="settings-section-title" style="font-size: 14px; font-weight: 600; color: var(--c-neutral-900);">SMTP / Email</div>
+                                <div class="settings-section-desc" style="font-size: 12px; color: var(--c-neutral-500);">Configure outgoing transactional email (optional)</div>
                             </div>
                             <div class="settings-section-body">
                                 <div class="form-row form-row-cols-2">
                                     <div class="form-group">
                                         <label for="mail_mailer" class="form-label">Mailer</label>
                                         <select id="mail_mailer" name="mail_mailer" class="form-select">
-                                            <option value="log">Log (development)</option>
+                                            <option value="log" selected>Log (development / testing)</option>
                                             <option value="smtp">SMTP</option>
                                             <option value="sendmail">Sendmail</option>
                                         </select>
@@ -83,24 +85,23 @@
                                         <label for="mail_encryption" class="form-label">Encryption</label>
                                         <select id="mail_encryption" name="mail_encryption" class="form-select">
                                             <option value="">None</option>
-                                            <option value="tls">TLS</option>
+                                            <option value="tls" selected>TLS</option>
                                             <option value="ssl">SSL</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
                                         <label for="mail_from_address" class="form-label">From Address</label>
-                                        <input type="email" id="mail_from_address" name="mail_from_address" value="{{ old('mail_from_address') }}" class="form-input">
+                                        <input type="email" id="mail_from_address" name="mail_from_address" value="{{ old('mail_from_address') }}" class="form-input" placeholder="notifications@leadx.com">
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="settings-section" style="margin-top: var(--sp-5);">
-                            <div class="settings-section-header" style="padding: var(--sp-3) var(--sp-4);">
-                                <div>
-                                    <div class="settings-section-title" style="font-size: 14px;">Pusher (Real-time Notifications)</div>
-                                    <div class="settings-section-desc">Enable real-time notifications (optional)</div>
-                                </div>
+                        <!-- Pusher Real-time Notifications Section -->
+                        <div class="settings-section" style="border: 1px solid var(--c-neutral-200); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+                            <div class="settings-section-header" style="margin-bottom: 1rem;">
+                                <div class="settings-section-title" style="font-size: 14px; font-weight: 600; color: var(--c-neutral-900);">Pusher (Real-time Notifications)</div>
+                                <div class="settings-section-desc" style="font-size: 12px; color: var(--c-neutral-500);">Enable real-time push notifications (optional)</div>
                             </div>
                             <div class="settings-section-body">
                                 <div class="form-row form-row-cols-2">
@@ -120,36 +121,37 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="pusher_app_cluster" class="form-label">Cluster</label>
-                                        <input type="text" id="pusher_app_cluster" name="pusher_app_cluster" value="{{ old('pusher_app_cluster') }}" class="form-input" placeholder="mt1">
+                                        <input type="text" id="pusher_app_cluster" name="pusher_app_cluster" value="{{ old('pusher_app_cluster', 'mt1') }}" class="form-input">
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="settings-section" style="margin-top: var(--sp-5);">
-                            <div class="settings-section-header" style="padding: var(--sp-3) var(--sp-4);">
-                                <div>
-                                    <div class="settings-section-title" style="font-size: 14px;">Google Calendar</div>
-                                    <div class="settings-section-desc">Enable Google Calendar integration (optional)</div>
-                                </div>
+                        <!-- Queue Driver -->
+                        <div class="settings-section" style="border: 1px solid var(--c-neutral-200); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+                            <div class="settings-section-header" style="margin-bottom: 1rem;">
+                                <div class="settings-section-title" style="font-size: 14px; font-weight: 600; color: var(--c-neutral-900);">Asynchronous Queue Driver</div>
+                                <div class="settings-section-desc" style="font-size: 12px; color: var(--c-neutral-500);">Select background job execution driver</div>
                             </div>
                             <div class="settings-section-body">
-                                <div class="form-row form-row-cols-2">
-                                    <div class="form-group">
-                                        <label for="google_client_id" class="form-label">Client ID</label>
-                                        <input type="text" id="google_client_id" name="google_client_id" value="{{ old('google_client_id') }}" class="form-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="google_client_secret" class="form-label">Client Secret</label>
-                                        <input type="text" id="google_client_secret" name="google_client_secret" value="{{ old('google_client_secret') }}" class="form-input">
-                                    </div>
+                                <div class="form-group">
+                                    <label for="queue_driver" class="form-label">Driver</label>
+                                    <select id="queue_driver" name="queue_driver" class="form-select">
+                                        <option value="sync" selected>sync (Immediate synchronous processing)</option>
+                                        <option value="database">database (Background queue worker - recommended)</option>
+                                        <option value="redis">redis (High-performance Redis queue)</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-actions" style="margin-top: var(--sp-6);">
-                            <a href="{{ route('install.admin') }}" class="btn btn-secondary">Back</a>
-                            <button type="submit" class="btn btn-primary">Continue</button>
+                        <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                            <a href="{{ route('install.admin') }}" class="btn btn-secondary">
+                                &larr; Back
+                            </a>
+                            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.5rem;">
+                                Continue &rarr;
+                            </button>
                         </div>
                     </form>
                 </div>

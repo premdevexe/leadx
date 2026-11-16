@@ -55,7 +55,7 @@
 .settings-section-desc {
     font-size: var(--text-xs);
     color: var(--c-neutral-500);
-    margin-top: var(--sp-0.5);
+    margin-top: var(--sp-0-5);
 }
 
 .settings-section-body {

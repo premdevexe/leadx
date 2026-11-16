@@ -150,7 +150,9 @@ class OrdersController extends Controller
             return back()->with('error', 'No API key is stored for this order, or it could not be decrypted.');
         }
 
-        session(['order_api_key_reveal' => ['order_id' => $order->id, 'key' => $key]]);
+        // Flash so the plaintext key is shown for one response, then removed
+        // from the session store (persistent entries kept it up to 2h).
+        session()->flash('order_api_key_reveal', ['order_id' => $order->id, 'key' => $key]);
 
         return back()->with('status', 'API key revealed for '.$order->order_number.'. Use Copy, then it will be cleared.');
     }

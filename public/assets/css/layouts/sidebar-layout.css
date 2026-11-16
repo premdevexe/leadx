@@ -26,7 +26,7 @@
     box-shadow: var(--shadow-2xl);
     overflow-x: hidden;
     overflow-y: auto;
-    transition: transform var(--transition-base) ease-in-out, width var(--transition-base);
+    transition: transform var(--transition-base), width var(--transition-base);
     transform: translateX(-100%);
 }
 
@@ -277,7 +277,7 @@
 .header-role-badge {
     font-size: 11px;
     font-weight: 500;
-    padding: var(--sp-0.5) var(--sp-1.5);
+    padding: var(--sp-0-5) var(--sp-1-5);
     border-radius: var(--radius-sm);
     background: var(--c-neutral-100);
     color: var(--c-neutral-500);
@@ -303,7 +303,7 @@
 .logout-btn {
     display: inline-flex;
     align-items: center;
-    padding: var(--sp-1) var(--sp-2.5);
+    padding: var(--sp-1) var(--sp-2-5);
     border-radius: var(--radius-md);
     border: var(--border-width) solid var(--border-color);
     font-size: var(--text-xs);
@@ -316,7 +316,7 @@
 }
 @media (min-width: 640px) {
     .logout-btn {
-        padding: var(--sp-1.5) var(--sp-3);
+        padding: var(--sp-1-5) var(--sp-3);
         font-size: var(--text-sm);
     }
 }

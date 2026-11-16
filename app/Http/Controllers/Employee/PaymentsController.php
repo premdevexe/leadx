@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\EmployeeTeamAccessGrant;
 use App\Models\Payment;
 use App\Models\SalesOrder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PaymentsController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         /** @var \App\Models\User $employee */
         $employee = $request->user();

@@ -94,9 +94,11 @@ class OrderCredentialController extends Controller
             return back()->with('error', 'No API key is stored for this order, or it could not be decrypted.');
         }
 
-        // Flash the value so the next response can display it for copying;
-        // it is not persisted and not written to any log.
-        session(['order_api_key_reveal' => ['order_id' => $order->id, 'key' => $key]]);
+        // Flash the value so it displays exactly one response after the
+        // redirect, then is removed from the session store. A persistent
+        // session entry would keep the plaintext key for up to the session
+        // lifetime (2h), contradicting the "cleared after Copy" promise.
+        session()->flash('order_api_key_reveal', ['order_id' => $order->id, 'key' => $key]);
 
         return back()->with('status', 'API key revealed for '.$order->order_number.' Use Copy, then it will be cleared.');
     }

@@ -1,30 +1,10 @@
-/* ============================================================
-   LeadX — Notification dropdown module
-   ============================================================ */
-import { $, on, addClass, removeClass } from '../core/dom.js';
+/* LeadX ? notification disclosure. Opening it does not mark messages read. */
+import { initDropdowns } from './dropdowns.js';
 
-export function initNotificationDropdown({ bellId, dropdownId, badgeId }) {
-    const bell = $(`#${bellId}`);
-    const dropdown = $(`#${dropdownId}`);
-    const badge = $(`#${badgeId}`);
-
+export function initNotificationDropdown({ bellId, dropdownId }) {
+    const bell = document.getElementById(bellId);
+    const dropdown = document.getElementById(dropdownId);
     if (!bell || !dropdown) return;
-
-    bell.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('open');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target) && !bell.contains(e.target)) {
-            removeClass(dropdown, 'open');
-        }
-    });
-
-    if (badge) {
-        // Hide badge when clicked
-        bell.addEventListener('click', () => {
-            badge.classList.remove('visible');
-        });
-    }
+    bell.dataset.dropdownToggle = dropdown.id;
+    initDropdowns();
 }

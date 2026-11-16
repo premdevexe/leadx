@@ -109,7 +109,7 @@ class InstallationWizardTest extends TestCase
 
         $css = File::get(public_path('assets/css/app.css'));
         $this->assertStringContainsString('--c-neutral-900', $css);
-        $this->assertStringContainsString('--sp-0.5', $css);
+        $this->assertStringContainsString('--sp-0-5', $css);
         $this->assertStringContainsString('--sp-4', $css);
         $this->assertStringContainsString('.auth-card-wide', $css);
         $this->assertStringContainsString('.btn-primary', $css);

@@ -8,8 +8,13 @@ import { initModals, initTriggers } from '../components/modals.js';
 import { initDropdowns } from '../components/dropdowns.js';
 import { initForms } from '../components/forms.js';
 import { initDismissibleAlerts, showToast } from '../components/alerts.js';
+import { initCsrf } from '../core/csrf.js';
+
+let initialized = false;
 
 export function initEmployeeDashboard() {
+    if (initialized) return;
+    initialized = true;
     initSidebar({
         sidebarId: 'sidebar',
         overlayId: 'sidebar-overlay',
@@ -29,6 +34,7 @@ export function initEmployeeDashboard() {
     initDropdowns();
     initForms();
     initDismissibleAlerts();
+    initCsrf();
 
     initUnreadBadge();
     initRealtimeNotifications();
@@ -47,7 +53,7 @@ function initUnreadBadge() {
 }
 
 function initRealtimeNotifications() {
-    document.addEventListener('leadx:notification', (e) => {
+    window.addEventListener('leadx:notification', (e) => {
         const data = e.detail;
         if (!data || !data.title) return;
 
@@ -55,16 +61,18 @@ function initRealtimeNotifications() {
 
         const badge = $('#unread-badge');
         if (badge) {
-            let current = parseInt(badge.textContent || '0', 10) || 0;
+            const current = Number(window.leadxUnreadCount) || parseInt(badge.textContent || '0', 10) || 0;
+            window.leadxUnreadCount = current + 1;
             badge.textContent = current + 1 > 99 ? '99+' : (current + 1);
+            badge.setAttribute('aria-label', `${current + 1} unread notifications`);
             badge.classList.add('visible');
         }
     });
 
     const bell = $('#notification-bell');
-    if (bell) {
+    if (bell?.dataset.notificationsUrl && !$('#notification-dropdown')) {
         bell.addEventListener('click', () => {
-            window.location.href = '/employee/notifications';
+            window.location.assign(bell.dataset.notificationsUrl);
         });
     }
 }

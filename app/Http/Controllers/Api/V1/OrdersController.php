@@ -122,7 +122,11 @@ class OrdersController extends Controller
             $query->where('order_number', 'like', '%'.str_replace('%', '', (string) $request->query('order_number')).'%');
         }
 
-        return OrderResource::collection($query->orderByDesc('id')->get());
+        // Bounded: list endpoints previously returned the entire scoped
+        // table, so payload size and DB load grew without limit as data
+        // accumulated. 200 is the cap for a single page; add true
+        // pagination (offset/cursor) when consumers need more.
+        return OrderResource::collection($query->orderByDesc('id')->take(200)->get());
     }
 
     /**

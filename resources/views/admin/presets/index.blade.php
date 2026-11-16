@@ -11,6 +11,9 @@
             <p class="text-sm text-neutral-500">Manage baseline access presets, assign strategies, and customize individual employee overrides.</p>
         </div>
         <div class="flex items-center gap-3">
+            <a href="{{ route('admin.permissions.index') }}" class="inline-flex items-center rounded-lg border border-neutral-200 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors">
+                Manage Permission Definitions
+            </a>
             <a href="{{ route('admin.presets.create') }}" class="inline-flex items-center rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-neutral-800 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />

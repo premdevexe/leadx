@@ -3,6 +3,13 @@
 @section('title', 'Order '.$order->order_number)
 
 @section('content')
+    @if (session('success'))
+        <div class="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-xs text-emerald-800">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-xs text-red-800">{{ session('error') }}</div>
+    @endif
+
     <h1 class="text-xl font-semibold tracking-tight">Order {{ $order->order_number }}</h1>
     <p class="mt-1 text-sm text-neutral-500">Created {{ $order->created_at?->diffForHumans() }}</p>
 

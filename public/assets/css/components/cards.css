@@ -76,7 +76,7 @@
     font-size: var(--text-xs);
     font-weight: 500;
     color: var(--c-neutral-500);
-    margin-bottom: var(--sp-1.5);
+    margin-bottom: var(--sp-1-5);
     letter-spacing: 0;
 }
 .stat-card-value {

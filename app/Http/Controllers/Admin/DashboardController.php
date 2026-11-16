@@ -4,8 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\AuditLog;
+use App\Models\EmailLog;
+use App\Models\Payment;
 use App\Models\Product;
+use App\Models\PushNotificationLog;
+use App\Models\Refund;
 use App\Models\SalesOrder;
+use App\Models\Subscription;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\UserUiPreference;
@@ -49,27 +55,43 @@ class DashboardController extends Controller
 
         $stats = [
             'users_total' => User::count(),
+            'employees_total' => User::where('role', 'employee')->count(),
+            'employees_active' => User::where('role', 'employee')->where('status', 'active')->count(),
             'admins_total' => Admin::count(),
             'teams_total' => Team::count(),
             'orders_total' => $overview['total_orders'],
             'orders_active' => $overview['active_subscriptions'],
+            'orders_pending' => SalesOrder::where('order_status', 'pending')->count(),
+            'closing_approval_requests' => SalesOrder::where('closing_value_status', 'Requested')->count(),
             'verified_revenue' => $overview['verified_revenue'],
             'paying_customers' => $overview['total_paying_customers'],
             'active_subscriptions' => $overview['active_subscriptions'],
             'expired_subscriptions' => $overview['expired_subscriptions'],
+            'expiring_subscriptions' => Subscription::where('status', 'active')->whereNotNull('expires_at')->where('expires_at', '<=', now()->addDays(30))->where('expires_at', '>', now())->count(),
             'pending_collections' => $overview['pending_collections'],
+            'pending_payments_count' => Payment::where('payment_status', 'pending')->count(),
             'total_closing_value' => $overview['total_closing_value'],
             'total_discounts' => $overview['total_discounts'],
             'total_product_value' => $overview['total_product_value'],
+            'refunds_count' => Refund::count(),
+            'refunds_total' => (float) Refund::sum('amount'),
             'users_last_7_days' => User::where('created_at', '>=', now()->subDays(7))->count(),
             'users_last_30_days' => User::where('created_at', '>=', now()->subDays(30))->count(),
             'products_total' => Product::count(),
             'products_active' => Product::where('status', 'active')->count(),
         ];
 
-        $recentOrders = SalesOrder::with('team')->latest()->take(5)->get();
-        $recentUsers = User::latest()->take(5)->get(['id', 'name', 'username', 'email', 'created_at']);
+        $recentOrders = SalesOrder::with(['team', 'product', 'assignedEmployee'])->latest()->take(5)->get();
+        $recentUsers = User::latest()->take(5)->get(['id', 'name', 'username', 'email', 'status', 'created_at']);
         $recentAdmins = Admin::latest()->take(5)->get(['id', 'name', 'username', 'email', 'created_at']);
+        $recentActivities = AuditLog::with('actor')->latest()->take(6)->get();
+        $notificationSummary = [
+            'push_total' => PushNotificationLog::count(),
+            'push_delivered' => PushNotificationLog::where('status', 'delivered')->count(),
+            'email_total' => EmailLog::count(),
+            'email_sent' => EmailLog::where('status', 'sent')->count(),
+            'email_failed' => EmailLog::where('status', 'failed')->count(),
+        ];
 
         $adminId = $request->user('admin')?->id ?? 1;
         $cardPreferences = $this->getCardPreferences($adminId);
@@ -84,6 +106,8 @@ class DashboardController extends Controller
                 'recent_orders' => $recentOrders,
                 'recent_users' => $recentUsers,
                 'recent_admins' => $recentAdmins,
+                'recent_activities' => $recentActivities,
+                'notification_summary' => $notificationSummary,
                 'card_preferences' => $cardPreferences,
                 'admin' => $request->user('admin')->only(['id', 'name', 'username', 'email']),
             ]);
@@ -98,6 +122,8 @@ class DashboardController extends Controller
             'recentOrders',
             'recentUsers',
             'recentAdmins',
+            'recentActivities',
+            'notificationSummary',
             'cardPreferences'
         ));
     }
@@ -112,7 +138,7 @@ class DashboardController extends Controller
         $validated = $request->validate([
             'cards' => ['required', 'array'],
             'cards.*.key' => ['required', 'string'],
-            'cards.*.visible' => ['required'],
+            'cards.*.visible' => ['sometimes'],
             'cards.*.order' => ['nullable', 'integer'],
         ]);
 
@@ -120,7 +146,7 @@ class DashboardController extends Controller
         foreach ($validated['cards'] as $index => $card) {
             $sanitized[] = [
                 'key' => (string) $card['key'],
-                'visible' => filter_var($card['visible'], FILTER_VALIDATE_BOOLEAN),
+                'visible' => filter_var($card['visible'] ?? '0', FILTER_VALIDATE_BOOLEAN),
                 'order' => isset($card['order']) ? (int) $card['order'] : ($index + 1),
                 'label' => $card['label'] ?? null,
             ];

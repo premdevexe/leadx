@@ -16,26 +16,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::firstOrNew(['email' => 'test@example.com'])->fill([
-            'name' => 'Test User',
-            'username' => 'testuser',
-            'password' => 'password',
-        ])->save();
-
-        // The Admin model has a 'password' => 'hashed' cast, so pass the
-        // plaintext and let the cast do the hashing (pre-hashing here would
-        // double-hash it).
-        Admin::firstOrCreate(
-            ['username' => 'admin'],
-            [
-                'name' => 'Demo Admin',
-                'email' => 'admin@leadx.local',
-                'password' => 'password',
-            ]
-        );
-
+        // No demo credentials: the install wizard creates the real admin
+        // account during its admin step. Seeding admin/admin-password-style
+        // accounts into every deployment (including production) is a
+        // standing backdoor, so this seeder only installs the reference
+        // data the app needs to boot (permissions + refund statuses).
         $this->call([
             PermissionSeeder::class,
             RefundStatusSeeder::class,

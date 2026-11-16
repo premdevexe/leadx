@@ -108,7 +108,7 @@ class PermissionService
      */
     public function canViewSidebarMenu(?User $user, string $menuKey): bool
     {
-        if (in_array($menuKey, ['profile', 'calendar'], true)) {
+        if (in_array($menuKey, ['profile', 'calendar', 'customer_issues'], true)) {
             return true;
         }
 

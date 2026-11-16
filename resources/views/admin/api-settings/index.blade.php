@@ -27,25 +27,6 @@
         </div>
     @endif
 
-    @if (session('new_token'))
-        <div class="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 shadow-xs">
-            <div class="flex items-start justify-between">
-                <div>
-                    <h3 class="text-sm font-semibold text-amber-800">Your New API Token: {{ session('new_token_name') }}</h3>
-                    <p class="mt-1 text-xs text-amber-700">Make sure to copy your personal access token now. You will not be able to see it again!</p>
-                </div>
-            </div>
-            <div class="mt-3 flex items-center gap-2">
-                <input id="new-token-input" type="text" readonly value="{{ session('new_token') }}"
-                       class="form-input w-full font-mono font-medium">
-                <button type="button" onclick="navigator.clipboard.writeText('{{ session('new_token') }}'); this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 2000)"
-                        class="btn px-4 py-2 text-sm font-medium text-white" style="background-color:#92400e;border-color:#92400e">
-                    Copy
-                </button>
-            </div>
-        </div>
-    @endif
-
     {{-- Tab Navigation --}}
     <nav class="mt-5 flex flex-wrap gap-1 border-b border-neutral-200" role="tablist">
         <button type="button" onclick="switchTab('pusher')" id="tab-pusher-btn" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg btn btn-primary">Pusher Beams</button>

@@ -29,23 +29,30 @@
     </form>
 
     {{-- Historical Team Data Access --}}
-    @if ($employee->team_id)
-        <div class="mt-6 rounded-xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
-                <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
-                    <div>
-                        <h2 class="text-base font-semibold text-neutral-900">Historical Team Data Access</h2>
-                        <p class="text-xs text-neutral-500">Grant temporary view-only access to team orders for a historical date range. Required for the employee to switch to Team Data view.</p>
-                    </div>
-                    @if ($employee->hasActiveTeamAccess())
-                        <span class="badge badge-success px-3 py-1 text-xs font-semibold">
-                            Active Grant in Effect
-                        </span>
-                    @else
-                        <span class="badge badge-neutral px-3 py-1 text-xs font-semibold">
-                            No Active Team Grant
-                        </span>
-                    @endif
-                </div>
+    <div class="mt-6 rounded-xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
+        <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
+            <div>
+                <h2 class="text-base font-semibold text-neutral-900">Historical Team Data Access</h2>
+                <p class="text-xs text-neutral-500">Grant temporary view-only access to team orders for a historical date range. Required for the employee to switch to Team Data view.</p>
+            </div>
+            @if ($employee->hasActiveTeamAccess())
+                <span class="badge badge-success px-3 py-1 text-xs font-semibold">
+                    Active Grant in Effect
+                </span>
+            @else
+                <span class="badge badge-neutral px-3 py-1 text-xs font-semibold">
+                    No Active Team Grant
+                </span>
+            @endif
+        </div>
+
+        @if (! $employee->team_id)
+            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800">
+                This employee has <strong>no team assigned</strong>. Assign a team in the form above
+                (Team dropdown) and save first — Team Data access can only be granted to an
+                employee who belongs to a team.
+            </div>
+        @else
 
                 <form method="POST" action="{{ route('admin.employees.team-access.grant', $employee) }}" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end bg-neutral-50 p-4 rounded-lg border border-neutral-200">
                     @csrf
@@ -107,6 +114,6 @@
                         </table>
                     </div>
                 @endif
-            </div>
         @endif
+    </div>
 @endsection

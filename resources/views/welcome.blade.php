@@ -93,15 +93,15 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-4); font-size: var(--text-xs);">
                 <div>
                     <div style="color: var(--c-neutral-400);">Accounting standard</div>
-                    <div style="font-weight: 500; color: var(--c-neutral-800); margin-top: var(--sp-0.5);">Verified Receipts & Clearances</div>
+                    <div style="font-weight: 500; color: var(--c-neutral-800); margin-top: var(--sp-0-5);">Verified Receipts & Clearances</div>
                 </div>
                 <div>
                     <div style="color: var(--c-neutral-400);">Currency precision</div>
-                    <div style="font-weight: 500; color: var(--c-neutral-800); margin-top: var(--sp-0.5); font-family: var(--font-mono);">{{ \App\Models\Setting::currency() }} ({{ \App\Models\Setting::currencySymbol() }})</div>
+                    <div style="font-weight: 500; color: var(--c-neutral-800); margin-top: var(--sp-0-5); font-family: var(--font-mono);">{{ \App\Models\Setting::currency() }} ({{ \App\Models\Setting::currencySymbol() }})</div>
                 </div>
                 <div>
                     <div style="color: var(--c-neutral-400);">Interface engine</div>
-                    <div style="font-weight: 500; color: var(--c-neutral-800); margin-top: var(--sp-0.5);">Vanilla CSS 3.0 Tokens</div>
+                    <div style="font-weight: 500; color: var(--c-neutral-800); margin-top: var(--sp-0-5);">Vanilla CSS 3.0 Tokens</div>
                 </div>
             </div>
         </div>

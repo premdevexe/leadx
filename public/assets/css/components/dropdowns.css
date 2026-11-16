@@ -24,7 +24,8 @@
     padding: var(--sp-1) 0;
 }
 
-.dropdown.open .dropdown-menu {
+.dropdown.open .dropdown-menu,
+.dropdown-menu.open {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
@@ -106,7 +107,7 @@
 
 .notification-item-content { flex: 1; min-width: 0; }
 .notification-item-title { font-weight: 500; color: var(--c-neutral-900); }
-.notification-item-text { color: var(--c-neutral-500); font-size: var(--text-xs); margin-top: var(--sp-0.5); }
+.notification-item-text { color: var(--c-neutral-500); font-size: var(--text-xs); margin-top: var(--sp-0-5); }
 
 .notification-dropdown-footer {
     padding: var(--sp-2) var(--sp-4);

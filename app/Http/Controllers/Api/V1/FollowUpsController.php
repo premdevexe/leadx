@@ -88,7 +88,9 @@ class FollowUpsController extends Controller
                 ->orWhere('phone', 'like', '%'.$term.'%'));
         }
 
-        return \App\Http\Resources\CustomerResource::collection($query->orderBy('name')->get());
+        // Bounded to 200 (see OrdersController index) so the payload stops
+        // growing without limit as customer data accumulates.
+        return \App\Http\Resources\CustomerResource::collection($query->orderBy('name')->take(200)->get());
     }
 
     /**
@@ -116,7 +118,9 @@ class FollowUpsController extends Controller
             $query->where('follow_up_type', $request->input('follow_up_type'));
         }
 
-        return FollowUpResource::collection($query->orderByDesc('id')->get());
+        // Bounded to 200 (see OrdersController index) so the payload stops
+        // growing without limit as follow-up data accumulates.
+        return FollowUpResource::collection($query->orderByDesc('id')->take(200)->get());
     }
 
     /**

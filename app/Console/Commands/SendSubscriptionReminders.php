@@ -35,7 +35,10 @@ class SendSubscriptionReminders extends Command
         Subscription::expiringSoon($expiryDays)
             ->where(fn ($q) => $q->whereNull('last_expiry_reminder_at')
                 ->orWhere('last_expiry_reminder_at', '<=', now()->subDays($expiryDays)))
-            ->chunk(100, function ($batch) use (&$expiring): void {
+            // chunkById: rows are mutated (last_expiry_reminder_at) inside the
+            // callback, which is part of the predicate — offset chunk() would
+            // skip every other row once batches exceed 100.
+            ->chunkById(100, function ($batch) use (&$expiring): void {
                 foreach ($batch as $subscription) {
                     $subscription->team?->notifyNow(new SubscriptionExpiringNotification($subscription));
                     try {

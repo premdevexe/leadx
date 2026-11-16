@@ -156,8 +156,42 @@ class DashboardController extends Controller
             ->whereMonth('sales_orders.created_at', now()->month)
             ->sum('closing_value');
 
-        // Recent orders
         $recentOrders = (clone $ordersQuery)->with('product')->orderByDesc('id')->limit(5)->get();
+
+        // Follow-up Summary
+        $recentFollowUps = (clone $followUpsQuery)->with('customer')->orderBy('scheduled_at')->limit(4)->get();
+
+        // Expiry Reminder Summary
+        $expiringSubscriptionsList = (clone $subscriptionsQuery)->with(['order.product', 'customer'])
+            ->where('status', 'active')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now()->addDays(30))
+            ->where('expires_at', '>', now())
+            ->orderBy('expires_at')
+            ->limit(4)
+            ->get();
+
+        // Recent Notifications
+        $recentNotifications = $employee->notifications()->latest()->limit(4)->get();
+
+        // Monthly Sales Trend (Last 6 Months)
+        $monthlySalesChart = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthDate = now()->subMonths($i);
+            $count = (clone $ordersQuery)
+                ->whereYear('sales_orders.created_at', $monthDate->year)
+                ->whereMonth('sales_orders.created_at', $monthDate->month)
+                ->count();
+            $val = (clone $ordersQuery)
+                ->whereYear('sales_orders.created_at', $monthDate->year)
+                ->whereMonth('sales_orders.created_at', $monthDate->month)
+                ->sum('closing_value');
+            $monthlySalesChart[] = [
+                'month' => $monthDate->format('M Y'),
+                'orders' => $count,
+                'closing_value' => (float) $val,
+            ];
+        }
 
         // Load card customization preferences
         $cardPreferences = $this->getCardPreferences($employee->id);
@@ -180,6 +214,10 @@ class DashboardController extends Controller
             'monthlyOrdersCount' => $monthlyOrdersCount,
             'monthlyClosingValue' => number_format((float) $monthlyClosingValue, 2),
             'recentOrders' => $recentOrders,
+            'recentFollowUps' => $recentFollowUps,
+            'expiringSubscriptionsList' => $expiringSubscriptionsList,
+            'recentNotifications' => $recentNotifications,
+            'monthlySalesChart' => $monthlySalesChart,
             'cardPreferences' => $cardPreferences,
             'currencySymbol' => $currencySymbol,
         ]);
@@ -195,7 +233,7 @@ class DashboardController extends Controller
         $validated = $request->validate([
             'cards' => ['required', 'array'],
             'cards.*.key' => ['required', 'string'],
-            'cards.*.visible' => ['required'],
+            'cards.*.visible' => ['sometimes'],
             'cards.*.order' => ['nullable', 'integer'],
         ]);
 
@@ -203,7 +241,7 @@ class DashboardController extends Controller
         foreach ($validated['cards'] as $index => $card) {
             $sanitized[] = [
                 'key' => (string) $card['key'],
-                'visible' => filter_var($card['visible'], FILTER_VALIDATE_BOOLEAN),
+                'visible' => filter_var($card['visible'] ?? '0', FILTER_VALIDATE_BOOLEAN),
                 'order' => isset($card['order']) ? (int) $card['order'] : ($index + 1),
             ];
         }
@@ -246,7 +284,7 @@ class DashboardController extends Controller
         $validated = $request->validate([
             'modules' => ['required', 'array'],
             'modules.*.key' => ['required', 'string'],
-            'modules.*.visible' => ['required'],
+            'modules.*.visible' => ['sometimes'],
             'modules.*.order' => ['nullable', 'integer'],
         ]);
 
@@ -254,7 +292,7 @@ class DashboardController extends Controller
         foreach ($validated['modules'] as $index => $mod) {
             $sanitized[] = [
                 'key' => (string) $mod['key'],
-                'visible' => filter_var($mod['visible'], FILTER_VALIDATE_BOOLEAN),
+                'visible' => filter_var($mod['visible'] ?? '0', FILTER_VALIDATE_BOOLEAN),
                 'order' => isset($mod['order']) ? (int) $mod['order'] : ($index + 1),
             ];
         }
@@ -361,7 +399,7 @@ class DashboardController extends Controller
     public function reports(): View
     {
         /** @var \App\Models\User $employee */
-        $employee = auth()->user();
+        $employee = request()->user();
 
         $viewMode = request()->query('view', 'my_data');
         $hasTeamAccess = $employee->hasActiveTeamAccess();
@@ -475,12 +513,12 @@ class DashboardController extends Controller
 
     public function settings(): View
     {
-        return view('employee.settings', ['employee' => auth()->user()]);
+        return view('employee.settings', ['employee' => request()->user()]);
     }
 
     public function help(): View
     {
-        return view('employee.help', ['employee' => auth()->user()]);
+        return view('employee.help', ['employee' => request()->user()]);
     }
 
     /**

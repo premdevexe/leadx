@@ -24,7 +24,10 @@ class ProcessSubscriptionsExpiry extends Command
     {
         $count = 0;
 
-        Subscription::expired()->chunk(100, function ($expired) use (&$count): void {
+        // chunkById: rows are mutated inside the callback (status -> expired),
+        // which evicts them from the predicate window; offset-based chunk()
+        // would skip every other row once batches exceed 100.
+        Subscription::expired()->chunkById(100, function ($expired) use (&$count): void {
             foreach ($expired as $subscription) {
                 $subscription->forceFill(['status' => 'expired'])->save();
                 $subscription->team?->notifyNow(new SubscriptionExpiredNotification($subscription));

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Employee Dashboard') — {{ \App\Models\Setting::siteName() }}</title>
     @if (\App\Models\Setting::faviconUrl())
         <link rel="icon" href="{{ \App\Models\Setting::faviconUrl() }}">
@@ -15,6 +16,7 @@
     @include('partials.pusher-channels')
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="app-shell">
         <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
 
@@ -80,6 +82,7 @@
                                         $isActive = request()->routeIs($item['match']) && (empty($item['params']) || request()->query('view') === ($params['view'] ?? null));
                                     @endphp
                                     <a href="{{ route($item['route'], $params) }}"
+                                       @if($isActive) aria-current="page" @endif
                                        class="sidebar-link {{ $isActive ? 'active' : '' }}">
                                         {{ $item['label'] }}
                                     </a>
@@ -94,7 +97,7 @@
         <div class="main-column">
             <header class="page-header">
                 <div class="header-left">
-                    <button type="button" id="sidebar-toggle" aria-label="Toggle menu" class="sidebar-toggle-btn">
+                    <button type="button" id="sidebar-toggle" aria-label="Toggle menu" aria-controls="sidebar" class="sidebar-toggle-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-menu h-5 w-5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                         </svg>
@@ -117,27 +120,47 @@
 
                     <span class="header-divider hidden sm:inline-block"></span>
                     <span class="header-role-badge">Employee</span>
+                    @if(request()->user()?->team)
+                        <span class="badge badge-neutral text-2xs ml-1 hidden md:inline-flex">Team: {{ request()->user()->team->team_code }}</span>
+                    @endif
                 </div>
-                <div class="header-right">
-                    <button type="button" id="notification-bell" aria-label="Notifications" class="sidebar-toggle-btn">
+                <div class="header-right flex items-center gap-3">
+                    <button type="button" id="notification-bell" data-notifications-url="{{ route('employee.notifications') }}" aria-label="Notifications" class="sidebar-toggle-btn p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 relative">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                         </svg>
                         <span id="unread-badge" class="notification-badge" style="font-size:10px; min-width:18px; height:18px; padding: 0 4px;">0</span>
                     </button>
-                    <span class="header-username">{{ request()->user()?->name }}</span>
+                    <a href="{{ route('employee.profile') }}" class="flex items-center gap-2 pl-2 border-l border-neutral-200 text-xs font-medium text-neutral-800 hover:text-neutral-900" title="My Profile">
+                        <div class="w-7 h-7 rounded-full bg-neutral-800 text-white flex items-center justify-center font-bold text-xs select-none">
+                            {{ strtoupper(substr(request()->user()?->name ?? 'E', 0, 1)) }}
+                        </div>
+                        <span class="header-username hidden sm:inline">{{ request()->user()?->name }}</span>
+                    </a>
                     <form method="POST" action="{{ route('employee.logout') }}" class="shrink-0">
                         @csrf
-                        <button type="submit" class="logout-btn">Log out</button>
+                        <button type="submit" class="logout-btn btn btn-secondary text-xs px-2.5 py-1">Log out</button>
                     </form>
                 </div>
             </header>
 
-            <main class="page-content">
-                <div class="page-content-inner">
+            <main id="main-content" class="page-content flex-1 p-4 sm:p-6 lg:p-8" tabindex="-1">
+                <div class="page-content-inner max-w-7xl mx-auto">
                     @yield('content')
                 </div>
             </main>
+
+            <footer class="employee-footer border-t border-neutral-200 bg-white py-4 px-6 text-xs text-neutral-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <div>
+                    &copy; {{ date('Y') }} <strong>{{ \App\Models\Setting::siteName() }}</strong>. Employee Portal.
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        <span>Employee Session Active</span>
+                    </span>
+                </div>
+            </footer>
         </div>
     </div>
 

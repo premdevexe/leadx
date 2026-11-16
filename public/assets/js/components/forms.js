@@ -1,56 +1,55 @@
-/* ============================================================
-   LeadX — Form helpers
-   ============================================================ */
-import { $, $$, on, addClass, removeClass } from '../core/dom.js';
+/* LeadX ? form helpers. */
+const initializedForms = new WeakSet();
+const loadingStates = new WeakMap();
 
 export function initForms() {
-    initToggles();
-    initAutoSubmit();
-}
-
-/* Toggle switches */
-function initToggles() {
-    $$('.form-switch input[type="checkbox"]').forEach((input) => {
-        on(input, 'change', () => {
-            const form = input.closest('form');
-            if (form) {
-                // Dispatch change event on the form for any listener
-                const event = new Event('change', { bubbles: true });
-                form.dispatchEvent(event);
-            }
+    document.querySelectorAll('form[data-auto-submit]').forEach((form) => {
+        if (initializedForms.has(form)) return;
+        initializedForms.add(form);
+        const configuredDelay = Number.parseInt(form.dataset.autoSubmit, 10);
+        const delay = Number.isFinite(configuredDelay) ? Math.max(0, configuredDelay) : 300;
+        let timer;
+        form.addEventListener('change', (event) => {
+            if (!event.target.matches('input, select, textarea')) return;
+            clearTimeout(timer);
+            // requestSubmit preserves browser validation and submit listeners.
+            timer = setTimeout(() => form.requestSubmit(), delay);
         });
+        form.addEventListener('submit', () => clearTimeout(timer));
     });
 }
 
-/* Auto-submit forms with [data-auto-submit] */
-function initAutoSubmit() {
-    $$('[data-auto-submit]').forEach((form) => {
-        const delay = parseInt(form.dataset.autoSubmit || '300', 10);
-        const inputs = $$('input, select', form);
-        inputs.forEach((input) => {
-            on(input, 'change', () => {
-                clearTimeout(form._autoSubmitTimer);
-                form._autoSubmitTimer = setTimeout(() => form.submit(), delay);
-            });
-        });
-    });
-}
-
-/* Confirm before destructive action */
 export function confirmAction(message = 'Are you sure?') {
-    return confirm(message);
+    return window.confirm(message);
 }
 
-/* Show/hide loading state on a form submit button */
 export function setFormLoading(form, loading) {
-    const btn = form.querySelector('[type="submit"]');
-    if (!btn) return;
     if (loading) {
-        btn.dataset.originalText = btn.textContent;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner spinner-sm"></span> Please wait...';
+        if (loadingStates.has(form)) return;
+        const buttons = [...form.querySelectorAll('button:not([type]), button[type="submit"], input[type="submit"]')];
+        const state = buttons.map((button) => ({
+            button,
+            disabled: button.disabled,
+            html: button.innerHTML,
+            value: button.value,
+        }));
+        loadingStates.set(form, { buttons: state, busy: form.getAttribute('aria-busy') });
+        form.setAttribute('aria-busy', 'true');
+        state.forEach(({ button }) => {
+            button.disabled = true;
+            if (button.tagName === 'INPUT') button.value = 'Please wait?';
+            else button.innerHTML = '<span class="spinner spinner-sm" aria-hidden="true"></span> Please wait?';
+        });
     } else {
-        btn.disabled = false;
-        btn.textContent = btn.dataset.originalText || 'Submit';
+        const state = loadingStates.get(form);
+        if (!state) return;
+        state.buttons.forEach(({ button, disabled, html, value }) => {
+            button.disabled = disabled;
+            if (button.tagName === 'INPUT') button.value = value;
+            else button.innerHTML = html;
+        });
+        if (state.busy === null) form.removeAttribute('aria-busy');
+        else form.setAttribute('aria-busy', state.busy);
+        loadingStates.delete(form);
     }
 }

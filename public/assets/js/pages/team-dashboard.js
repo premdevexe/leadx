@@ -6,8 +6,13 @@ import { initModals, initTriggers } from '../components/modals.js';
 import { initDropdowns } from '../components/dropdowns.js';
 import { initForms } from '../components/forms.js';
 import { initDismissibleAlerts } from '../components/alerts.js';
+import { initCsrf } from '../core/csrf.js';
+
+let initialized = false;
 
 export function initTeamDashboard() {
+    if (initialized) return;
+    initialized = true;
     initSidebar({
         sidebarId: 'sidebar',
         overlayId: 'sidebar-overlay',
@@ -21,6 +26,7 @@ export function initTeamDashboard() {
     initDropdowns();
     initForms();
     initDismissibleAlerts();
+    initCsrf();
 }
 
 // Auto-run on page load (module scripts are deferred, so the DOM is ready)
