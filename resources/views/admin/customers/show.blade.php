@@ -14,7 +14,7 @@
                 Customer profile · Team {{ $customer->team?->team_code ?? '—' }} · Member since {{ $customer->created_at->format('M d, Y') }}
             </p>
         </div>
-        <a href="{{ route('admin.customers') }}" class="text-sm text-neutral-600 hover:text-neutral-900">← All customers</a>
+        <a href="{{ route('admin.customers') }}" class="text-sm text-neutral-600 hover:text-neutral-900">&larr; All customers</a>
     </div>
 
     <div class="mt-5 grid gap-5 lg:grid-cols-3">
@@ -33,7 +33,7 @@
                 <div class="flex justify-between">
                     <dt class="text-neutral-500">Status</dt>
                     <dd>
-                        <span class="rounded bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                        <span class="badge badge-success">
                             {{ ucfirst($customer->status) }}
                         </span>
                     </dd>
@@ -63,18 +63,18 @@
             @if ($customer->subscriptions->isEmpty())
                 <p class="mt-3 text-sm text-neutral-400">No active or historical subscriptions recorded for this customer.</p>
             @else
-                <div class="mt-3 w-full overflow-x-auto rounded-lg border border-neutral-200">
-                    <table class="w-full min-w-[560px] text-xs whitespace-nowrap">
-                        <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+                <div class="mt-3 table-wrapper">
+                    <table class="data-table w-full" style="min-width:560px">
+                        <thead>
                             <tr>
-                                <th class="px-3 py-2 text-left">Product / Plan</th>
+                                <th class="px-3 py-2">Product / Plan</th>
                                 <th class="px-3 py-2 text-right">Price</th>
                                 <th class="px-3 py-2 text-left">Status</th>
                                 <th class="px-3 py-2 text-left">Started</th>
                                 <th class="px-3 py-2 text-left">Expires</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-neutral-100">
+                        <tbody>
                             @foreach ($customer->subscriptions as $sub)
                                 <tr>
                                     <td class="px-3 py-2 font-medium text-neutral-900">
@@ -84,12 +84,12 @@
                                         {{ $cur }}{{ number_format((float) ($sub->price_snapshot ?? $sub->amount_paid), 2) }}
                                     </td>
                                     <td class="px-3 py-2">
-                                        <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium {{ $sub->status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-600' }}">
+                                        <span class="badge {{ $sub->status === 'active' ? 'badge-success' : 'badge-neutral' }}">
                                             {{ ucfirst($sub->status) }}
                                         </span>
                                     </td>
                                     <td class="px-3 py-2 text-neutral-500">{{ $sub->started_at ? $sub->started_at->toDateString() : '—' }}</td>
-                                    <td class="px-3 py-2 font-medium {{ $sub->isActive() ? 'text-neutral-900' : 'text-neutral-400' }}">
+                                    <td class="px-3 py-2 {{ $sub->isActive() ? 'font-medium text-neutral-900' : 'text-neutral-400' }}">
                                         {{ $sub->expires_at ? $sub->expires_at->toDateString() : '—' }}
                                     </td>
                                 </tr>
@@ -104,9 +104,9 @@
             @if ($orders->isEmpty())
                 <p class="mt-3 text-sm text-neutral-400">No sales orders found.</p>
             @else
-                <div class="mt-3 w-full overflow-x-auto rounded-lg border border-neutral-200">
-                    <table class="w-full min-w-[640px] text-xs whitespace-nowrap">
-                        <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+                <div class="mt-3 table-wrapper">
+                    <table class="data-table w-full" style="min-width:640px">
+                        <thead>
                             <tr>
                                 <th class="px-3 py-2 text-left">Order #</th>
                                 <th class="px-3 py-2 text-left">Product Snapshot</th>
@@ -116,7 +116,7 @@
                                 <th class="px-3 py-2 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-neutral-100">
+                        <tbody>
                             @foreach ($orders as $order)
                                 <tr>
                                     <td class="px-3 py-2 font-mono font-medium">
@@ -134,13 +134,13 @@
                                         {{ $cur }}{{ number_format((float) $order->amount_received, 2) }}
                                     </td>
                                     <td class="px-3 py-2">
-                                        <span class="rounded px-1.5 py-0.5 text-[10px] {{ $order->payment_status === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-600' }}">
+                                        <span class="badge {{ $order->payment_status === 'paid' ? 'badge-success' : 'badge-neutral' }}">
                                             {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
                                         </span>
                                     </td>
                                     <td class="px-3 py-2 text-right">
                                         <a href="{{ route('admin.orders.show', $order) }}" class="text-[11px] text-neutral-600 hover:text-neutral-900">
-                                            View Order →
+                                            View Order &rarr;
                                         </a>
                                     </td>
                                 </tr>

@@ -8,50 +8,48 @@
             <h1 class="text-xl font-semibold tracking-tight">Refund Statuses Configuration</h1>
             <p class="mt-1 text-xs text-neutral-500">Configure allowed refund statuses, colors, and finality rules.</p>
         </div>
-        <a href="{{ route('admin.settings') }}" class="text-xs text-neutral-600 hover:text-neutral-900 underline">
-            &larr; Back to Settings
-        </a>
+        <a href="{{ route('admin.settings') }}" class="text-xs text-neutral-600 hover:text-neutral-900 underline">&larr; Back to Settings</a>
     </div>
 
     @if (session('status'))
-        <div class="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-xs text-emerald-800">{{ session('status') }}</div>
+        <div class="mt-4 alert alert-success text-xs font-semibold">{{ session('status') }}</div>
     @endif
     @if ($errors->any())
-        <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-xs text-red-800">{{ $errors->first() }}</div>
+        <div class="mt-4 alert alert-danger text-xs font-semibold">{{ $errors->first() }}</div>
     @endif
 
     <div class="mt-6 grid gap-6 lg:grid-cols-3">
         {{-- List of Statuses --}}
         <div class="lg:col-span-2 rounded-xl border border-neutral-200 bg-white p-5">
             <h2 class="text-sm font-semibold text-neutral-700">Existing Refund Statuses</h2>
-            <div class="mt-4 divide-y divide-neutral-100 text-xs">
+            <div class="mt-4 space-y-0 text-xs">
                 @foreach ($statuses as $st)
                     <div class="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div>
                             <div class="flex items-center gap-2">
                                 <span class="font-semibold text-neutral-900">{{ $st->label }}</span>
                                 <code class="font-mono text-[10px] text-neutral-400">({{ $st->slug }})</code>
-                                <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-{{ $st->color }}-100 text-{{ $st->color }}-800">
+                                <span class="badge badge-gray" style="background:var(--c-{{ $st->color }}-100);color:var(--c-{{ $st->color }}-800)">
                                     {{ ucfirst($st->color) }}
                                 </span>
                                 @if ($st->is_final)
-                                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-neutral-200 text-neutral-800">Final</span>
+                                    <span class="badge badge-neutral">Final</span>
                                 @endif
                             </div>
                         </div>
                         <form method="POST" action="{{ route('admin.settings.refund-statuses.update', $st) }}" class="flex items-center gap-2">
                             @csrf
                             @method('PUT')
-                            <input type="text" name="label" value="{{ $st->label }}" required class="rounded border border-neutral-300 px-2 py-1 text-xs w-36">
-                            <select name="color" class="rounded border border-neutral-300 px-2 py-1 text-xs">
+                            <input type="text" name="label" value="{{ $st->label }}" required class="form-input w-36 text-xs">
+                            <select name="color" class="form-select text-xs" style="width:auto">
                                 @foreach (['neutral', 'amber', 'blue', 'emerald', 'red', 'purple'] as $c)
                                     <option value="{{ $c }}" @selected($st->color === $c)>{{ ucfirst($c) }}</option>
                                 @endforeach
                             </select>
-                            <label class="inline-flex items-center gap-1 text-[11px] text-neutral-600">
+                            <label class="form-check text-[11px] text-neutral-600">
                                 <input type="checkbox" name="is_final" value="1" @checked($st->is_final) class="rounded border-neutral-300"> Final
                             </label>
-                            <button type="submit" class="rounded bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-neutral-800">
+                            <button type="submit" class="btn btn-primary px-2.5 py-1 text-xs font-medium">
                                 Save
                             </button>
                         </form>
@@ -66,18 +64,18 @@
             <form method="POST" action="{{ route('admin.settings.refund-statuses.store') }}" class="mt-4 space-y-3 text-xs">
                 @csrf
                 <div>
-                    <label class="block text-[11px] text-neutral-500 mb-0.5">Slug (Unique identifier)</label>
+                    <label class="form-label text-[11px]">Slug (Unique identifier)</label>
                     <input type="text" name="slug" placeholder="e.g. chargeback_pending" required
-                           class="w-full rounded border border-neutral-300 px-2.5 py-1.5 focus:border-neutral-500 focus:outline-none">
+                           class="form-input">
                 </div>
                 <div>
-                    <label class="block text-[11px] text-neutral-500 mb-0.5">Label (Display text)</label>
+                    <label class="form-label text-[11px]">Label (Display text)</label>
                     <input type="text" name="label" placeholder="e.g. Chargeback Pending" required
-                           class="w-full rounded border border-neutral-300 px-2.5 py-1.5 focus:border-neutral-500 focus:outline-none">
+                           class="form-input">
                 </div>
                 <div>
-                    <label class="block text-[11px] text-neutral-500 mb-0.5">Color Badge</label>
-                    <select name="color" class="w-full rounded border border-neutral-300 px-2.5 py-1.5 focus:border-neutral-500 focus:outline-none">
+                    <label class="form-label text-[11px]">Color Badge</label>
+                    <select name="color" class="form-select">
                         <option value="neutral">Neutral</option>
                         <option value="amber">Amber</option>
                         <option value="blue">Blue</option>
@@ -87,12 +85,12 @@
                     </select>
                 </div>
                 <div>
-                    <label class="inline-flex items-center gap-1.5 text-neutral-700">
+                    <label class="form-check text-neutral-700">
                         <input type="checkbox" name="is_final" value="1" class="rounded border-neutral-300">
                         <span>Is Final Status (Cannot transition further once reached)</span>
                     </label>
                 </div>
-                <button type="submit" class="w-full rounded bg-neutral-900 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800">
+                <button type="submit" class="btn btn-primary w-full py-1.5 text-xs font-semibold text-white">
                     Create Refund Status
                 </button>
             </form>

@@ -6,10 +6,10 @@
     <h1 class="text-xl font-semibold tracking-tight">Send notification</h1>
 
     @if (session('status'))
-        <div class="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('status') }}</div>
+        <div class="mt-4 alert alert-success text-sm">{{ session('status') }}</div>
     @endif
     @if (session('error'))
-        <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</div>
+        <div class="mt-4 alert alert-danger text-sm">{{ session('error') }}</div>
     @endif
 
     <p class="mt-2 text-sm text-neutral-500">
@@ -24,35 +24,35 @@
 
         <div class="grid gap-4">
             <div>
-                <label class="block text-xs font-medium text-neutral-500" for="title">Title</label>
+                <label class="form-label" for="title">Title</label>
                 <input type="text" name="title" id="title" value="{{ old('title') }}" maxlength="100" required
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
-                @error('title') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                       class="form-input">
+                @error('title') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500" for="body">Body</label>
+                <label class="form-label" for="body">Body</label>
                 <textarea name="body" id="body" rows="3" maxlength="300" required
-                          class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">{{ old('body') }}</textarea>
-                @error('body') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                          class="form-input">{{ old('body') }}</textarea>
+                @error('body') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500" for="interests">
+                <label class="form-label" for="interests">
                     Interests <span class="text-neutral-400">(comma-separated, defaults to <code class="font-mono text-xs">{{ config('services.pusher.device_interest', 'hello') }}</code>)</span>
                 </label>
-                <p class="mt-1 text-xs text-neutral-400">
+                <p class="form-hint">
                     Interest names may only contain letters, numbers and <code class="font-mono">_ - = @ , . ;</code> — no spaces (use e.g. <code class="font-mono">Divi-Chellow</code> instead of "Divi Chellow").
                 </p>
                 <input type="text" name="interests" id="interests" value="{{ old('interests', config('services.pusher.device_interest', 'hello')) }}" required
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 font-mono text-sm focus:border-neutral-500 focus:outline-none">
-                @error('interests') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                       class="form-input font-mono">
+                @error('interests') <p class="form-error">{{ $message }}</p> @enderror
             </div>
         </div>
 
         <div class="mt-6 flex flex-wrap items-center gap-3">
             <button type="submit"
-                    class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
+                    class="btn btn-primary px-4 py-2 text-sm font-medium">
                 Send notification
             </button>
         </div>
@@ -65,7 +65,7 @@
             <div class="flex items-center gap-1">
                 @foreach ([['all', 'All'], ['failed', 'Failed'], ['sent', 'Sent']] as [$key, $label])
                     <a href="{{ $key === 'all' ? route('admin.notifications') : route('admin.notifications', ['status' => $key]) }}"
-                       class="rounded-lg px-2.5 py-1 font-medium transition-colors {{ $filterKey === $key ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 hover:text-neutral-700' }}">
+                       class="btn {{ $filterKey === $key ? 'btn-primary' : 'btn-secondary' }} px-2.5 py-1 text-xs font-medium">
                         {{ $label }}
                     </a>
                 @endforeach
@@ -75,7 +75,7 @@
                     <input type="hidden" name="status" value="{{ $status }}">
                 @endif
                 <select name="limit" onchange="this.form.submit()"
-                        class="rounded-lg border border-neutral-300 px-2 py-1 text-xs focus:border-neutral-500 focus:outline-none">
+                        class="form-select" style="width:auto">
                     @foreach ([10, 25, 50, 100] as $option)
                         <option value="{{ $option }}" @selected($limit === $option)>Last {{ $option }}</option>
                     @endforeach
@@ -87,7 +87,7 @@
                     @csrf
                     @method('DELETE')
                     <button type="submit"
-                            class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50">
+                            class="btn btn-danger px-3 py-1.5 text-xs font-medium text-white hover:bg-red-800">
                         Clear history
                     </button>
                 </form>
@@ -100,10 +100,10 @@
             No notifications sent yet.
         </div>
     @else
-        <div class="mt-4 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
-            <table class="w-full min-w-[640px] text-left text-sm">
+        <div class="mt-4 table-wrapper">
+            <table class="data-table w-full" style="min-width:640px">
                 <thead>
-                    <tr class="border-b border-neutral-200 text-xs text-neutral-500">
+                    <tr class="text-left text-xs text-neutral-500">
                         <th class="px-4 py-3 font-medium">When</th>
                         <th class="px-4 py-3 font-medium">Title</th>
                         <th class="px-4 py-3 font-medium">Body</th>
@@ -112,10 +112,10 @@
                         <th class="px-4 py-3 font-medium">Publish ID</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-neutral-100">
+                <tbody>
                     @foreach ($history as $log)
                         <tr class="align-top">
-                            <td class="whitespace-nowrap px-4 py-3 text-xs text-neutral-500">{{ $log->created_at->format('M j, Y H:i') }}</td>
+                            <td class="px-4 py-3 text-xs text-neutral-500">{{ $log->created_at->format('M j, Y H:i') }}</td>
                             <td class="px-4 py-3 font-medium text-neutral-800">{{ $log->title }}</td>
                             <td class="px-4 py-3 text-neutral-600">{{ Str::limit($log->body, 60) }}</td>
                             <td class="px-4 py-3">
@@ -129,7 +129,7 @@
                                     {{ $log->status }}
                                 </span>
                                 @if ($log->error)
-                                    <div class="mt-1 max-w-xs text-xs text-red-500" title="{{ $log->error }}">{{ Str::limit($log->error, 120) }}</div>
+                                    <div class="mt-1 text-xs text-red-500" title="{{ $log->error }}">{{ Str::limit($log->error, 120) }}</div>
                                 @endif
                                 @if ($log->status !== 'sent')
                                     <form method="POST"
@@ -140,11 +140,10 @@
                                                name="interests"
                                                value="{{ session('retry_interests.'.$log->id, $log->interests) }}"
                                                placeholder="Interests (comma-separated)"
-                                               title="Interests this retry will be sent to — edit to correct a failed interest, e.g. replace a space with a hyphen"
-                                               class="w-44 rounded-lg border border-neutral-300 px-2 py-1 font-mono text-xs focus:border-neutral-500 focus:outline-none">
+                                               class="form-input w-44 font-mono text-xs">
                                         <button type="submit"
-                                                class="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-500 hover:bg-neutral-50">
-                                            ↻ Retry
+                                                class="btn btn-secondary px-3 py-1.5 text-xs font-medium text-neutral-700">
+                                            Retry
                                         </button>
                                     </form>
                                     @if (session('retry_error.'.$log->id))

@@ -1,0 +1,79 @@
+/* ============================================================
+   LeadX — Component: Modals
+   ============================================================ */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-4);
+    background: rgb(0 0 0 / 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-base), visibility var(--transition-base);
+}
+
+.modal-overlay.active { opacity: 1; visibility: visible; }
+
+.modal {
+    background: var(--c-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2xl);
+    width: 100%;
+    max-width: 32rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.95) translateY(10px);
+    transition: transform var(--transition-base);
+}
+
+.modal-overlay.active .modal { transform: scale(1) translateY(0); }
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-4) var(--sp-5);
+    border-bottom: var(--border-width) solid var(--border-color);
+}
+
+.modal-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--c-neutral-900);
+}
+
+.modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-md);
+    color: var(--c-neutral-500);
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+.modal-close:hover { background: var(--c-neutral-100); color: var(--c-neutral-900); }
+
+.modal-body { padding: var(--sp-5); }
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-5);
+    border-top: var(--border-width) solid var(--border-color);
+    background: var(--c-neutral-50);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* Modal sizes */
+.modal-sm { max-width: 24rem; }
+.modal-lg { max-width: 48rem; }
+.modal-xl { max-width: 64rem; }
+.modal-full { max-width: calc(100vw - var(--sp-8)); max-height: calc(100vh - var(--sp-8)); }

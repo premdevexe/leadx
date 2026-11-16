@@ -9,23 +9,23 @@
             <p class="mt-1 text-sm text-neutral-500">Manage site identity, branding logos, favicon, currency, and payment options.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('admin.api-settings.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
-                <svg class="h-4 w-4 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <a href="{{ route('admin.api-settings.index') }}" class="btn btn-secondary px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
+                <svg class="h-4 w-4 text-neutral-500 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
                 </svg>
                 API Integrations
             </a>
-            <a href="{{ route('admin.settings.refund-statuses') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
+            <a href="{{ route('admin.settings.refund-statuses') }}" class="btn btn-secondary px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
                 Refund Statuses
             </a>
-            <a href="{{ route('admin.email.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
+            <a href="{{ route('admin.email.index') }}" class="btn btn-secondary px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
                 Email / SMTP
             </a>
         </div>
     </div>
 
     @if (session('status'))
-        <div class="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('status') }}</div>
+        <div class="mt-4 alert alert-success text-sm">{{ session('status') }}</div>
     @endif
 
     <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data" class="mt-5 space-y-6">
@@ -41,23 +41,23 @@
 
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
-                    <label for="site_name" class="text-sm font-medium text-neutral-800">Site Name</label>
+                    <label for="site_name" class="form-label">Site Name</label>
                     <input id="site_name" name="site_name" type="text" value="{{ $siteName }}"
                            maxlength="100"
                            placeholder="LeadX"
-                           class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200">
-                    @error('site_name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                           class="form-input mt-1 w-full">
+                    @error('site_name') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label for="currency" class="text-sm font-medium text-neutral-800">Currency</label>
+                    <label for="currency" class="form-label">Currency</label>
                     <select id="currency" name="currency"
-                            class="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200">
+                            class="form-select mt-1 w-full">
                         @foreach ($currencies as $code => $symbol)
                             <option value="{{ $code }}" @selected($code === $currency)>{{ $symbol }} — {{ $code }}</option>
                         @endforeach
                     </select>
-                    @error('currency') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('currency') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
             </div>
         </div>
@@ -69,7 +69,7 @@
                     <div class="flex items-center gap-2">
                         <span class="inline-flex h-6 w-6 items-center justify-center rounded-md bg-neutral-900 text-white">
                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6 6v2m0-14v2"/>
                             </svg>
                         </span>
                         <h2 class="text-base font-semibold text-neutral-900">Logo & Favicon Upload Center</h2>
@@ -82,26 +82,25 @@
 
             <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
                 {{-- 1. Primary Site Logo Box --}}
-                <div class="flex flex-col rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 transition-all hover:border-neutral-300">
+                <div class="flex flex-col rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-semibold text-neutral-900">Primary Site Logo</span>
                         @if ($logoUrl)
-                            <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">Active</span>
+                            <span class="badge badge-success">Active</span>
                         @else
-                            <span class="inline-flex items-center rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-600">Default Badge</span>
+                            <span class="badge badge-neutral">Default Badge</span>
                         @endif
                     </div>
                     <p class="mt-1 text-xs text-neutral-500">Standard brand logo displayed on light backgrounds and portals.</p>
 
-                    {{-- Preview Container --}}
-                    <div class="mt-3 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-200 bg-white p-3 shadow-2xs">
+                    <div class="mt-3 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-200 bg-white p-3">
                         <div id="logo-preview-wrapper" class="flex max-h-full max-w-full items-center justify-center">
                             @if ($logoUrl)
                                 <img id="logo-preview" src="{{ $logoUrl }}" alt="Primary Logo" class="max-h-24 max-w-full object-contain">
                             @else
                                 <div id="logo-placeholder" class="flex flex-col items-center justify-center text-neutral-400">
                                     <svg class="h-8 w-8 text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6 6v2m0-14v2"/>
                                     </svg>
                                     <span class="mt-1 text-[11px]">No logo uploaded</span>
                                 </div>
@@ -110,20 +109,19 @@
                         </div>
                     </div>
 
-                    {{-- Upload Controls --}}
                     <div class="mt-3 flex-1 flex flex-col justify-end space-y-2">
                         <label class="block">
                             <span class="sr-only">Choose Primary Logo</span>
                             <input type="file" name="logo" id="logo-input" accept="image/png,image/jpeg,image/svg+xml,image/webp"
                                    class="block w-full text-xs text-neutral-500 file:mr-2.5 file:rounded-md file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-neutral-800 file:cursor-pointer">
                         </label>
-                        <p class="text-[11px] text-neutral-400">PNG, JPG, SVG, WebP (Max 2MB). Rec: 250×60px.</p>
+                        <p class="text-[11px] text-neutral-400">PNG, JPG, SVG, WebP (Max 2MB). Rec: 250x60px.</p>
                         @error('logo') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
 
                         @if ($logoUrl)
                             <div class="pt-2 border-t border-neutral-200">
                                 <label class="flex items-center gap-1.5 text-xs text-red-600 cursor-pointer hover:text-red-700">
-                                    <input type="checkbox" name="remove_logo" value="1" class="rounded border-neutral-300 text-red-600 focus:ring-red-500">
+                                    <input type="checkbox" name="remove_logo" value="1" class="rounded border-neutral-300 text-red-600">
                                     <span>Remove current primary logo</span>
                                 </label>
                             </div>
@@ -131,33 +129,31 @@
                     </div>
                 </div>
 
-                {{-- 2. Transparent Logo Box Section (Specially Highlighted) --}}
-                <div class="flex flex-col rounded-xl border-2 border-indigo-200 bg-indigo-50/20 p-4 shadow-xs transition-all hover:border-indigo-300">
+                {{-- 2. Transparent Logo Box --}}
+                <div class="flex flex-col rounded-xl border-2 border-indigo-200 bg-indigo-50 p-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-1.5">
                             <span class="text-sm font-semibold text-neutral-900">Transparent Logo</span>
-                            <span class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-800">Transparent Box</span>
+                            <span class="badge" style="background:var(--c-indigo-100);color:var(--c-indigo-700)">Transparent Box</span>
                         </div>
                         @if ($logoTransparentUrl)
-                            <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">Active</span>
+                            <span class="badge badge-success">Active</span>
                         @else
-                            <span class="inline-flex items-center rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-600">Unset</span>
+                            <span class="badge badge-neutral">Unset</span>
                         @endif
                     </div>
                     <p class="mt-1 text-xs text-neutral-500">Special transparent background logo for dark headers, invoices, and overlays.</p>
 
-                    {{-- Background Switcher Toolbar for Transparent Logo --}}
                     <div class="mt-2 flex items-center justify-between text-[11px] text-neutral-500">
                         <span>Preview background:</span>
-                        <div class="inline-flex rounded-md border border-neutral-200 bg-white p-0.5 shadow-2xs">
-                            <button type="button" onclick="setTransparentBoxBg('checkerboard')" class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors bg-neutral-900 text-white" id="bg-btn-checkerboard" title="Checkerboard transparency grid">Grid</button>
-                            <button type="button" onclick="setTransparentBoxBg('dark')" class="rounded px-2 py-0.5 text-[10px] font-medium text-neutral-600 hover:text-neutral-900 transition-colors" id="bg-btn-dark" title="Dark Header Preview (#171717)">Dark</button>
-                            <button type="button" onclick="setTransparentBoxBg('light')" class="rounded px-2 py-0.5 text-[10px] font-medium text-neutral-600 hover:text-neutral-900 transition-colors" id="bg-btn-light" title="White Preview (#FFFFFF)">Light</button>
+                        <div class="inline-flex rounded-md border border-neutral-200 bg-white p-0.5">
+                            <button type="button" onclick="setTransparentBoxBg('checkerboard')" class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors btn btn-primary" id="bg-btn-checkerboard" style="padding:2px 8px">Grid</button>
+                            <button type="button" onclick="setTransparentBoxBg('dark')" class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors btn btn-secondary" id="bg-btn-dark" style="padding:2px 8px">Dark</button>
+                            <button type="button" onclick="setTransparentBoxBg('light')" class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors btn btn-secondary" id="bg-btn-light" style="padding:2px 8px">Light</button>
                         </div>
                     </div>
 
-                    {{-- Transparent Preview Container (with CSS Checkerboard) --}}
-                    <div id="transparent-preview-box" class="mt-2 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-200 p-3 shadow-2xs checkerboard-bg transition-colors duration-150">
+                    <div id="transparent-preview-box" class="mt-2 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-200 p-3 checkerboard-bg transition-colors duration-150">
                         <div id="logo-transparent-preview-wrapper" class="flex max-h-full max-w-full items-center justify-center">
                             @if ($logoTransparentUrl)
                                 <img id="logo-transparent-preview" src="{{ $logoTransparentUrl }}" alt="Transparent Logo" class="max-h-24 max-w-full object-contain">
@@ -173,7 +169,6 @@
                         </div>
                     </div>
 
-                    {{-- Upload Controls --}}
                     <div class="mt-3 flex-1 flex flex-col justify-end space-y-2">
                         <label class="block">
                             <span class="sr-only">Choose Transparent Logo</span>
@@ -186,7 +181,7 @@
                         @if ($logoTransparentUrl)
                             <div class="pt-2 border-t border-indigo-100">
                                 <label class="flex items-center gap-1.5 text-xs text-red-600 cursor-pointer hover:text-red-700">
-                                    <input type="checkbox" name="remove_logo_transparent" value="1" class="rounded border-neutral-300 text-red-600 focus:ring-red-500">
+                                    <input type="checkbox" name="remove_logo_transparent" value="1" class="rounded border-neutral-300 text-red-600">
                                     <span>Remove transparent logo</span>
                                 </label>
                             </div>
@@ -195,26 +190,29 @@
                 </div>
 
                 {{-- 3. Favicon Upload Box --}}
-                <div class="flex flex-col rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 transition-all hover:border-neutral-300">
+                <div class="flex flex-col rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-semibold text-neutral-900">Browser Favicon</span>
                         @if ($faviconUrl)
-                            <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">Active</span>
+                            <span class="badge badge-success">Active</span>
                         @else
-                            <span class="inline-flex items-center rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-600">Default</span>
+                            <span class="badge badge-neutral">Default</span>
                         @endif
                     </div>
                     <p class="mt-1 text-xs text-neutral-500">Browser tab icon and bookmark shortcut graphic.</p>
 
-                    {{-- Simulated Browser Tab Preview --}}
-                    <div class="mt-3 flex h-32 w-full flex-col justify-center rounded-lg border border-neutral-200 bg-white p-3 shadow-2xs">
+                    <div class="mt-3 flex h-32 w-full flex-col justify-center rounded-lg border border-neutral-200 bg-white p-3">
                         <div class="w-full rounded-md border border-neutral-200 bg-neutral-100 p-1.5 text-xs">
-                            <div class="flex items-center gap-1.5 rounded bg-white px-2.5 py-1 shadow-2xs">
+                            <div class="flex items-center gap-1.5 rounded bg-white px-2.5 py-1">
                                 <div id="favicon-tab-icon-wrapper" class="flex h-4 w-4 shrink-0 items-center justify-center">
                                     @if ($faviconUrl)
                                         <img id="favicon-tab-icon" src="{{ $faviconUrl }}" alt="Favicon" class="h-3.5 w-3.5 object-contain">
                                     @else
-                                        <span id="favicon-tab-placeholder" class="text-[10px]">🌐</span>
+                                        <span id="favicon-tab-placeholder" class="text-neutral-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3.5 w-3.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0 0a8.949 8.949 0 004.95-1.484M12 21a8.949 8.949 0 01-4.95-1.484m9.9 0A8.962 8.962 0 0021 12h-2m-7 9V3m0 0a8.949 8.949 0 014.95 1.484M12 3a8.949 8.949 0 00-4.95 1.484m9.9 0A8.969 8.969 0 0012 3m-7 9H3m14 0a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                        </span>
                                         <img id="favicon-tab-icon" src="" alt="Favicon Preview" class="hidden h-3.5 w-3.5 object-contain">
                                     @endif
                                 </div>
@@ -224,30 +222,29 @@
                         </div>
                         <div class="mt-2 flex items-center justify-center">
                             @if ($faviconUrl)
-                                <img id="favicon-large-preview" src="{{ $faviconUrl }}" alt="Favicon Large" class="h-10 w-10 rounded border border-neutral-200 bg-neutral-50 p-1 object-contain shadow-2xs">
+                                <img id="favicon-large-preview" src="{{ $faviconUrl }}" alt="Favicon Large" class="h-10 w-10 rounded border border-neutral-200 bg-neutral-50 p-1 object-contain">
                             @else
                                 <div id="favicon-large-placeholder" class="flex h-10 w-10 items-center justify-center rounded border border-neutral-200 bg-neutral-50 text-neutral-400">
                                     <span class="text-xs font-semibold">ICO</span>
                                 </div>
-                                <img id="favicon-large-preview" src="" alt="Favicon Large Preview" class="hidden h-10 w-10 rounded border border-neutral-200 bg-neutral-50 p-1 object-contain shadow-2xs">
+                                <img id="favicon-large-preview" src="" alt="Favicon Large Preview" class="hidden h-10 w-10 rounded border border-neutral-200 bg-neutral-50 p-1 object-contain">
                             @endif
                         </div>
                     </div>
 
-                    {{-- Upload Controls --}}
                     <div class="mt-3 flex-1 flex flex-col justify-end space-y-2">
                         <label class="block">
                             <span class="sr-only">Choose Favicon</span>
                             <input type="file" name="favicon" id="favicon-input" accept=".ico,image/png,image/svg+xml,image/webp"
                                    class="block w-full text-xs text-neutral-500 file:mr-2.5 file:rounded-md file:border-0 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-neutral-800 file:cursor-pointer">
                         </label>
-                        <p class="text-[11px] text-neutral-400">ICO, PNG, SVG (Max 1MB). Rec: 32×32 or 64×64px.</p>
+                        <p class="text-[11px] text-neutral-400">ICO, PNG, SVG (Max 1MB). Rec: 32x32 or 64x64px.</p>
                         @error('favicon') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
 
                         @if ($faviconUrl)
                             <div class="pt-2 border-t border-neutral-200">
                                 <label class="flex items-center gap-1.5 text-xs text-red-600 cursor-pointer hover:text-red-700">
-                                    <input type="checkbox" name="remove_favicon" value="1" class="rounded border-neutral-300 text-red-600 focus:ring-red-500">
+                                    <input type="checkbox" name="remove_favicon" value="1" class="rounded border-neutral-300 text-red-600">
                                     <span>Remove custom favicon</span>
                                 </label>
                             </div>
@@ -266,26 +263,25 @@
 
             <div class="mt-4 grid gap-2 sm:grid-cols-2">
                 @foreach ($paymentMethods as $code => $label)
-                    <label class="flex items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm {{ in_array($code, $enabledMethods, true) ? 'border-neutral-400 bg-neutral-50' : '' }}">
+                    <label class="form-check">
                         <input type="checkbox" name="payment_methods[]" value="{{ $code }}"
                                @checked(in_array($code, $enabledMethods, true))
                                class="rounded border-neutral-300">
-                        <span class="font-medium text-neutral-800">{{ $label }}</span>
+                        <span class="text-sm font-medium text-neutral-800">{{ $label }}</span>
                     </label>
                 @endforeach
             </div>
 
-            @error('payment_methods') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
+            @error('payment_methods') <p class="form-error">{{ $message }}</p> @enderror
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
-            <button type="submit" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-neutral-800 transition-colors">
+            <button type="submit" class="btn btn-primary px-5 py-2.5 text-sm font-semibold text-white">
                 Save Settings & Branding
             </button>
         </div>
     </form>
 
-    {{-- Styling for Checkerboard Pattern --}}
     <style>
         .checkerboard-bg {
             background-color: #ffffff;
@@ -299,7 +295,6 @@
         }
     </style>
 
-    {{-- Live Client-side Image Preview Script --}}
     <script>
         function bindImagePreview(inputId, imgId, placeholderId) {
             const input = document.getElementById(inputId);
@@ -327,7 +322,6 @@
         bindImagePreview('logo-transparent-input', 'logo-transparent-preview', 'logo-transparent-placeholder');
         bindImagePreview('favicon-input', 'favicon-large-preview', 'favicon-large-placeholder');
 
-        // Also update favicon mini tab icon
         const favInput = document.getElementById('favicon-input');
         if (favInput) {
             favInput.addEventListener('change', function (e) {
@@ -349,7 +343,6 @@
             });
         }
 
-        // Transparent Box Background Toggle
         function setTransparentBoxBg(mode) {
             const box = document.getElementById('transparent-preview-box');
             const btnChecker = document.getElementById('bg-btn-checkerboard');
@@ -357,31 +350,12 @@
             const btnLight = document.getElementById('bg-btn-light');
             if (!box) return;
 
-            [btnChecker, btnDark, btnLight].forEach(btn => {
-                if (btn) {
-                    btn.classList.remove('bg-neutral-900', 'text-white');
-                    btn.classList.add('text-neutral-600');
-                }
-            });
-
             if (mode === 'dark') {
-                box.className = 'mt-2 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 p-3 shadow-2xs transition-colors duration-150';
-                if (btnDark) {
-                    btnDark.classList.add('bg-neutral-900', 'text-white');
-                    btnDark.classList.remove('text-neutral-600');
-                }
+                box.className = 'mt-2 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 p-3 shadow-xs transition-colors duration-150';
             } else if (mode === 'light') {
-                box.className = 'mt-2 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-200 bg-white p-3 shadow-2xs transition-colors duration-150';
-                if (btnLight) {
-                    btnLight.classList.add('bg-neutral-900', 'text-white');
-                    btnLight.classList.remove('text-neutral-600');
-                }
+                box.className = 'mt-2 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-200 bg-white p-3 shadow-xs transition-colors duration-150';
             } else {
-                box.className = 'mt-2 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-200 p-3 shadow-2xs checkerboard-bg transition-colors duration-150';
-                if (btnChecker) {
-                    btnChecker.classList.add('bg-neutral-900', 'text-white');
-                    btnChecker.classList.remove('text-neutral-600');
-                }
+                box.className = 'mt-2 flex h-32 w-full items-center justify-center rounded-lg border border-neutral-200 p-3 shadow-xs checkerboard-bg transition-colors duration-150';
             }
         }
     </script>

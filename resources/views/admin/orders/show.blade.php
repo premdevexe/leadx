@@ -3,12 +3,12 @@
 @section('title', 'Order '.$order->order_number)
 
 @php
-    $paymentColors = [
-        'pending' => 'bg-amber-50 text-amber-700',
-        'partially_paid' => 'bg-blue-50 text-blue-700',
-        'paid' => 'bg-emerald-50 text-emerald-700',
-        'failed' => 'bg-red-50 text-red-700',
-        'refunded' => 'bg-neutral-100 text-neutral-500',
+    $paymentStyles = [
+        'pending'        => 'background:var(--c-amber-50);color:var(--c-amber-800)',
+        'partially_paid' => 'background:var(--c-blue-50);color:var(--c-blue-800)',
+        'paid'           => 'background:var(--c-green-50);color:var(--c-green-800)',
+        'failed'         => 'background:var(--c-red-50);color:var(--c-red-800)',
+        'refunded'       => 'background:var(--c-neutral-100);color:var(--c-neutral-500)',
     ];
 @endphp
 
@@ -23,21 +23,21 @@
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('admin.orders.edit', $order) }}" class="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-sm hover:bg-neutral-50 transition">
+            <a href="{{ route('admin.orders.edit', $order) }}" class="btn btn-secondary px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50">
                 Edit Order
             </a>
-            <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-600 hover:text-neutral-900">← All orders</a>
+            <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-600 hover:text-neutral-900">&larr; All orders</a>
         </div>
     </div>
 
     @if (session('status'))
-        <div class="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('status') }}</div>
+        <div class="mt-4 alert alert-success text-sm">{{ session('status') }}</div>
     @endif
     @if (session('error'))
-        <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</div>
+        <div class="mt-4 alert alert-danger text-sm">{{ session('error') }}</div>
     @endif
     @if ($errors->any())
-        <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>
+        <div class="mt-4 alert alert-danger text-sm">{{ $errors->first() }}</div>
     @endif
 
     {{-- Closing Value Approval Banner --}}
@@ -64,40 +64,42 @@
                 @endif
             </p>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-amber-200">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-amber-200">
                 {{-- Accept Form --}}
-                <form method="POST" action="{{ route('admin.orders.closing-approval.accept', $order) }}" class="space-y-3 bg-white p-4 rounded-xl border border-amber-200 shadow-xs">
+                <form method="POST" action="{{ route('admin.orders.closing-approval.accept', $order) }}" class="space-y-3 rounded-xl border border-amber-200 bg-white p-4 shadow-xs">
                     @csrf
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Option A: Accept Deal</span>
-                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-medium">Approve</span>
+                        <span class="text-[10px] badge badge-success">Approve</span>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-medium text-neutral-600">Adjusted Value (optional)</label>
-                        <input type="number" step="0.01" name="adjusted_closing_value" placeholder="{{ $order->closing_value }}" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-900 focus:border-neutral-500 focus:outline-none">
-                        <p class="mt-1 text-[10px] text-neutral-400">Leave blank to accept {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }}.</p>
+                        <label class="form-label">Adjusted Value (optional)</label>
+                        <input type="number" step="0.01" name="adjusted_closing_value" placeholder="{{ $order->closing_value }}" class="form-input mt-1 w-full text-xs">
+                        <p class="form-hint">Leave blank to accept {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }}.</p>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-medium text-neutral-600">Approval notes (optional)</label>
-                        <input type="text" name="notes" placeholder="e.g. Approved discount" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-900 focus:border-neutral-500 focus:outline-none">
+                        <label class="form-label">Approval notes (optional)</label>
+                        <input type="text" name="notes" placeholder="e.g. Approved discount" class="form-input mt-1 w-full text-xs">
                     </div>
-                    <button type="submit" style="background-color: #047857; color: #ffffff;" class="w-full rounded-lg py-2 px-4 text-xs font-bold text-white shadow-xs hover:opacity-90 active:scale-[0.99] transition cursor-pointer">
-                        Accept
+                    <button type="submit" class="btn btn-primary w-full py-2 px-4 text-xs font-semibold">
+                        Accept Deal
                     </button>
                 </form>
 
                 {{-- Reject Form --}}
-                <form method="POST" action="{{ route('admin.orders.closing-approval.reject', $order) }}" class="space-y-3 bg-white p-4 rounded-xl border border-amber-200 shadow-xs">
+                <form method="POST" action="{{ route('admin.orders.closing-approval.reject', $order) }}" class="space-y-3 rounded-xl border border-amber-200 bg-white p-4 shadow-xs">
                     @csrf
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-red-800 uppercase tracking-wider">Option B: Reject Deal</span>
-                        <span class="text-[10px] bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-200 font-medium">Suspend Order</span>
+                        <span class="text-xs font-semibold text-neutral-800">Option B: Reject deal</span>
+                        <span class="text-[10px] badge badge-danger">Suspend order</span>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-medium text-neutral-600">Mandatory Rejection Reason *</label>
-                        <textarea name="rejection_reason" required rows="2" placeholder="Explain why this closing value is rejected…" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-900 focus:border-neutral-500 focus:outline-none"></textarea>
+                        <label class="form-label">Mandatory rejection reason *</label>
+                        <textarea name="rejection_reason" required rows="2" placeholder="Explain why this closing value is rejected…" class="form-input mt-1 w-full text-xs"></textarea>
                     </div>
-                    <button type="submit" onclick="return confirm('Reject this closing value? Order will be suspended.')" style="background-color: #b91c1c; color: #ffffff;" class="w-full rounded-lg py-2 px-4 text-xs font-bold text-white shadow-xs hover:opacity-90 active:scale-[0.99] transition cursor-pointer">
+                    <button type="submit" onclick="return confirm('Reject this closing value? Order will be suspended.')" class="btn btn-danger w-full py-2 px-4 text-xs font-semibold">
+                        Reject Deal
+                    </button>
                         Reject
                     </button>
                 </form>
@@ -111,7 +113,7 @@
             <details class="group">
                 <summary class="flex items-center justify-between cursor-pointer list-none text-xs font-semibold text-neutral-700">
                     <span>Modify Accepted Closing Value</span>
-                    <span class="text-neutral-400 group-open:rotate-180 transition-transform">▼</span>
+                    <span class="text-neutral-400 group-open:rotate-180 transition-transform">&#x25BE;</span>
                 </summary>
                 <form method="POST" action="{{ route('admin.orders.closing-value.modify', $order) }}" class="mt-3 space-y-2 border-t border-neutral-100 pt-3 text-xs">
                     @csrf
@@ -119,16 +121,16 @@
                         <div>
                             <label class="block text-[11px] text-neutral-500">New Closing Value</label>
                             <input type="number" step="0.01" min="0.01" name="new_closing_value" value="{{ $order->closing_value }}" required
-                                   class="mt-0.5 w-full rounded border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                                   class="form-input mt-0.5 w-full text-xs">
                         </div>
                         <div>
                             <label class="block text-[11px] text-neutral-500">Mandatory Reason</label>
                             <input type="text" name="modification_reason" required placeholder="Reason for adjusting accepted value…"
-                                   class="mt-0.5 w-full rounded border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                                   class="form-input mt-0.5 w-full text-xs">
                         </div>
                     </div>
                     <button type="submit" onclick="return confirm('Modify accepted closing value? This will recalculate discount and notify the employee.')"
-                            class="rounded bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800">
+                            class="btn btn-primary px-3 py-1.5 text-xs font-medium">
                         Update Closing Value
                     </button>
                 </form>
@@ -195,15 +197,15 @@
                 </dl>
 
                 <div class="mt-5 flex flex-wrap items-center gap-2">
-                    <span class="rounded-full px-2.5 py-0.5 text-xs font-medium {{ $paymentColors[$order->payment_status] ?? 'bg-neutral-100 text-neutral-600' }}">
-                        Payment: {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
+                    <span class="badge {{ $order->payment_status === 'paid' ? 'badge-success' : ($order->payment_status === 'pending' ? 'badge-warning' : 'badge-neutral') }}">
+                        <span class="badge-dot"></span> Payment: {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
                     </span>
                     @if ($order->payment_method)
-                        <span class="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
+                        <span class="badge badge-neutral">
                             Via: {{ \App\Models\Setting::paymentMethodLabel($order->payment_method) }}
                         </span>
                     @endif
-                    <span class="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
+                    <span class="badge badge-neutral">
                         Status: {{ ucfirst(str_replace('_', ' ', $order->order_status)) }}
                     </span>
                 </div>
@@ -219,9 +221,9 @@
                 @if ($order->payments->isEmpty())
                     <p class="mt-3 text-sm text-neutral-400">No payment receipts recorded for this order yet.</p>
                 @else
-                    <div class="mt-3 w-full overflow-x-auto rounded-lg border border-neutral-200">
-                        <table class="w-full min-w-[460px] text-xs whitespace-nowrap">
-                            <thead class="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+                    <div class="mt-3 table-wrapper">
+                        <table class="data-table w-full" style="min-width:460px">
+                            <thead>
                                 <tr>
                                     <th class="px-3 py-2 text-left">Date</th>
                                     <th class="px-3 py-2 text-left">Method</th>
@@ -230,18 +232,18 @@
                                     <th class="px-3 py-2 text-right">Action</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-neutral-100">
+                            <tbody>
                                 @foreach ($order->payments as $payment)
                                     <tr>
                                         <td class="px-3 py-2 text-neutral-600">{{ $payment->created_at->format('M d, Y') }}</td>
                                         <td class="px-3 py-2 uppercase font-mono text-neutral-700">{{ $payment->payment_method }}</td>
                                         <td class="px-3 py-2 text-right tabular-nums font-medium">{{ \App\Models\Setting::currencySymbolFor($payment->currency) }}{{ number_format((float) $payment->amount, 2) }}</td>
                                         <td class="px-3 py-2">
-                                            <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium {{ $paymentColors[$payment->payment_status] ?? 'bg-neutral-100' }}">
+                                            <span class="badge {{ $paymentStyles[$payment->payment_status] ?? 'badge-neutral' }}">
                                                 {{ ucfirst($payment->payment_status) }}
                                             </span>
                                         </td>
-                                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                                        <td class="px-3 py-2 text-right">
                                             @if ($payment->payment_status === 'pending')
                                                 <form method="POST" action="{{ route('admin.orders.payments.verify', [$order, $payment]) }}" class="inline">
                                                     @csrf
@@ -256,7 +258,7 @@
                                                     </button>
                                                 </form>
                                             @elseif ($payment->isVerified())
-                                                <span class="text-[10px] text-emerald-700">✓ Verified</span>
+                                                <span class="text-[10px] text-emerald-700">&#x2713; Verified</span>
                                             @else
                                                 <span class="text-[10px] text-neutral-400">—</span>
                                             @endif
@@ -277,18 +279,18 @@
                             <input type="number" step="0.01" min="0.01" name="amount"
                                    value="{{ old('amount', max((float)$order->closing_value - (float)$order->amount_received, 0) ?: '') }}"
                                    placeholder="Amount" required
-                                   class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                                   class="form-input w-full text-xs">
                         </div>
                         <div>
                             <select name="payment_method" required
-                                    class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                                    class="form-select w-full text-xs">
                                 @foreach ($enabledPaymentMethods ?? ['bank_transfer', 'cash', 'upi', 'gateway'] as $pm)
                                     <option value="{{ $pm }}">{{ ucfirst(str_replace('_', ' ', $pm)) }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div>
-                            <button type="submit" class="w-full rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-700">
+                            <button type="submit" class="btn btn-primary w-full py-1.5 px-3 text-xs font-medium">
                                 Record Payment
                             </button>
                         </div>
@@ -317,7 +319,7 @@
                 </div>
 
                 @if ($order->refunds->isNotEmpty())
-                    <div class="mt-3 divide-y divide-neutral-100 text-xs">
+                    <div class="mt-3 text-xs">
                         @foreach ($order->refunds as $refund)
                             <div class="py-2.5">
                                 <div class="flex items-center justify-between">
@@ -325,7 +327,7 @@
                                         <span class="font-semibold text-neutral-900">
                                             {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float)$refund->amount, 2) }}
                                         </span>
-                                        <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $refund->type === 'full' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800' }}">
+                                        <span class="badge {{ $refund->type === 'full' ? 'badge-danger' : 'badge-warning' }}">
                                             {{ ucfirst($refund->type) }}
                                         </span>
                                     </div>
@@ -349,11 +351,11 @@
                                 <label class="block text-[10px] text-neutral-500 mb-0.5">Amount</label>
                                 <input type="number" step="0.01" min="0.01" max="{{ $order->remainingRefundable() }}" name="amount"
                                        value="{{ old('amount', $order->remainingRefundable()) }}" placeholder="Amount" required
-                                       class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                                       class="form-input w-full text-xs">
                             </div>
                             <div>
                                 <label class="block text-[10px] text-neutral-500 mb-0.5">Type</label>
-                                <select name="type" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                                <select name="type" class="form-select w-full text-xs">
                                     <option value="full">Full Refund</option>
                                     <option value="partial">Partial Refund</option>
                                 </select>
@@ -362,10 +364,10 @@
                         <div>
                             <label class="block text-[10px] text-neutral-500 mb-0.5">Mandatory Reason</label>
                             <input type="text" name="reason" placeholder="Reason for refund (chargeback, customer request, etc.)…" required
-                                   class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                                   class="form-input w-full text-xs">
                         </div>
                         <button type="submit" onclick="return confirm('Process this refund? This updates financial status and notifies assigned staff.')"
-                                class="w-full rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-700">
+                                class="btn btn-primary w-full px-3 py-1.5 text-xs font-medium">
                             Process Refund
                         </button>
                     </form>
@@ -383,7 +385,7 @@
                         <div class="flex justify-between">
                             <dt class="text-neutral-500">Status</dt>
                             <dd>
-                                <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $order->subscription->status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-600' }}">
+                                <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $order->subscription->status === 'active' ? 'badge-success' : 'badge-neutral' }}">
                                     {{ ucfirst($order->subscription->status) }}
                                 </span>
                             </dd>
@@ -413,7 +415,7 @@
                             <div class="flex justify-between items-center pt-1 border-t border-neutral-100">
                                 <dt class="text-neutral-500">Google Sync</dt>
                                 <dd>
-                                    <span class="rounded-full px-2 py-0.5 text-[10px] font-medium {{ $order->subscription->calendar_sync_status === 'synced' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-neutral-100 text-neutral-600' }}">
+                                    <span class="rounded-full px-2 py-0.5 text-[10px] font-medium {{ $order->subscription->calendar_sync_status === 'synced' ? 'badge-success' : 'badge-neutral' }}" style="{{ $order->subscription->calendar_sync_status === 'synced' ? 'border:1px solid var(--c-green-200)' : '' }}">
                                         {{ ucfirst($order->subscription->calendar_sync_status) }}
                                     </span>
                                 </dd>
@@ -425,7 +427,7 @@
                         <a href="{{ $order->googleCalendarUrl() }}"
                            target="_blank"
                            onclick="window.open(this.href, 'google_calendar_popup', 'width=750,height=650,left=200,top=100,scrollbars=yes,resizable=yes'); return false;"
-                           class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 shadow-2xs transition">
+                           class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 shadow-xs transition">
                             <svg class="h-4 w-4" viewBox="0 0 24 24">
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -449,7 +451,7 @@
                         <a href="{{ $order->googleCalendarUrl() }}"
                            target="_blank"
                            onclick="window.open(this.href, 'google_calendar_popup', 'width=750,height=650,left=200,top=100,scrollbars=yes,resizable=yes'); return false;"
-                           class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 shadow-2xs transition">
+                           class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 shadow-xs transition">
                             <svg class="h-4 w-4" viewBox="0 0 24 24">
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -473,7 +475,7 @@
                         @csrf
                         @method('PUT')
                         @if ($order->payment_status === 'paid')
-                            <button type="submit" class="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700">
+                            <button type="submit" class="btn btn-primary px-3 py-1.5 text-sm font-medium">
                                 Activate subscription
                             </button>
                         @else
@@ -521,16 +523,16 @@
 
                 <form method="POST" action="{{ route('admin.orders.api-key.store', $order) }}" class="mt-3">
                     @csrf
-                    <label for="api_key_input" class="text-xs font-medium text-neutral-700">Save / replace API key</label>
+                    <label for="api_key_input" class="form-label">Save / replace API key</label>
                     <div class="mt-1 flex gap-2">
                         <input type="text" id="api_key_input" name="api_key" placeholder="Enter customer API key…" required
-                               class="flex-1 rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-mono focus:border-neutral-500 focus:outline-none">
-                        <button type="submit" class="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-700">
+                               class="form-input flex-1 text-xs font-mono">
+                        <button type="submit" class="btn btn-primary px-3 py-1.5 text-xs font-medium">
                             Save Key
                         </button>
                     </div>
                     @error('api_key')
-                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        <p class="form-error">{{ $message }}</p>
                     @enderror
                 </form>
             </div>
@@ -595,12 +597,12 @@
                     <form method="POST" action="{{ route('admin.orders.cancel', $order) }}" class="mt-3 space-y-3">
                         @csrf
                         <div>
-                            <label class="block text-xs font-medium text-neutral-700">Mandatory Cancellation Reason</label>
+                            <label class="form-label">Mandatory Cancellation Reason</label>
                             <textarea name="cancellation_reason" required rows="2" placeholder="State reason for order cancellation…"
-                                      class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs focus:border-red-500 focus:outline-none"></textarea>
+                                      class="form-input mt-1 w-full text-xs"></textarea>
                         </div>
                         <button type="submit" onclick="return confirm('Are you sure you want to cancel this order? This action will suspend subscriptions.')"
-                                class="rounded-lg bg-red-700 px-4 py-2 text-xs font-semibold text-white hover:bg-red-800">
+                                class="btn btn-danger px-4 py-2 text-xs font-semibold text-white hover:bg-red-800">
                             Cancel Order
                         </button>
                     </form>
@@ -615,7 +617,7 @@
         <div class="rounded-xl border border-neutral-200 bg-white p-5">
             <h2 class="text-sm font-semibold text-neutral-500">Closing Value History</h2>
             @if ($order->closingValueHistories->isNotEmpty())
-                <div class="mt-3 divide-y divide-neutral-100 text-xs">
+                <div class="mt-3 text-xs">
                     @foreach ($order->closingValueHistories as $h)
                         <div class="py-2.5">
                             <div class="flex items-center justify-between">
@@ -623,7 +625,7 @@
                                     {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $h->proposed_value, 2) }}
                                     <span class="ml-1 text-[10px] text-neutral-400 font-normal">({{ ucfirst($h->actor_type) }})</span>
                                 </span>
-                                <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $h->status === 'Accepted' ? 'bg-emerald-100 text-emerald-800' : ($h->status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800') }}">
+                                <span class="badge {{ $h->status === 'Accepted' ? 'badge-success' : ($h->status === 'Rejected' ? 'badge-danger' : 'badge-warning') }}">
                                     {{ $h->status }}
                                 </span>
                             </div>
@@ -643,7 +645,7 @@
         <div class="rounded-xl border border-neutral-200 bg-white p-5">
             <h2 class="text-sm font-semibold text-neutral-500">Order Edit Audit History</h2>
             @if ($order->editHistories->isNotEmpty())
-                <div class="mt-3 divide-y divide-neutral-100 text-xs">
+                <div class="mt-3 text-xs">
                     @foreach ($order->editHistories as $eh)
                         <div class="py-2.5">
                             <div class="flex items-center justify-between">
@@ -654,7 +656,7 @@
                             </div>
                             <div class="mt-1 text-[11px] text-neutral-600">
                                 <span class="line-through text-neutral-400">{{ $eh->old_value ?? '—' }}</span>
-                                <span class="mx-1">→</span>
+                                <span class="mx-1">&rarr;</span>
                                 <strong class="text-neutral-900">{{ $eh->new_value ?? '—' }}</strong>
                             </div>
                             <p class="mt-1 text-neutral-600 italic">"{{ $eh->reason }}"</p>

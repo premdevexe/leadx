@@ -1,0 +1,100 @@
+/* ============================================================
+   LeadX — Page: Auth Login
+   ============================================================ */
+
+.auth-page {
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-6);
+    background: var(--c-neutral-50);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 24rem;
+}
+
+.auth-card-wide,
+.auth-card-lg {
+    max-width: 42rem;
+}
+
+.auth-card-xl {
+    max-width: 48rem;
+}
+
+.auth-card-full {
+    max-width: 100%;
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-4);
+}
+
+.auth-brand img {
+    height: 2.25rem;
+    max-width: 160px;
+    width: auto;
+    object-fit: contain;
+}
+
+.auth-brand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-md);
+    background: var(--c-neutral-900);
+    color: var(--c-white);
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.auth-brand-text {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.auth-box {
+    background: var(--c-white);
+    border: var(--border-width) solid var(--c-neutral-200);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
+    box-shadow: var(--shadow-sm);
+}
+
+.auth-box .form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-top: var(--sp-6);
+    padding-top: var(--sp-4);
+    border-top: var(--border-width) solid var(--border-color);
+    background: transparent;
+    border-radius: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+}
+
+.auth-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--c-neutral-900);
+}
+
+.auth-subtitle {
+    margin-top: var(--sp-1);
+    font-size: var(--text-sm);
+    color: var(--c-neutral-500);
+}
+
+.auth-form { margin-top: var(--sp-6); }

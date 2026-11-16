@@ -126,7 +126,7 @@ class OrdersController extends Controller
         ]);
 
         // Build E.164 phone from country code + local number
-        $data = $this->normalizePhone($data);
+        $this->normalizePhone($data);
 
         $team = Team::find($data['team_id']);
 
@@ -643,10 +643,14 @@ class OrdersController extends Controller
      */
     private function normalizePhone(array &$data): void
     {
-        $local = $data['customer_phone_local'] ?? null;
+        // Support both old single-field and new split fields.
+        $local = $data['customer_phone_local'] ?? ($data['customer_phone'] ?? null);
         $cc = $data['customer_country_code'] ?? null;
 
-        if ($local) {
+        // If customer_phone already looks like E.164 (+digits), keep it.
+        if ($local && ! $cc && str_starts_with($local, '+')) {
+            $data['customer_phone'] = $local;
+        } elseif ($local) {
             $digits = preg_replace('/\D/', '', $local);
             $data['customer_phone'] = $cc ? '+' . preg_replace('/\D/', '', $cc) . ltrim($digits, '0') : $local;
         } else {

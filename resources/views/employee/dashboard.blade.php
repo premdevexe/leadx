@@ -21,7 +21,7 @@
         <div class="flex items-center gap-3">
             {{-- Customize Button --}}
             <button type="button" onclick="document.getElementById('customize-employee-modal').classList.remove('hidden')"
-                    class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-xs hover:bg-neutral-50">
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                 <svg class="h-4 w-4 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
@@ -29,14 +29,14 @@
             </button>
 
             {{-- Top-Level Scope Toggle: My Data | Team Data --}}
-            <div class="inline-flex rounded-lg border border-neutral-200 bg-neutral-100 p-1 text-xs font-semibold shadow-xs">
+            <div class="inline-flex rounded-lg border bg-neutral-100 p-1 text-xs font-semibold shadow-sm">
                 <a href="{{ route('employee.dashboard', ['view' => 'my_data']) }}"
-                   class="rounded-md px-4 py-1.5 transition-colors {{ $viewMode !== 'team_data' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-600 hover:text-neutral-900' }}">
+                   class="rounded-md px-4 py-1.5 transition-colors {{ $viewMode !== 'team_data' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900' }}">
                     My Data
                 </a>
                 @if ($hasTeamAccess)
                     <a href="{{ route('employee.dashboard', ['view' => 'team_data']) }}"
-                       class="rounded-md px-4 py-1.5 transition-colors {{ $viewMode === 'team_data' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-600 hover:text-neutral-900' }}">
+                       class="rounded-md px-4 py-1.5 transition-colors {{ $viewMode === 'team_data' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900' }}">
                         Team Data
                     </a>
                 @else
@@ -66,7 +66,7 @@
 
     {{-- Team Data View-Only Notice --}}
     @if ($viewMode === 'team_data' && $activeGrant)
-        <div class="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 text-xs text-indigo-900 flex items-center justify-between">
+        <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-xs text-indigo-900 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -90,74 +90,77 @@
                 @canCard($card['key'])
                 @switch($card['key'])
                     @case('orders_count')
-                        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">{{ $viewMode === 'team_data' ? 'Team Total Orders' : 'My Total Orders' }}</p>
-                            <p class="mt-2 text-2xl font-bold text-neutral-900">{{ $totalOrders }}</p>
-                            <p class="mt-1 text-[11px] text-neutral-400">Total volume recorded</p>
+                        <div class="card p-5">
+                            <p class="text-xs font-medium text-neutral-500">{{ $viewMode === 'team_data' ? 'Team total orders' : 'My total orders' }}</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $totalOrders }}</p>
+                            <p class="mt-1 text-xs text-neutral-400">Total volume recorded</p>
                         </div>
                         @break
 
                     @case('sales_value')
-                        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">{{ $viewMode === 'team_data' ? 'Team Sales Value' : 'My Sales / Closing Value' }}</p>
-                            <p class="mt-2 text-2xl font-bold text-neutral-900">{{ $currencySymbol }}{{ $closingValue }}</p>
-                            <p class="mt-1 text-[11px] text-neutral-400">Agreed deal values</p>
+                        <div class="card p-5">
+                            <p class="text-xs font-medium text-neutral-500">{{ $viewMode === 'team_data' ? 'Team sales value' : 'My sales closing value' }}</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $currencySymbol }}{{ $closingValue }}</p>
+                            <p class="mt-1 text-xs text-neutral-400">Agreed deal values</p>
                         </div>
                         @break
 
                     @case('verified_revenue')
-                        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">{{ $viewMode === 'team_data' ? 'Team Verified Revenue' : 'My Verified Revenue' }}</p>
-                            <p class="mt-2 text-2xl font-bold text-emerald-600">{{ $currencySymbol }}{{ $verifiedRevenue }}</p>
-                            <p class="mt-1 text-[11px] text-neutral-400">Cleared & verified collections</p>
+                        <div class="card p-5 stat-card-featured">
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs font-medium" style="color: rgba(255, 255, 255, 0.75);">{{ $viewMode === 'team_data' ? 'Team verified revenue' : 'My verified revenue' }}</p>
+                                <span class="status-pip" style="background: var(--c-green-500);" title="Verified collections"></span>
+                            </div>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-white">{{ $currencySymbol }}{{ $verifiedRevenue }}</p>
+                            <p class="mt-1 text-xs" style="color: rgba(255, 255, 255, 0.6);">Cleared and verified collections</p>
                         </div>
                         @break
 
                     @case('customers_count')
-                        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">{{ $viewMode === 'team_data' ? 'Team Customers' : 'My Customers' }}</p>
-                            <p class="mt-2 text-2xl font-bold text-neutral-900">{{ $customersCount }}</p>
-                            <p class="mt-1 text-[11px] text-neutral-400">Unique client accounts</p>
+                        <div class="card p-5">
+                            <p class="text-xs font-medium text-neutral-500">{{ $viewMode === 'team_data' ? 'Team customers' : 'My customers' }}</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $customersCount }}</p>
+                            <p class="mt-1 text-xs text-neutral-400">Unique client accounts</p>
                         </div>
                         @break
 
                     @case('active_subscriptions')
-                        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">Active Subscriptions</p>
-                            <p class="mt-2 text-2xl font-bold text-blue-600">{{ $activeSubscriptions }}</p>
-                            <p class="mt-1 text-[11px] text-neutral-400">Current live plans</p>
+                        <div class="card p-5">
+                            <p class="text-xs font-medium text-neutral-500">Active subscriptions</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $activeSubscriptions }}</p>
+                            <p class="mt-1 text-xs text-neutral-400">Current live plans</p>
                         </div>
                         @break
 
                     @case('pending_payments')
-                        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">{{ $viewMode === 'team_data' ? 'Team Pending Payments' : 'My Pending Payments' }}</p>
-                            <p class="mt-2 text-2xl font-bold text-amber-600">{{ $pendingPaymentsCount }} <span class="text-sm font-normal text-neutral-500">({{ $currencySymbol }}{{ $pendingAmount }})</span></p>
-                            <p class="mt-1 text-[11px] text-neutral-400">Outstanding payment collection</p>
+                        <div class="card p-5">
+                            <p class="text-xs font-medium text-neutral-500">{{ $viewMode === 'team_data' ? 'Team pending payments' : 'My pending payments' }}</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $pendingPaymentsCount }} <span class="text-sm font-normal text-neutral-500">({{ $currencySymbol }}{{ $pendingAmount }})</span></p>
+                            <p class="mt-1 text-xs text-neutral-400">Outstanding payment collection</p>
                         </div>
                         @break
 
                     @case('expiring_subscriptions')
-                        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">Expiring in 30 Days</p>
-                            <p class="mt-2 text-2xl font-bold text-red-600">{{ $expiringSubscriptions }}</p>
-                            <p class="mt-1 text-[11px] text-neutral-400">Requires renewal outreach</p>
+                        <div class="card p-5">
+                            <p class="text-xs font-medium text-neutral-500">Expiring in 30 days</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $expiringSubscriptions }}</p>
+                            <p class="mt-1 text-xs text-neutral-400">Requires renewal outreach</p>
                         </div>
                         @break
 
                     @case('follow_ups')
-                        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">{{ $viewMode === 'team_data' ? 'Team Follow-ups' : 'My Follow-ups' }}</p>
-                            <p class="mt-2 text-2xl font-bold text-purple-600">{{ $followUpsCount }}</p>
-                            <p class="mt-1 text-[11px] text-neutral-400">Scheduled client tasks</p>
+                        <div class="card p-5">
+                            <p class="text-xs font-medium text-neutral-500">{{ $viewMode === 'team_data' ? 'Team follow-ups' : 'My follow-ups' }}</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $followUpsCount }}</p>
+                            <p class="mt-1 text-xs text-neutral-400">Scheduled client tasks</p>
                         </div>
                         @break
 
                     @case('monthly_performance')
-                        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                            <p class="text-xs font-medium text-neutral-500 uppercase tracking-wider">Monthly Performance</p>
-                            <p class="mt-2 text-2xl font-bold text-neutral-900">{{ $currencySymbol }}{{ $monthlyClosingValue }}</p>
-                            <p class="mt-1 text-[11px] text-neutral-400">{{ $monthlyOrdersCount }} orders this month</p>
+                        <div class="card p-5">
+                            <p class="text-xs font-medium text-neutral-500">Monthly performance</p>
+                            <p class="mt-2 text-2xl font-bold tabular-nums text-neutral-900">{{ $currencySymbol }}{{ $monthlyClosingValue }}</p>
+                            <p class="mt-1 text-xs text-neutral-400">{{ $monthlyOrdersCount }} orders this month</p>
                         </div>
                         @break
                 @endswitch
@@ -168,7 +171,7 @@
 
     {{-- Bottom Modules: Recent Orders & Action Links --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
+        <div class="lg:col-span-2 card p-5">
             <div class="flex items-center justify-between border-b border-neutral-100 pb-3 mb-3">
                 <h2 class="text-sm font-semibold text-neutral-900">
                     {{ $viewMode === 'team_data' ? 'Recent Team Orders' : 'My Recent Orders' }}
@@ -179,7 +182,7 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-neutral-600">
-                    <thead class="border-b border-neutral-100 text-[11px] uppercase tracking-wider text-neutral-400">
+                    <thead class="border-b border-neutral-100 text-[11px] uppercase text-neutral-400">
                         <tr>
                             <th class="py-2">Order ID</th>
                             <th class="py-2">Product</th>
@@ -193,10 +196,10 @@
                             <tr>
                                 <td class="py-2 font-mono text-xs font-semibold text-neutral-900">{{ $order->order_number }}</td>
                                 <td class="py-2">{{ $order->product?->name ?? 'Standard Plan' }}</td>
-                                <td class="py-2 font-medium text-neutral-900">{{ $currencySymbol }}{{ number_format($order->closing_value, 2) }}</td>
+                                <td class="py-2 font-medium tabular-nums text-neutral-900">{{ $currencySymbol }}{{ number_format($order->closing_value, 2) }}</td>
                                 <td class="py-2">
-                                    <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold
-                                        {{ $order->payment_status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                                    <span class="badge {{ $order->payment_status === 'paid' ? 'badge-success' : 'badge-warning' }}">
+                                        <span class="badge-dot"></span>
                                         {{ ucfirst($order->payment_status) }}
                                     </span>
                                 </td>
@@ -217,14 +220,14 @@
         </div>
 
         {{-- Quick Actions --}}
-        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs flex flex-col justify-between">
+        <div class="card p-5 flex flex-col justify-between">
             <div>
                 <h2 class="text-sm font-semibold text-neutral-900 mb-2">Portal Actions</h2>
                 <p class="text-xs text-neutral-500 mb-4">Quick shortcuts to your daily sales workflow.</p>
                 <div class="space-y-2">
                     @if ($viewMode !== 'team_data')
                         @canEmployee('orders.create')
-                            <a href="{{ route('employee.orders.create') }}" class="flex items-center justify-center w-full rounded-lg bg-neutral-900 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800">
+                            <a href="{{ route('employee.orders.create') }}" class="btn btn-primary w-full flex items-center justify-center">
                                 + Create New Order
                             </a>
                         @endcanEmployee
@@ -233,13 +236,13 @@
                             Order Creation disabled in Team Data mode
                         </div>
                     @endif
-                    <a href="{{ route('employee.orders') }}" class="flex items-center justify-center w-full rounded-lg border border-neutral-200 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50">
+                    <a href="{{ route('employee.orders') }}" class="btn btn-secondary w-full flex items-center justify-center">
                         View Orders List
                     </a>
-                    <a href="{{ route('employee.customers') }}" class="flex items-center justify-center w-full rounded-lg border border-neutral-200 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50">
+                    <a href="{{ route('employee.customers') }}" class="btn btn-secondary w-full flex items-center justify-center">
                         My Customers
                     </a>
-                    <a href="{{ route('employee.profile') }}" class="flex items-center justify-center w-full rounded-lg border border-neutral-200 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50">
+                    <a href="{{ route('employee.profile') }}" class="btn btn-secondary w-full flex items-center justify-center">
                         My Profile
                     </a>
                 </div>
@@ -251,12 +254,12 @@
     </div>
 
     {{-- Customize Modal --}}
-    <div id="customize-employee-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-xs hidden p-4">
-        <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+    <div id="customize-employee-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 hidden p-4">
+        <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-md">
             <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
                 <h3 class="text-base font-semibold text-neutral-900">Customize Dashboard Metric Cards</h3>
                 <button type="button" onclick="document.getElementById('customize-employee-modal').classList.add('hidden')" class="text-neutral-400 hover:text-neutral-600">
-                    ✕
+                    &#x2715;
                 </button>
             </div>
 
@@ -266,13 +269,13 @@
                 <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
                     @foreach ($cardPreferences as $index => $c)
                         @canCard($c['key'])
-                            <div class="flex items-center justify-between rounded-lg border border-neutral-100 bg-neutral-50/50 p-2.5">
+                            <div class="flex items-center justify-between rounded-lg border border-neutral-100 bg-neutral-50 p-2.5">
                                 <span class="text-xs font-medium text-neutral-800">{{ $c['label'] }}</span>
                                 <div class="flex items-center gap-3">
                                     <input type="hidden" name="cards[{{ $index }}][key]" value="{{ $c['key'] }}">
                                     <input type="hidden" name="cards[{{ $index }}][order]" value="{{ $c['order'] ?? ($index + 1) }}">
                                     <label class="inline-flex items-center gap-1.5 cursor-pointer">
-                                        <input type="checkbox" name="cards[{{ $index }}][visible]" value="1" {{ ($c['visible'] ?? true) ? 'checked' : '' }} class="rounded border-neutral-300 text-neutral-900 focus:ring-0">
+                                        <input type="checkbox" name="cards[{{ $index }}][visible]" value="1" {{ ($c['visible'] ?? true) ? 'checked' : '' }}>
                                         <span class="text-xs text-neutral-500">Show</span>
                                     </label>
                                 </div>
@@ -286,12 +289,8 @@
                         Reset Defaults
                     </button>
                     <div class="flex gap-2">
-                        <button type="button" onclick="document.getElementById('customize-employee-modal').classList.add('hidden')" class="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-50">
-                            Cancel
-                        </button>
-                        <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800">
-                            Save Layout
-                        </button>
+                        <button type="button" onclick="document.getElementById('customize-employee-modal').classList.add('hidden')" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Layout</button>
                     </div>
                 </div>
             </form>

@@ -13,14 +13,14 @@
             </p>
         </div>
 
-        <div class="inline-flex rounded-lg border border-neutral-200 bg-neutral-100 p-1 text-xs font-semibold shadow-xs">
+        <div class="inline-flex rounded-lg border bg-neutral-100 p-1 text-xs font-semibold shadow-sm">
             <a href="{{ route('employee.follow-ups', ['view' => 'my_data']) }}"
-               class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode !== 'team_data' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-600 hover:text-neutral-900' }}">
+               class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode !== 'team_data' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900' }}">
                 My Data
             </a>
             @if ($hasTeamAccess)
                 <a href="{{ route('employee.follow-ups', ['view' => 'team_data']) }}"
-                   class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode === 'team_data' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-600 hover:text-neutral-900' }}">
+                   class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode === 'team_data' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900' }}">
                     Team Data
                 </a>
             @else
@@ -36,14 +36,14 @@
     @endif
 
     @if ($viewMode === 'team_data' && $activeGrant)
-        <div class="mt-4 rounded-lg border border-indigo-200 bg-indigo-50/70 p-3 text-xs text-indigo-900">
+        <div class="mt-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-900">
             <strong>Team Data Window:</strong> {{ $activeGrant->start_date->format('M d, Y') }} &rarr; {{ $activeGrant->end_date->format('M d, Y') }} (View-Only mode).
         </div>
     @endif
 
-    <div class="mt-5 overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-xs">
+    <div class="mt-5 overflow-x-auto rounded-xl border bg-white shadow-sm">
         <table class="min-w-full text-left text-sm">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-xs uppercase tracking-wider text-neutral-500 font-semibold">
+            <thead class="border-b border-neutral-200 bg-neutral-50 text-xs uppercase text-neutral-500 font-semibold">
                 <tr>
                     <th class="px-4 py-2.5">Title</th>
                     <th class="px-4 py-2.5">Scheduled</th>
@@ -56,12 +56,12 @@
             </thead>
             <tbody class="divide-y divide-neutral-100 text-xs">
                 @forelse ($followUps as $followUp)
-                    <tr class="hover:bg-neutral-50/50">
+                    <tr class="hover:bg-neutral-50">
                         <td class="px-4 py-3 font-medium">{{ $followUp->title }}</td>
                         <td class="px-4 py-3">{{ $followUp->scheduled_at?->format('Y-m-d H:i') ?? '—' }}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold
-                                {{ $followUp->status === 'completed' ? 'bg-emerald-100 text-emerald-800' : ($followUp->status === 'scheduled' ? 'bg-amber-100 text-amber-800' : 'bg-neutral-100 text-neutral-700') }}">
+                                {{ $followUp->status === 'completed' ? 'badge-success' : ($followUp->status === 'scheduled' ? 'badge-warning' : 'badge-gray') }}">
                                 {{ ucfirst($followUp->status) }}
                             </span>
                         </td>

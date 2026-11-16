@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->appendToGroup('web', \App\Http\Middleware\CheckInstallation::class);
         $middleware->alias([
             'admin' => \App\Http\Middleware\AuthenticateAdmin::class,
             'ensure-role-active' => \App\Http\Middleware\EnsureRoleActive::class,

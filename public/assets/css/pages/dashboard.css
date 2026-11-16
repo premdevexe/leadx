@@ -1,0 +1,100 @@
+/* ============================================================
+   LeadX — Page: Dashboard
+   ============================================================ */
+
+.dashboard-header {
+    margin-bottom: var(--sp-6);
+}
+
+.dashboard-header-title {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--c-neutral-900);
+}
+
+.dashboard-header-desc {
+    margin-top: var(--sp-1);
+    font-size: var(--text-sm);
+    color: var(--c-neutral-500);
+}
+
+/* Stats grid */
+.stats-grid {
+    display: grid;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-6);
+}
+
+@media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+
+/* Dashboard content sections */
+.dashboard-section {
+    margin-bottom: var(--sp-6);
+}
+
+.dashboard-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--sp-4);
+}
+
+.dashboard-section-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--c-neutral-900);
+}
+
+/* Quick actions */
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+}
+
+/* Charts / analytics placeholder */
+.chart-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 16rem;
+    background: var(--c-neutral-50);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--c-neutral-200);
+    color: var(--c-neutral-400);
+    font-size: var(--text-sm);
+}
+
+/* Activity feed */
+.activity-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.activity-item {
+    display: flex;
+    gap: var(--sp-3);
+    padding: var(--sp-3) 0;
+    border-bottom: var(--border-width) solid var(--border-color);
+}
+
+.activity-item:last-child { border-bottom: none; }
+
+.activity-item-icon {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background: var(--c-neutral-100);
+    font-size: var(--text-sm);
+}
+
+.activity-item-content { flex: 1; min-width: 0; }
+.activity-item-text { font-size: var(--text-sm); color: var(--c-neutral-700); }
+.activity-item-time { font-size: var(--text-xs); color: var(--c-neutral-400); margin-top: var(--sp-0.5); }

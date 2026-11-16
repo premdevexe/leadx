@@ -75,7 +75,7 @@
                     </h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         @foreach ($modulePermissions as $perm)
-                            <label class="flex items-start gap-2.5 rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50/50 cursor-pointer transition-colors">
+                            <label class="flex items-start gap-2.5 rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 cursor-pointer transition-colors">
                                 <input type="checkbox" name="permissions[]" value="{{ $perm->id }}" class="perm-cb mt-0.5 h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900">
                                 <div class="text-xs">
                                     <div class="font-medium text-neutral-900">{{ $perm->name }}</div>

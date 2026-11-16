@@ -13,10 +13,12 @@ use App\Http\Controllers\Admin\OrderCredentialController;
 use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\PermissionPresetsController;
 use App\Http\Controllers\Admin\ProductsController;
-use App\Http\Controllers\Admin\TeamAccessGrantsController;
+use App\Http\Controllers\Admin\RefundStatusesController;
 use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\TeamAccessGrantsController;
 use App\Http\Controllers\Admin\TeamsController;
+use App\Http\Controllers\Install\InstallController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Employee\CreateOrderController;
 use App\Http\Controllers\Employee\CustomersController as EmployeeCustomersController;
@@ -37,6 +39,27 @@ use App\Http\Controllers\Team\OrdersController as TeamOrdersController;
 use App\Http\Controllers\Team\PaymentsController as TeamPaymentsController;
 use App\Http\Controllers\Team\SubscriptionsController as TeamSubscriptionsController;
 use App\Http\Controllers\Team\TeamMembersController;
+
+// ── Installation Wizard ─────────────────────────────────────
+
+Route::prefix('install')->name('install.')->middleware('guest')->group(function () {
+    Route::get('/', [InstallController::class, 'requirements'])->name('requirements');
+    Route::get('/environment', [InstallController::class, 'environment'])->name('environment');
+    Route::post('/environment', [InstallController::class, 'saveEnvironment'])->name('save-environment');
+    Route::get('/database', [InstallController::class, 'database'])->name('database');
+    Route::post('/database/test', [InstallController::class, 'testDatabase'])->name('test-database');
+    Route::post('/database', [InstallController::class, 'saveDatabase'])->name('save-database');
+    Route::get('/migrate', [InstallController::class, 'migrate'])->name('migrate');
+    Route::post('/migrate/run', [InstallController::class, 'runMigrations'])->name('run-migrate');
+    Route::get('/admin', [InstallController::class, 'admin'])->name('admin');
+    Route::post('/admin', [InstallController::class, 'saveAdmin'])->name('save-admin');
+    Route::get('/config', [InstallController::class, 'config'])->name('config');
+    Route::post('/config', [InstallController::class, 'saveConfig'])->name('save-config');
+    Route::get('/verify', [InstallController::class, 'verify'])->name('verify');
+    Route::post('/finish', [InstallController::class, 'finish'])->name('finish');
+});
+
+// ── Application Routes ──────────────────────────────────────
 
 Route::get('/', function () {
     if (auth()->guard('admin')->check()) {

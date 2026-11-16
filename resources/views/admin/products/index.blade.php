@@ -14,33 +14,33 @@
             <p class="mt-0.5 text-sm text-neutral-500">Manage catalog products, pricing, subscription durations, and activation status.</p>
         </div>
         <a href="{{ route('admin.products.create') }}"
-           class="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
+           class="btn btn-primary px-3 py-1.5 text-sm font-medium">
             New product
         </a>
     </div>
 
     @if (session('status'))
-        <div class="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('status') }}</div>
+        <div class="mt-4 alert alert-success text-sm">{{ session('status') }}</div>
     @endif
     @if (session('error'))
-        <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</div>
+        <div class="mt-4 alert alert-danger text-sm">{{ session('error') }}</div>
     @endif
     @if ($errors->any())
-        <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>
+        <div class="mt-4 alert alert-danger text-sm">{{ $errors->first() }}</div>
     @endif
 
     {{-- Search and Status Filters --}}
     <form method="GET" action="{{ route('admin.products') }}" class="mt-5 rounded-xl border border-neutral-200 bg-white p-4">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div class="lg:col-span-2">
-                <label class="block text-xs font-medium text-neutral-500">Search product name</label>
+                <label class="form-label">Search product name</label>
                 <input type="text" name="search" value="{{ $f['search'] ?? '' }}"
                        placeholder="e.g. Starter Plan, Pro…"
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                       class="form-input mt-1 w-full">
             </div>
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Status</label>
-                <select name="status" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select mt-1 w-full">
                     <option value="">All statuses</option>
                     @foreach (\App\Models\Product::STATUSES as $status)
                         <option value="{{ $status }}" @selected(($f['status'] ?? '') === $status)>{{ ucfirst($status) }}</option>
@@ -48,11 +48,11 @@
                 </select>
             </div>
             <div class="flex items-end gap-2">
-                <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+                <button type="submit" class="btn btn-primary px-4 py-2 text-sm font-medium">
                     Filter
                 </button>
                 @if (!empty($f['search']) || !empty($f['status']))
-                    <a href="{{ route('admin.products') }}" class="rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50">
+                    <a href="{{ route('admin.products') }}" class="btn btn-secondary px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50">
                         Clear
                     </a>
                 @endif
@@ -69,10 +69,10 @@
             @endif
         </div>
     @else
-        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full min-w-[640px] text-sm whitespace-nowrap">
+        <div class="mt-5 table-wrapper">
+            <table class="data-table w-full" style="min-width:640px">
                 <thead>
-                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
+                    <tr>
                         <th class="px-4 py-3">Name</th>
                         <th class="px-4 py-3">Duration</th>
                         <th class="px-4 py-3 text-right">Base Price</th>
@@ -85,7 +85,7 @@
                 </thead>
                 <tbody>
                     @foreach ($products as $product)
-                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                        <tr>
                             <td class="px-4 py-3">
                                 <span class="font-medium text-neutral-900">{{ $product->name }}</span>
                             </td>
@@ -100,13 +100,13 @@
                             </td>
                             <td class="px-4 py-3">
                                 @if ($product->api_key_required)
-                                    <span class="inline-flex items-center rounded bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700">Yes</span>
+                                    <span class="badge badge-purple" style="font-size:11px;padding:1px 8px">Yes</span>
                                 @else
-                                    <span class="text-neutral-400 text-xs">No</span>
+                                    <span class="text-xs text-neutral-400">No</span>
                                 @endif
                             </td>
                             <td class="px-4 py-3">
-                                <span class="inline-flex items-center gap-1.5 text-xs font-medium {{ $product->status === 'active' ? 'text-emerald-700' : 'text-neutral-500' }}">
+                                <span class="flex items-center gap-1.5 text-xs font-medium {{ $product->status === 'active' ? 'text-emerald-700' : 'text-neutral-500' }}">
                                     <span class="h-1.5 w-1.5 rounded-full {{ $product->status === 'active' ? 'bg-emerald-500' : 'bg-neutral-300' }}"></span>
                                     {{ ucfirst($product->status) }}
                                 </span>
@@ -114,7 +114,7 @@
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-500">
                                 {{ $product->orders_count ?? 0 }}
                             </td>
-                            <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <td class="px-4 py-3 text-right">
                                 <form method="POST" action="{{ route('admin.products.toggle-status', $product) }}" class="inline">
                                     @csrf
                                     @method('PATCH')
@@ -123,12 +123,12 @@
                                         {{ $product->status === 'active' ? 'Deactivate' : 'Activate' }}
                                     </button>
                                 </form>
-                                <a href="{{ route('admin.products.edit', $product) }}" class="ml-3 text-sm text-neutral-600 transition-colors hover:text-neutral-900">Edit</a>
+                                <a href="{{ route('admin.products.edit', $product) }}" class="ml-3 text-sm text-neutral-600 hover:text-neutral-900">Edit</a>
                                 <form method="POST" action="{{ route('admin.products.destroy', $product) }}" class="inline"
-                                      onsubmit="return confirm('{{ ($product->orders_count ?? 0) > 0 ? "Product \'{$product->name}\' is linked to orders. It will be safely archived/deactivated. Continue?" : "Delete product \'{$product->name}\' permanently?" }}');">
+                                      onsubmit="return confirm('{{ ($product->orders_count ?? 0) > 0 ? "Product '{$product->name}' is linked to orders. It will be safely archived/deactivated. Continue?" : "Delete product '{$product->name}' permanently?" }}');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="ml-3 text-sm text-red-600 transition-colors hover:text-red-800">
+                                    <button type="submit" class="ml-3 text-sm text-red-600 hover:text-red-800">
                                         {{ ($product->orders_count ?? 0) > 0 ? 'Archive' : 'Delete' }}
                                     </button>
                                 </form>

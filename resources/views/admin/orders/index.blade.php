@@ -7,21 +7,21 @@
     $paymentStatuses = \App\Models\SalesOrder::PAYMENT_STATUSES;
     $currencySymbol = \App\Models\Setting::currencySymbol();
 
-    $statusColors = [
-        'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
-        'confirmed' => 'bg-blue-50 text-blue-700 border-blue-200',
-        'active' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        'expired' => 'bg-neutral-100 text-neutral-600 border-neutral-200',
-        'cancelled' => 'bg-neutral-100 text-neutral-400 border-neutral-200',
-        'suspended' => 'bg-orange-50 text-orange-700 border-orange-200',
+    $statusStyles = [
+        'pending'   => 'background:var(--c-amber-50);color:var(--c-amber-800);border:1px solid var(--c-amber-200)',
+        'confirmed' => 'background:var(--c-blue-50);color:var(--c-blue-800);border:1px solid var(--c-blue-200)',
+        'active'    => 'background:var(--c-green-50);color:var(--c-green-800);border:1px solid var(--c-green-200)',
+        'expired'   => 'background:var(--c-neutral-100);color:var(--c-neutral-600);border:1px solid var(--c-neutral-200)',
+        'cancelled' => 'background:var(--c-neutral-100);color:var(--c-neutral-400);border:1px solid var(--c-neutral-200)',
+        'suspended' => 'background:var(--c-orange-50);color:var(--c-orange-600);border:1px solid var(--c-orange-400)',
     ];
 
-    $paymentColors = [
-        'pending' => 'bg-amber-50 text-amber-700',
-        'partially_paid' => 'bg-blue-50 text-blue-700',
-        'paid' => 'bg-emerald-50 text-emerald-700',
-        'failed' => 'bg-red-50 text-red-700',
-        'refunded' => 'bg-neutral-100 text-neutral-500',
+    $paymentStyles = [
+        'pending'        => 'background:var(--c-amber-50);color:var(--c-amber-800)',
+        'partially_paid' => 'background:var(--c-blue-50);color:var(--c-blue-800)',
+        'paid'           => 'background:var(--c-green-50);color:var(--c-green-800)',
+        'failed'         => 'background:var(--c-red-50);color:var(--c-red-800)',
+        'refunded'       => 'background:var(--c-neutral-100);color:var(--c-neutral-500)',
     ];
 
     $f = $filters;
@@ -31,7 +31,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-xl font-semibold tracking-tight">Orders</h1>
         <a href="{{ route('admin.orders.create') }}"
-           class="inline-flex items-center justify-center rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
+           class="btn btn-primary px-3 py-1.5 text-sm font-medium">
             New order
         </a>
     </div>
@@ -40,13 +40,13 @@
     <form method="GET" action="{{ route('admin.orders') }}" class="mt-5 rounded-xl border border-neutral-200 bg-white p-4">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Order number</label>
+                <label class="form-label">Order number</label>
                 <input type="text" name="order_number" value="{{ old('order_number', $f['order_number']) }}"
-                       placeholder="GEM-2026" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                       placeholder="GEM-2026" class="form-input mt-1 w-full">
             </div>
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Team</label>
-                <select name="team_id" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Team</label>
+                <select name="team_id" class="form-select mt-1 w-full">
                     <option value="">All teams</option>
                     @foreach ($teams as $team)
                         <option value="{{ $team->id }}" @selected($f['team_id'] === $team->id)>{{ $team->team_code }} — {{ $team->team_name }}</option>
@@ -54,8 +54,8 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Employee</label>
-                <select name="employee_id" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Employee</label>
+                <select name="employee_id" class="form-select mt-1 w-full">
                     <option value="">All employees</option>
                     @foreach ($employees as $employee)
                         <option value="{{ $employee->id }}" @selected($f['employee_id'] === $employee->id)>{{ $employee->username }}</option>
@@ -63,8 +63,8 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Order status</label>
-                <select name="order_status" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Order status</label>
+                <select name="order_status" class="form-select mt-1 w-full">
                     <option value="">Any</option>
                     @foreach ($orderStatuses as $status)
                         <option value="{{ $status }}" @selected($f['order_status'] === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
@@ -72,8 +72,8 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Payment</label>
-                <select name="payment_status" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Payment</label>
+                <select name="payment_status" class="form-select mt-1 w-full">
                     <option value="">Any</option>
                     @foreach ($paymentStatuses as $status)
                         <option value="{{ $status }}" @selected($f['payment_status'] === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
@@ -82,16 +82,16 @@
             </div>
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-3">
-            <button type="submit" class="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700">Filter</button>
+            <button type="submit" class="btn btn-primary px-3 py-1.5 text-sm font-medium">Filter</button>
             <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-500 hover:text-neutral-800">Reset</a>
         </div>
     </form>
 
     {{-- Table --}}
-    <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
-        <table class="w-full min-w-[760px] text-sm whitespace-nowrap">
+    <div class="mt-5 table-wrapper">
+        <table class="data-table w-full" style="min-width:760px">
             <thead>
-                <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
+                <tr>
                     <th class="px-4 py-3">Order #</th>
                     <th class="px-4 py-3">Customer</th>
                     <th class="px-4 py-3">Team</th>
@@ -105,7 +105,7 @@
             </thead>
             <tbody>
                 @forelse ($orders as $order)
-                    <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
+                    <tr>
                         <td class="px-4 py-3 font-mono text-xs">
                             <a href="{{ route('admin.orders.show', $order) }}" class="text-neutral-900 hover:text-neutral-500">
                                 {{ $order->order_number ?? '— (unnumbered)' }}
@@ -124,20 +124,21 @@
                         <td class="px-4 py-3 text-right tabular-nums">{{ $currencySymbol }}{{ number_format((float) $order->closing_value, 2) }}</td>
                         <td class="px-4 py-3">
                             @if ($order->closing_value_status === 'Requested')
-                                <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">Requested</span>
+                                <span class="badge badge-warning"><span class="badge-dot"></span> Requested</span>
                             @elseif ($order->closing_value_status === 'Rejected')
-                                <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-800">Rejected</span>
+                                <span class="badge badge-danger"><span class="badge-dot"></span> Rejected</span>
                             @else
-                                <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">Accepted</span>
+                                <span class="badge badge-success"><span class="badge-dot"></span> Accepted</span>
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <span class="rounded-full border px-2 py-0.5 text-xs {{ $statusColors[$order->order_status] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200' }}">
+                            <span class="badge badge-neutral">
                                 {{ ucfirst(str_replace('_', ' ', $order->order_status)) }}
                             </span>
                         </td>
                         <td class="px-4 py-3">
-                            <span class="rounded-full px-2 py-0.5 text-xs {{ $paymentColors[$order->payment_status] ?? 'bg-neutral-100 text-neutral-600' }}">
+                            <span class="badge {{ $order->payment_status === 'paid' ? 'badge-success' : ($order->payment_status === 'pending' ? 'badge-warning' : 'badge-neutral') }}">
+                                <span class="badge-dot"></span>
                                 {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
                             </span>
                         </td>
@@ -162,7 +163,7 @@
                 @empty
                     <tr>
                         <td colspan="8" class="px-4 py-8 text-center text-neutral-400">
-                            No orders found{{ $orders->total() > 0 ? '' : '' }}. <a href="{{ route('admin.orders.create') }}" class="text-neutral-600 underline">Create one</a>
+                            No orders found. <a href="{{ route('admin.orders.create') }}" class="text-neutral-600 underline">Create one</a>
                         </td>
                     </tr>
                 @endforelse

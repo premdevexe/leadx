@@ -6,16 +6,16 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-xl font-semibold tracking-tight">Teams</h1>
         <a href="{{ route('admin.teams.create') }}"
-           class="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
+           class="btn btn-primary px-3 py-1.5 text-sm font-medium">
             New team
         </a>
     </div>
 
     @if (session('status'))
-        <div class="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('status') }}</div>
+        <div class="mt-4 alert alert-success text-sm">{{ session('status') }}</div>
     @endif
     @if ($errors->any())
-        <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>
+        <div class="mt-4 alert alert-danger text-sm">{{ $errors->first() }}</div>
     @endif
 
     @if ($teams->isEmpty())
@@ -37,7 +37,7 @@
                             <div>
                                 <div class="flex items-center gap-2">
                                     <span class="font-semibold">{{ $team->team_name }}</span>
-                                    <span class="rounded-md bg-neutral-100 px-1.5 py-0.5 font-mono text-xs text-neutral-600">{{ $team->team_code }}</span>
+                                    <span class="badge badge-gray">{{ $team->team_code }}</span>
                                     <span class="flex items-center gap-1.5 text-xs {{ $team->status === 'active' ? 'text-emerald-700' : 'text-neutral-500' }}">
                                         <span class="h-1.5 w-1.5 rounded-full {{ $team->status === 'active' ? 'bg-emerald-500' : 'bg-neutral-300' }}"></span>
                                         {{ $team->status }}
@@ -57,14 +57,14 @@
                                 {{ $team->orders_count }} orders
                             </a>
                             @if ($team->orders_count > 0)
-                                <span class="rounded-md bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-500" title="Team code is locked after the first order">code locked</span>
+                                <span class="badge badge-neutral text-xs" title="Team code is locked after the first order">code locked</span>
                             @endif
-                            <a href="{{ route('admin.teams.edit', $team) }}" class="text-sm text-neutral-600 transition-colors hover:text-neutral-900">Edit</a>
+                            <a href="{{ route('admin.teams.edit', $team) }}" class="text-sm text-neutral-600 hover:text-neutral-900">Edit</a>
                             <form method="POST" action="{{ route('admin.teams.destroy', $team) }}"
                                   onsubmit="return confirm('Delete team {{ $team->team_name }}? This cannot be undone.');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="text-sm text-red-600 transition-colors hover:text-red-800">Delete</button>
+                                <button type="submit" class="text-sm text-red-600 hover:text-red-800">Delete</button>
                             </form>
                         </div>
                     </div>
@@ -91,10 +91,10 @@
         @if ($unassigned->isEmpty())
             <p class="text-sm text-neutral-400">All employees are assigned to a team</p>
         @else
-            <div class="w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
-                <table class="w-full min-w-[520px] text-sm whitespace-nowrap">
+            <div class="table-wrapper">
+                <table class="data-table w-full" style="min-width:520px">
                     <thead>
-                        <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
+                        <tr class="text-left text-xs font-medium text-neutral-500">
                             <th class="px-4 py-3">Username</th>
                             <th class="px-4 py-3">Name</th>
                             <th class="px-4 py-3">Email</th>
@@ -102,7 +102,7 @@
                     </thead>
                     <tbody>
                         @foreach ($unassigned as $user)
-                            <tr class="border-b border-neutral-100 last:border-0">
+                            <tr>
                                 <td class="px-4 py-3">{{ $user->username ?? '—' }}</td>
                                 <td class="px-4 py-3 text-neutral-600">{{ $user->name }}</td>
                                 <td class="px-4 py-3 text-neutral-500">{{ $user->email }}</td>

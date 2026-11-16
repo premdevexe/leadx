@@ -20,19 +20,19 @@
 
         <div class="grid gap-4 sm:grid-cols-2">
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Team <span class="text-red-500">*</span></label>
-                <select name="team_id" required class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Team <span class="text-red-600">*</span></label>
+                <select name="team_id" required class="form-select mt-1 w-full">
                     <option value="">Select a team…</option>
                     @foreach ($teams as $team)
                         <option value="{{ $team->id }}" @selected(old('team_id') === (string) $team->id)>{{ $team->team_code }} — {{ $team->team_name }}</option>
                     @endforeach
                 </select>
-                @error('team_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                @error('team_id') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Assigned employee</label>
-                <select name="assigned_employee_id" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Assigned employee</label>
+                <select name="assigned_employee_id" class="form-select mt-1 w-full">
                     <option value="">Auto (first team member)</option>
                     @foreach ($employees as $employee)
                         <option value="{{ $employee->id }}" @selected(old('assigned_employee_id') === (string) $employee->id)>
@@ -40,20 +40,20 @@
                         </option>
                     @endforeach
                 </select>
-                @error('assigned_employee_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                @error('assigned_employee_id') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Customer name <span class="text-red-500">*</span></label>
+                <label class="form-label">Customer name <span class="text-red-600">*</span></label>
                 <input type="text" name="customer_name" value="{{ old('customer_name') }}" required
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
-                @error('customer_name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                       class="form-input mt-1 w-full">
+                @error('customer_name') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div class="sm:col-span-2">
-                <label class="block text-xs font-medium text-neutral-500">Customer phone <span class="text-red-500">*</span></label>
+                <label class="form-label">Customer phone <span class="text-red-600">*</span></label>
                 <div class="mt-1 flex gap-2">
-                    <select name="customer_country_code" class="w-28 shrink-0 rounded-lg border border-neutral-300 bg-white px-2 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                    <select name="customer_country_code" class="w-28 shrink-0 form-select">
                         @php
                             $countryCodes = [
                                 '+1' => '+1 (US/CA)',
@@ -85,17 +85,17 @@
                         @endforeach
                     </select>
                     <input type="tel" name="customer_phone_local" value="{{ old('customer_phone_local') }}" placeholder="9876543210" required
-                           class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                           class="form-input flex-1">
                 </div>
-                <p class="mt-1 text-xs text-neutral-400">Needed later for WhatsApp sharing. Enter number without country code prefix.</p>
-                @error('customer_phone') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                @error('customer_country_code') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                <p class="form-hint">Needed later for WhatsApp sharing. Enter number without country code prefix.</p>
+                @error('customer_phone') <p class="form-error">{{ $message }}</p> @enderror
+                @error('customer_country_code') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Product</label>
+                <label class="form-label">Product</label>
                 <select id="product-select" name="product_id"
-                        class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                        class="form-select mt-1 w-full">
                     <option value="">— none (enter manually) —</option>
                     @foreach ($products as $product)
                         <option value="{{ $product->id }}"
@@ -106,19 +106,19 @@
                         </option>
                     @endforeach
                 </select>
-                @error('product_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                <p class="mt-1 text-xs text-neutral-400">Selecting a product auto-fills the name, value and duration below.</p>
+                @error('product_id') <p class="form-error">{{ $message }}</p> @enderror
+                <p class="form-hint">Selecting a product auto-fills the name, value and duration below.</p>
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Product name</label>
+                <label class="form-label">Product name</label>
                 <input type="text" id="product-name" name="product_name" value="{{ old('product_name') }}"
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                       class="form-input mt-1 w-full">
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Subscription duration</label>
-                <select name="duration" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Subscription duration</label>
+                <select name="duration" class="form-select mt-1 w-full">
                     @foreach (\App\Models\SalesOrder::DURATIONS as $code => $label)
                         <option value="{{ $code }}" @selected(old('duration', '1y') === $code)>{{ $label }}</option>
                     @endforeach
@@ -126,34 +126,34 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Product value ({{ $cur }})</label>
+                <label class="form-label">Product value ({{ $cur }})</label>
                 <input type="number" step="0.01" min="0" name="product_value" value="{{ old('product_value', 0) }}"
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                       class="form-input mt-1 w-full">
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Closing value ({{ $cur }})</label>
+                <label class="form-label">Closing value ({{ $cur }})</label>
                 <input type="number" step="0.01" min="0" id="closing-value" name="closing_value" value="{{ old('closing_value', 0) }}"
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
-                <p class="mt-1 text-xs text-neutral-400">The final deal price. Leave blank to close at full product value.</p>
+                       class="form-input mt-1 w-full">
+                <p class="form-hint">The final deal price. Leave blank to close at full product value.</p>
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Discount amount ({{ $cur }})</label>
+                <label class="form-label">Discount amount ({{ $cur }})</label>
                 <input type="text" readonly id="discount-amount" name="discount_amount" value="0.00"
-                       class="mt-1 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-500 cursor-not-allowed tabular-nums">
-                <p class="mt-1 text-xs text-neutral-400">Auto-calculated: Product value − Closing value. Read-only.</p>
+                       class="form-input mt-1 w-full tabular-nums bg-neutral-50 text-neutral-500 cursor-not-allowed">
+                <p class="form-hint">Auto-calculated: Product value − Closing value. Read-only.</p>
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Amount received ({{ $cur }})</label>
+                <label class="form-label">Amount received ({{ $cur }})</label>
                 <input type="number" step="0.01" min="0" name="amount_received" value="{{ old('amount_received', 0) }}"
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                       class="form-input mt-1 w-full">
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Payment method</label>
-                <select name="payment_method" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Payment method</label>
+                <select name="payment_method" class="form-select mt-1 w-full">
                     <option value="">—</option>
                     @foreach ($paymentMethods ?? \App\Models\Setting::PAYMENT_METHODS as $code => $label)
                         @if (in_array($code, $enabledPaymentMethods ?? array_keys(\App\Models\Setting::PAYMENT_METHODS), true))
@@ -161,13 +161,13 @@
                         @endif
                     @endforeach
                 </select>
-                <p class="mt-1 text-xs text-neutral-400">Only methods enabled in Settings are shown.</p>
-                @error('payment_method') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                <p class="form-hint">Only methods enabled in Settings are shown.</p>
+                @error('payment_method') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Payment status</label>
-                <select name="payment_status" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Payment status</label>
+                <select name="payment_status" class="form-select mt-1 w-full">
                     @foreach ($paymentStatuses as $status)
                         <option value="{{ $status }}" @selected(old('payment_status', 'pending') === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
                     @endforeach
@@ -175,8 +175,8 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Order status</label>
-                <select name="order_status" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Order status</label>
+                <select name="order_status" class="form-select mt-1 w-full">
                     @foreach ($orderStatuses as $status)
                         <option value="{{ $status }}" @selected(old('order_status', 'pending') === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
                     @endforeach
@@ -185,10 +185,10 @@
         </div>
 
         <div class="mt-6 flex flex-wrap items-center gap-3">
-            <button type="submit" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+            <button type="submit" class="btn btn-primary px-4 py-2 text-sm font-medium">
                 Create order
             </button>
-            <a href="{{ route('admin.orders') }}" class="w-full sm:w-auto text-center text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
+            <a href="{{ route('admin.orders') }}" class="text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
         </div>
     </form>
 
@@ -201,9 +201,6 @@
             const closingInput = document.getElementById('closing-value');
             const discountInput = document.getElementById('discount-amount');
 
-            // Discount is read-only and derives from the closing price:
-            // discount = product value − closing value. Closing value is the
-            // rep's input; touching either side re-computes the discount.
             function updateDiscount() {
                 if (!discountInput || !closingInput) return;
                 const price = parseFloat(priceInput ? priceInput.value : '') || 0;
@@ -215,7 +212,6 @@
                 const opt = select.options[select.selectedIndex];
                 if (opt.value === '') return;
 
-                // "Name (price — duration)" → name only.
                 nameInput.value = opt.textContent.split(' (')[0];
 
                 if (priceInput) priceInput.value = opt.dataset.price;
@@ -223,8 +219,6 @@
                 const durationSelect = document.querySelector('select[name="duration"]');
                 if (durationSelect && opt.dataset.duration) durationSelect.value = opt.dataset.duration;
 
-                // A catalog product defaults to closing at full price (no
-                // discount) unless the rep already typed a closing value.
                 if (closingInput.value === '') {
                     closingInput.value = opt.dataset.price;
                 }

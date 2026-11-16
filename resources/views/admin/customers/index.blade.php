@@ -19,14 +19,14 @@
     <form method="GET" action="{{ route('admin.customers') }}" class="mt-5 rounded-xl border border-neutral-200 bg-white p-4">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div class="lg:col-span-2">
-                <label class="block text-xs font-medium text-neutral-500">Search customer</label>
+                <label class="form-label">Search customer</label>
                 <input type="text" name="search" value="{{ $f['search'] ?? '' }}"
                        placeholder="Name, phone, or email…"
-                       class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                       class="form-input mt-1 w-full">
             </div>
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Team</label>
-                <select name="team_id" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Team</label>
+                <select name="team_id" class="form-select mt-1 w-full">
                     <option value="">All teams</option>
                     @foreach ($teams as $team)
                         <option value="{{ $team->id }}" @selected(($f['team_id'] ?? null) === $team->id)>
@@ -36,11 +36,11 @@
                 </select>
             </div>
             <div class="flex items-end gap-2">
-                <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+                <button type="submit" class="btn btn-primary px-4 py-2 text-sm font-medium">
                     Filter
                 </button>
                 @if (!empty($f['search']) || !empty($f['team_id']))
-                    <a href="{{ route('admin.customers') }}" class="rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50">
+                    <a href="{{ route('admin.customers') }}" class="btn btn-secondary px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50">
                         Clear
                     </a>
                 @endif
@@ -57,10 +57,10 @@
             @endif
         </div>
     @else
-        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full min-w-[680px] text-sm whitespace-nowrap">
+        <div class="mt-5 table-wrapper">
+            <table class="data-table w-full" style="min-width:680px">
                 <thead>
-                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
+                    <tr>
                         <th class="px-4 py-3">Customer</th>
                         <th class="px-4 py-3">Contact</th>
                         <th class="px-4 py-3">Team</th>
@@ -72,14 +72,12 @@
                 </thead>
                 <tbody>
                     @foreach ($customers as $customer)
-                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                        <tr>
                             <td class="px-4 py-3 font-medium text-neutral-900">
                                 <a href="{{ route('admin.customers.show', $customer) }}" class="hover:underline">
                                     {{ $customer->name }}
                                 </a>
-                                <span class="ml-1 inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                                    Paying
-                                </span>
+                                <span class="ml-1 badge badge-success" style="font-size:10px;padding:1px 6px">Paying</span>
                             </td>
                             <td class="px-4 py-3 text-xs text-neutral-500">
                                 {{ $customer->phone ?? '—' }}
@@ -101,7 +99,7 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{{ route('admin.customers.show', $customer) }}" class="text-xs font-medium text-neutral-900 hover:underline">
-                                    View Details →
+                                    View Details &rarr;
                                 </a>
                             </td>
                         </tr>

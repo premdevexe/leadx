@@ -21,7 +21,7 @@
     @endif
 
     {{-- 36-Hour Expiry Notification Configuration Banner --}}
-    <div class="rounded-2xl border border-blue-200 bg-blue-50/70 p-5 shadow-2xs">
+    <div class="rounded-xl border border-blue-200 bg-blue-50 p-5">
         <div class="flex items-start gap-3">
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -37,7 +37,7 @@
         </div>
     </div>
 
-    <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs">
+    <div class="card p-6">
         <div class="flex items-start justify-between border-b border-neutral-100 pb-5">
             <div class="flex items-center gap-4">
                 <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -52,11 +52,11 @@
             </div>
 
             @if ($connection)
-                <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                <span class="inline-flex items-center rounded-full badge-success px-3 py-1 text-xs font-semibold">
                     Connected
                 </span>
             @else
-                <span class="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
+                <span class="inline-flex items-center rounded-full badge-gray px-3 py-1 text-xs font-semibold text-neutral-600">
                     Not Connected
                 </span>
             @endif
@@ -102,7 +102,7 @@
                     </p>
                     <div class="mt-5">
                         <a href="{{ route('employee.calendar.connect') }}"
-                           class="inline-flex items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800">
+                           class="inline-flex items-center gap-2 btn btn-primary">
                             <svg class="h-4 w-4" viewBox="0 0 24 24">
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>

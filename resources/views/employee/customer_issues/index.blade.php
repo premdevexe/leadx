@@ -9,8 +9,8 @@
             <p class="mt-1 text-sm text-neutral-500">Track and manage issues reported by customers.</p>
         </div>
         <a href="{{ route('employee.customer-issues.create') }}"
-           class="inline-flex items-center justify-center rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mr-1.5 h-4 w-4">
+           class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mr-1.5 h-4 w-4 inline">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
             Report Issue
@@ -19,66 +19,60 @@
 
     {{-- Summary Cards --}}
     <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs">
+        <div class="card p-4">
             <p class="text-xs font-medium text-neutral-500">Total Issues</p>
             <p class="mt-1 text-2xl font-semibold text-neutral-900">{{ $totalIssues }}</p>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs">
+        <div class="card p-4">
             <p class="text-xs font-medium text-neutral-500">Fixed Issues</p>
             <p class="mt-1 text-2xl font-semibold text-emerald-700">{{ $fixedIssues }}</p>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs">
+        <div class="card p-4">
             <p class="text-xs font-medium text-neutral-500">Still Facing</p>
             <p class="mt-1 text-2xl font-semibold text-amber-700">{{ $stillFacingIssues }}</p>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs">
+        <div class="card p-4">
             <p class="text-xs font-medium text-neutral-500">Customers Affected</p>
             <p class="mt-1 text-2xl font-semibold text-neutral-900">{{ $customersAffected }}</p>
         </div>
     </div>
 
     {{-- Filters --}}
-    <div class="mt-5 rounded-xl border border-neutral-200 bg-white p-4 shadow-xs">
+    <div class="mt-5 card p-4">
         <form method="GET" action="{{ route('employee.customer-issues.index') }}" class="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div class="flex-1">
-                <label class="mb-1 block text-xs font-medium text-neutral-600">Search Customer</label>
+            <div class="flex-1 form-group">
+                <label class="form-label">Search Customer</label>
                 <input type="text" name="search" value="{{ $search }}"
                        placeholder="Search by customer name..."
-                       class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                       class="form-input">
             </div>
-            <div>
-                <label class="mb-1 block text-xs font-medium text-neutral-600">Status</label>
-                <select name="status" class="rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
                     <option value="">All Statuses</option>
                     <option value="still_facing" {{ $statusFilter === 'still_facing' ? 'selected' : '' }}>Still Facing</option>
                     <option value="fixed" {{ $statusFilter === 'fixed' ? 'selected' : '' }}>Fixed</option>
                 </select>
             </div>
-            <div>
-                <label class="mb-1 block text-xs font-medium text-neutral-600">Date From</label>
+            <div class="form-group">
+                <label class="form-label">Date From</label>
                 <input type="date" name="date_from" value="{{ $dateFrom }}"
-                       class="rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                       class="form-input">
             </div>
-            <div>
-                <label class="mb-1 block text-xs font-medium text-neutral-600">Date To</label>
+            <div class="form-group">
+                <label class="form-label">Date To</label>
                 <input type="date" name="date_to" value="{{ $dateTo }}"
-                       class="rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                       class="form-input">
             </div>
-            <button type="submit"
-                    class="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800">
-                Apply
-            </button>
-            <a href="{{ route('employee.customer-issues.index') }}"
-               class="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50">
-                Reset
-            </a>
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="{{ route('employee.customer-issues.index') }}" class="btn btn-secondary">Reset</a>
         </form>
     </div>
 
     {{-- Issues Table --}}
-    <div class="mt-5 overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-xs">
+    <div class="mt-5 overflow-x-auto rounded-xl border bg-white shadow-sm">
         <table class="min-w-full text-left text-sm">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-xs uppercase tracking-wider text-neutral-500 font-semibold">
+            <thead class="border-b border-neutral-200 bg-neutral-50 text-xs uppercase text-neutral-500 font-semibold">
                 <tr>
                     <th class="px-4 py-2.5">Customer</th>
                     <th class="px-4 py-2.5">Issue</th>
@@ -93,7 +87,7 @@
                     @php
                         $latestHistory = $issue->histories->first();
                     @endphp
-                    <tr class="hover:bg-neutral-50/50">
+                    <tr class="hover:bg-neutral-50">
                         <td class="px-4 py-3 font-medium text-neutral-900">
                             {{ $issue->customer?->name ?? '—' }}
                         </td>
@@ -103,16 +97,16 @@
                         </td>
                         <td class="px-4 py-3">
                             @if ($issue->status === \App\Models\CrmCustomerIssue::STATUS_STILL_FACING)
-                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800">Still Facing</span>
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold badge-warning">Still Facing</span>
                             @else
-                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-800">Fixed</span>
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold badge-success">Fixed</span>
                             @endif
                         </td>
                         <td class="px-4 py-3">{{ $issue->issue_date?->format('Y-m-d') ?? ($issue->created_at?->format('Y-m-d') ?? '—') }}</td>
                         <td class="px-4 py-3">{{ $issue->updated_at?->format('Y-m-d H:i') ?? '—' }}</td>
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('employee.customer-issues.show', $issue) }}"
-                               class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100">
+                               class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100">
                                 View
                             </a>
                         </td>
@@ -128,7 +122,7 @@
                                 <p class="text-sm font-medium">No issues found.</p>
                                 <p class="text-xs">Report a customer issue to get started.</p>
                                 <a href="{{ route('employee.customer-issues.create') }}"
-                                   class="mt-2 inline-flex items-center rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800">
+                                   class="mt-2 inline-flex items-center btn btn-primary">
                                     Report First Issue
                                 </a>
                             </div>

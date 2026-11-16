@@ -13,14 +13,14 @@
             </p>
         </div>
 
-        <div class="inline-flex rounded-lg border border-neutral-200 bg-neutral-100 p-1 text-xs font-semibold shadow-xs">
+        <div class="inline-flex rounded-lg border bg-neutral-100 p-1 text-xs font-semibold shadow-sm">
             <a href="{{ route('employee.subscriptions', ['view' => 'my_data']) }}"
-               class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode !== 'team_data' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-600 hover:text-neutral-900' }}">
+               class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode !== 'team_data' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900' }}">
                 My Data
             </a>
             @if ($hasTeamAccess)
                 <a href="{{ route('employee.subscriptions', ['view' => 'team_data']) }}"
-                   class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode === 'team_data' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-600 hover:text-neutral-900' }}">
+                   class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode === 'team_data' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900' }}">
                     Team Data
                 </a>
             @else
@@ -36,14 +36,14 @@
     @endif
 
     @if ($viewMode === 'team_data' && $activeGrant)
-        <div class="mt-4 rounded-lg border border-indigo-200 bg-indigo-50/70 p-3 text-xs text-indigo-900 flex items-center justify-between">
+        <div class="mt-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-900 flex items-center justify-between">
             <span><strong>Team Data Window:</strong> {{ $activeGrant->start_date->format('M d, Y') }} &rarr; {{ $activeGrant->end_date->format('M d, Y') }} (View-Only mode).</span>
         </div>
     @endif
 
-    <div class="mt-5 overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-xs">
+    <div class="mt-5 overflow-x-auto rounded-xl border bg-white shadow-sm">
         <table class="min-w-full text-left text-sm">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-xs uppercase tracking-wider text-neutral-500 font-semibold">
+            <thead class="border-b border-neutral-200 bg-neutral-50 text-xs uppercase text-neutral-500 font-semibold">
                 <tr>
                     <th class="px-4 py-2.5">Order</th>
                     <th class="px-4 py-2.5">Plan</th>
@@ -57,12 +57,12 @@
             </thead>
             <tbody class="divide-y divide-neutral-100 text-xs">
                 @forelse ($subscriptions as $subscription)
-                    <tr class="hover:bg-neutral-50/50">
+                    <tr class="hover:bg-neutral-50">
                         <td class="px-4 py-3 font-mono font-medium">{{ $subscription->order?->order_number ?? '—' }}</td>
                         <td class="px-4 py-3">{{ $subscription->plan?->name ?? 'Standard Plan' }}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold
-                                {{ $subscription->status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-neutral-100 text-neutral-700' }}">
+                                {{ $subscription->status === 'active' ? 'badge-success' : 'badge-gray' }}">
                                 {{ ucfirst($subscription->status) }}
                             </span>
                         </td>

@@ -6,7 +6,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-xl font-semibold tracking-tight">Admins</h1>
         <a href="{{ route('admin.admins.create') }}"
-           class="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700">
+           class="btn btn-primary px-3 py-1.5 text-sm font-medium">
             New admin
         </a>
     </div>
@@ -21,9 +21,9 @@
     @endif
 
     <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
-        <table class="w-full min-w-[680px] text-sm whitespace-nowrap">
+        <table class="data-table w-full" style="min-width:680px">
             <thead>
-                <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500">
+                <tr class="text-left text-xs font-medium text-neutral-500">
                     <th class="px-4 py-3">Username</th>
                     <th class="px-4 py-3">Name</th>
                     <th class="px-4 py-3">Email</th>
@@ -33,12 +33,12 @@
             </thead>
             <tbody>
                 @foreach ($admins as $admin)
-                    <tr class="border-b border-neutral-100 last:border-0">
+                    <tr>
                         <td class="px-4 py-3 font-medium">{{ $admin->username }}@if (auth('admin')->id() === $admin->id)<span class="ml-2 rounded-md bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-500">you</span>@endif</td>
                         <td class="px-4 py-3 text-neutral-600">{{ $admin->name }}</td>
                         <td class="px-4 py-3 text-neutral-500">{{ $admin->email }}</td>
                         <td class="px-4 py-3 text-neutral-500">{{ $admin->created_at?->format('M d, Y') ?? '—' }}</td>
-                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                        <td class="px-4 py-3 text-right">
                             <a href="{{ route('admin.admins.edit', $admin) }}" class="text-sm text-neutral-600 transition-colors hover:text-neutral-900">Edit</a>
                         </td>
                     </tr>

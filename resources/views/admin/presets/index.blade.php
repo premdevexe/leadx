@@ -91,9 +91,9 @@
                         <th class="px-6 py-3 text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-neutral-100">
+                <tbody>
                     @forelse ($employees as $emp)
-                        <tr class="hover:bg-neutral-50/50">
+                        <tr class="hover:bg-neutral-50">
                             <td class="px-6 py-3 font-medium text-neutral-900">
                                 {{ $emp->name }}
                                 <div class="text-[11px] text-neutral-400">{{ $emp->email }} &bull; {{ $emp->username }}</div>
@@ -157,9 +157,9 @@
                         <th class="px-6 py-2.5">Reason / Context</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-neutral-100">
+                <tbody>
                     @forelse ($recentHistories as $log)
-                        <tr class="hover:bg-neutral-50/50">
+                        <tr class="hover:bg-neutral-50">
                             <td class="px-6 py-2.5 whitespace-nowrap text-neutral-400 font-mono text-[11px]">
                                 {{ $log->created_at->format('Y-m-d H:i') }}
                             </td>

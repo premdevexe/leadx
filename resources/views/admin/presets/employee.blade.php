@@ -110,7 +110,7 @@
         {{-- Active / Past Grants Table --}}
         @if (isset($teamGrants) && $teamGrants->isNotEmpty())
             <div class="overflow-x-auto pt-2">
-                <table class="w-full text-left text-xs text-neutral-600">
+                <table class="data-table w-full" style="min-width:600px">
                     <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wider text-neutral-500 font-semibold">
                         <tr>
                             <th class="px-4 py-2">Window Range</th>
@@ -120,7 +120,7 @@
                             <th class="px-4 py-2 text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-neutral-100">
+                    <tbody>
                         @foreach ($teamGrants as $grant)
                             <tr>
                                 <td class="px-4 py-2 font-medium text-neutral-900">
@@ -188,7 +188,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         @foreach ($perms as $perm)
                             <div class="flex items-center justify-between rounded-lg border {{ $perm['is_override'] ? 'border-amber-300 bg-amber-50/30' : 'border-neutral-200 bg-white' }} p-3">
-                                <div class="max-w-xs">
+                                <div style="max-width:200px">
                                     <div class="flex items-center gap-1.5">
                                         <span class="font-medium text-xs text-neutral-900">{{ $perm['name'] }}</span>
                                         @if ($perm['granted'])
@@ -213,12 +213,6 @@
                     </div>
                 </div>
             @endforeach
-
-            <div class="flex justify-end pt-4 border-t border-neutral-100">
-                <button type="submit" class="rounded-lg bg-neutral-900 px-6 py-2 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800">
-                    Save Permission Overrides
-                </button>
-            </div>
         </div>
     </form>
 
@@ -242,9 +236,9 @@
                         <th class="px-6 py-2.5">Reason</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-neutral-100">
+                <tbody>
                     @forelse ($history as $h)
-                        <tr class="hover:bg-neutral-50/50">
+                        <tr class="hover:bg-neutral-50">
                             <td class="px-6 py-2.5 whitespace-nowrap text-neutral-400 font-mono text-[11px]">
                                 {{ $h->created_at->format('Y-m-d H:i') }}
                             </td>

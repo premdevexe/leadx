@@ -1,0 +1,150 @@
+/* ============================================================
+   LeadX — Component: Tables
+   ============================================================ */
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-wrapper::-webkit-scrollbar { height: 6px; }
+.table-wrapper::-webkit-scrollbar-track { background: transparent; }
+.table-wrapper::-webkit-scrollbar-thumb { background: var(--c-neutral-300); border-radius: var(--radius-full); }
+.table-wrapper::-webkit-scrollbar-thumb:hover { background: var(--c-neutral-400); }
+
+.data-table {
+    width: 100%;
+    font-size: var(--text-sm);
+    border-collapse: collapse;
+}
+
+.data-table thead {
+    background: var(--c-neutral-50);
+    border-bottom: var(--border-width) solid var(--border-color);
+}
+
+.data-table thead th {
+    padding: var(--sp-3) var(--sp-4);
+    text-align: left;
+    font-weight: 600;
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--c-neutral-500);
+    white-space: nowrap;
+}
+
+.data-table tbody tr {
+    border-bottom: var(--border-width) solid var(--border-color);
+    transition: background var(--transition-fast);
+}
+
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--c-neutral-50); }
+
+.data-table tbody td {
+    padding: var(--sp-3) var(--sp-4);
+    color: var(--c-neutral-700);
+    vertical-align: middle;
+}
+
+.data-table tbody td:first-child { color: var(--c-neutral-900); font-weight: 500; }
+
+/* Table in card */
+.card .table-wrapper { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+.card .data-table thead th { padding: var(--sp-2.5) var(--sp-4); }
+.card .data-table tbody td { padding: var(--sp-2.5) var(--sp-4); }
+
+/* Table actions */
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+}
+
+.table-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-1.5);
+    border-radius: var(--radius-md);
+    color: var(--c-neutral-500);
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+.table-action-btn:hover { background: var(--c-neutral-100); color: var(--c-neutral-700); }
+.table-action-btn.danger:hover { background: var(--c-red-50); color: var(--c-red-600); }
+.table-action-btn.primary:hover { background: var(--c-blue-50); color: var(--c-blue-600); }
+
+/* Empty state */
+.table-empty {
+    text-align: center;
+    padding: var(--sp-10) var(--sp-4);
+    color: var(--c-neutral-500);
+}
+.table-empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--sp-3);
+    opacity: 0.3;
+}
+.table-empty-title {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--c-neutral-700);
+    margin-bottom: var(--sp-1);
+}
+.table-empty-desc {
+    font-size: var(--text-sm);
+    color: var(--c-neutral-500);
+}
+
+/* Table footer / pagination */
+.table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-3) var(--sp-4);
+    border-top: var(--border-width) solid var(--border-color);
+    background: var(--c-neutral-50);
+}
+
+.table-footer-info {
+    font-size: var(--text-xs);
+    color: var(--c-neutral-500);
+}
+
+.table-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 var(--sp-2);
+    font-size: var(--text-sm);
+    border-radius: var(--radius-md);
+    border: var(--border-width) solid var(--border-color);
+    background: var(--c-white);
+    color: var(--c-neutral-700);
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.pagination-btn:hover:not(:disabled) { background: var(--c-neutral-50); border-color: var(--c-neutral-300); }
+.pagination-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination-btn.active {
+    background: var(--c-neutral-900);
+    color: var(--c-white);
+    border-color: var(--c-neutral-900);
+}
+.pagination-btn.active:hover { background: var(--c-neutral-800); }

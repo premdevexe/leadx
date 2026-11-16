@@ -3,16 +3,12 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
-        "dev": "vite"
+        "build:css": "cp -r public/assets/css public/build/css 2>/dev/null; cp -r public/assets/css/* public/build/ 2>/dev/null; echo 'CSS ready'",
+        "build": "cp -r public/assets/css public/build/css 2>/dev/null; echo 'Assets ready'",
+        "dev": "echo 'No build step needed — assets are in public/assets/'"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "axios": "^1.11.0",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^2.0.0",
-        "tailwindcss": "^4.0.0",
-        "vite": "^7.0.7"
+        "axios": "^1.11.0"
     },
     "dependencies": {
         "pusher-js": "^8.6.0"

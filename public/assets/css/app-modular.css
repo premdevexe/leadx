@@ -1,0 +1,31 @@
+/* ============================================================
+   LeadX — Modular Application CSS (imports all component styles)
+   ============================================================ */
+
+/* Font */
+@import url('https://fonts.bunny.net/css?family=instrument-sans:400,500,600');
+
+/* Core */
+@import url('./core/variables.css');
+
+/* Layout */
+@import url('./layouts/sidebar-layout.css');
+
+/* Components */
+@import url('./components/buttons.css');
+@import url('./components/forms.css');
+@import url('./components/cards.css');
+@import url('./components/tables.css');
+@import url('./components/badges.css');
+@import url('./components/alerts.css');
+@import url('./components/modals.css');
+@import url('./components/dropdowns.css');
+@import url('./components/loading.css');
+@import url('./components/pagination.css');
+@import url('./components/utilities.css');
+
+/* Pages */
+@import url('./pages/auth.css');
+@import url('./pages/dashboard.css');
+@import url('./pages/settings.css');
+@import url('./pages/calendar.css');

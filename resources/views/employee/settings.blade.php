@@ -9,7 +9,7 @@
         <p class="mt-1 text-sm text-neutral-500">Your employee profile and preferences.</p>
     </div>
 
-    <div class="rounded-xl border border-neutral-200 bg-white p-6 shadow-xs divide-y divide-neutral-100">
+    <div class="card p-6 divide-y divide-neutral-100">
         <dl class="flex items-center justify-between py-2 text-xs">
             <dt class="font-medium text-neutral-500">Full Name</dt>
             <dd class="text-neutral-900 font-semibold">{{ $employee->name }}</dd>

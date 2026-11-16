@@ -9,69 +9,63 @@
     @else
         <link rel="icon" href="{{ asset('favicon.ico') }}">
     @endif
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v={{ file_exists(public_path('assets/css/app.css')) ? filemtime(public_path('assets/css/app.css')) : time() }}">
 </head>
-<body class="min-h-screen bg-neutral-50 font-sans text-neutral-900 antialiased">
-    <div class="flex min-h-screen items-center justify-center px-4">
-        <div class="w-full max-w-sm">
-            <div class="mb-8 text-center">
+<body>
+    <main class="auth-page">
+        <div class="auth-card">
+            <div class="auth-brand" style="margin-bottom: 2rem; text-align: center;">
                 @if (\App\Models\Setting::logoUrl())
-                    <img src="{{ \App\Models\Setting::logoUrl() }}" alt="{{ \App\Models\Setting::siteName() }}" class="h-10 max-w-[180px] w-auto mx-auto object-contain">
+                    <img src="{{ \App\Models\Setting::logoUrl() }}" alt="{{ \App\Models\Setting::siteName() }}" class="auth-brand-img" style="margin: 0 auto; height: 2.5rem; max-width: 180px; width: auto; object-fit: contain;">
                 @else
-                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-900 text-sm font-semibold text-white mx-auto">
+                    <span class="auth-brand-icon" style="margin: 0 auto; width: 2.5rem; height: 2.5rem; border-radius: var(--radius-md); background: var(--c-neutral-900); color: var(--c-white); font-size: var(--text-sm); font-weight: 600; display: flex; align-items: center; justify-content: center;">
                         {{ strtoupper(substr(\App\Models\Setting::siteName(), 0, 1)) }}
                     </span>
                 @endif
-                <h1 class="mt-4 text-lg font-semibold">Employee Login</h1>
-                <p class="mt-1 text-sm text-neutral-500">{{ \App\Models\Setting::siteName() }}</p>
+                <h1 class="auth-title" style="text-align: center; margin-top: 1rem; font-size: var(--text-lg); font-weight: 600; color: var(--c-neutral-900);">Employee Login</h1>
+                <p style="text-align: center; margin-top: var(--sp-1); font-size: var(--text-sm); color: var(--c-neutral-500);">{{ \App\Models\Setting::siteName() }}</p>
             </div>
 
-            <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div class="auth-box" style="border: var(--border-width) solid var(--c-neutral-200); background: var(--c-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--sp-5);">
                 @if (session('info'))
-                    <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                        {{ session('info') }}
+                    <div class="alert alert-warning" style="margin-bottom: var(--sp-4);">
+                        <div class="alert-message">{{ session('info') }}</div>
                     </div>
                 @endif
                 @if ($errors->any())
-                    <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                        {{ $errors->first() }}
+                    <div class="alert alert-danger" style="margin-bottom: var(--sp-4);">
+                        <div class="alert-message">{{ $errors->first() }}</div>
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('employee.login.attempt') }}" class="space-y-4">
+                <form method="POST" action="{{ route('employee.login.attempt') }}" style="display: flex; flex-direction: column; gap: var(--sp-4);">
                     @csrf
 
-                    <div>
-                        <label for="login" class="mb-1.5 block text-sm font-medium text-neutral-700">Username or email</label>
-                        <input id="login" type="text" name="login" value="{{ old('login') }}"
-                               class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10"
-                               required autofocus autocomplete="username">
+                    <div class="form-group">
+                        <label for="login" class="form-label">Username or email</label>
+                        <input id="login" type="text" name="login" value="{{ old('login') }}" class="form-input" required autofocus autocomplete="username">
                     </div>
 
-                    <div>
-                        <label for="password" class="mb-1.5 block text-sm font-medium text-neutral-700">Password</label>
-                        <input id="password" type="password" name="password"
-                               class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10"
-                               required autocomplete="current-password">
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input id="password" type="password" name="password" class="form-input" required autocomplete="current-password">
                     </div>
 
-                    <label class="flex items-center gap-2 text-sm text-neutral-600">
-                        <input type="checkbox" name="remember" class="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900/20">
-                        Remember me
+                    <label class="form-check">
+                        <input type="checkbox" name="remember">
+                        <span>Remember me</span>
                     </label>
 
-                    <button type="submit" class="w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800">
-                        Sign in
-                    </button>
+                    <button type="submit" class="btn btn-primary btn-block">Sign in</button>
                 </form>
             </div>
 
-            <p class="mt-4 text-center text-xs text-neutral-500">
-                <a href="{{ route('login') }}" class="underline hover:text-neutral-900">Back</a>
-                &nbsp;·&nbsp;
-                <a href="{{ route('admin.login') }}" class="underline hover:text-neutral-900">Admin login</a>
+            <p style="margin-top: var(--sp-4); text-align: center; font-size: var(--text-xs); color: var(--c-neutral-500);">
+                <a href="{{ route('login') }}" style="color: var(--c-blue-600); text-decoration: underline;">Back</a>
+                &nbsp;&middot;&nbsp;
+                <a href="{{ route('admin.login') }}" style="color: var(--c-blue-600); text-decoration: underline;">Admin login</a>
             </p>
         </div>
-    </div>
+    </main>
 </body>
 </html>

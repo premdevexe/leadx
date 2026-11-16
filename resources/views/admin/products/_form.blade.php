@@ -1,60 +1,60 @@
 <div class="grid gap-4 sm:grid-cols-2">
     <div>
-        <label class="block text-xs font-medium text-neutral-500">Product name</label>
+        <label class="form-label">Product name</label>
         <input type="text" name="name" value="{{ old('name', $product->name) }}" required
-               class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
-        @error('name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+               class="form-input mt-1 w-full">
+        @error('name') <p class="form-error">{{ $message }}</p> @enderror
     </div>
 
     <div>
-        <label class="block text-xs font-medium text-neutral-500">Price ({{ \App\Models\Setting::currencySymbol() }})</label>
+        <label class="form-label">Price ({{ \App\Models\Setting::currencySymbol() }})</label>
         <input type="number" step="0.01" min="0" name="price" value="{{ old('price', $product->price) }}"
-               class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
-        @error('price') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+               class="form-input mt-1 w-full">
+        @error('price') <p class="form-error">{{ $message }}</p> @enderror
     </div>
 
     <div>
-        <label class="block text-xs font-medium text-neutral-500">Minimum Closing Price (Floor Price) ({{ \App\Models\Setting::currencySymbol() }})</label>
+        <label class="form-label">Minimum Closing Price (Floor Price) ({{ \App\Models\Setting::currencySymbol() }})</label>
         <input type="number" step="0.01" min="0" name="minimum_closing_price" value="{{ old('minimum_closing_price', $product->minimum_closing_price ?? 0) }}"
-               class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
-        <p class="mt-1 text-[11px] text-neutral-400">Orders closed below this floor trigger Super Admin Closing Approval workflow.</p>
-        @error('minimum_closing_price') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+               class="form-input mt-1 w-full">
+        <p class="form-hint">Orders closed below this floor trigger Super Admin Closing Approval workflow.</p>
+        @error('minimum_closing_price') <p class="form-error">{{ $message }}</p> @enderror
     </div>
 
     <div>
-        <label class="block text-xs font-medium text-neutral-500">Duration</label>
-        <select name="duration" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+        <label class="form-label">Duration</label>
+        <select name="duration" class="form-select mt-1 w-full">
             @foreach (\App\Models\SalesOrder::DURATIONS as $code => $label)
                 <option value="{{ $code }}" @selected(old('duration', $product->duration ?? '1y') === $code)>{{ $label }}</option>
             @endforeach
         </select>
-        @error('duration') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+        @error('duration') <p class="form-error">{{ $message }}</p> @enderror
     </div>
 
     <div>
-        <label class="block text-xs font-medium text-neutral-500">Status</label>
-        <select name="status" class="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select mt-1 w-full">
             @foreach (\App\Models\Product::STATUSES as $status)
                 <option value="{{ $status }}" @selected(old('status', $product->status ?? 'active') === $status)>{{ ucfirst($status) }}</option>
             @endforeach
         </select>
-        @error('status') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+        @error('status') <p class="form-error">{{ $message }}</p> @enderror
     </div>
 
     <div class="sm:col-span-2 pt-1">
-        <label class="inline-flex items-center gap-2 cursor-pointer">
+        <label class="form-check">
             <input type="checkbox" name="api_key_required" value="1" @checked(old('api_key_required', $product->api_key_required ?? false))
-                   class="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900">
+                   class="rounded border-neutral-300 text-neutral-900 focus:ring-0">
             <span class="text-xs font-medium text-neutral-700">API Key Required to complete/deliver orders for this product</span>
         </label>
     </div>
 </div>
 
 <div class="mt-6 flex flex-wrap items-center gap-3">
-    <button type="submit" id="product-submit-btn" class="w-full sm:w-auto rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700">
+    <button type="submit" id="product-submit-btn" class="btn btn-primary px-4 py-2 text-sm font-medium">
         {{ $product->exists ? 'Save changes' : 'Create product' }}
     </button>
-    <a href="{{ route('admin.products') }}" class="w-full sm:w-auto text-center text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
+    <a href="{{ route('admin.products') }}" class="text-sm text-neutral-600 hover:text-neutral-900">Cancel</a>
 </div>
 
 <script>
@@ -66,7 +66,7 @@
                 if (btn) {
                     btn.disabled = true;
                     btn.classList.add('opacity-75', 'cursor-not-allowed');
-                    btn.innerHTML = '<span class="inline-block animate-spin mr-1">↻</span> Saving…';
+                    btn.innerHTML = '<span class="inline-block animate-spin mr-1">&#x21BB;</span> Saving&hellip;';
                 }
             });
         }

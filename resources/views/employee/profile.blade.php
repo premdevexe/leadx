@@ -11,7 +11,7 @@
             <p class="text-sm text-neutral-500">Manage your personal credentials, contact info, and security settings.</p>
         </div>
         <div class="flex items-center gap-2">
-            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ ($employee->status ?? 'active') === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ ($employee->status ?? 'active') === 'active' ? 'badge-success' : 'badge-danger' }}">
                 {{ ucfirst($employee->status ?? 'active') }} Account
             </span>
         </div>
@@ -37,7 +37,7 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {{-- Left Column: System-Assigned Info (Read-Only) --}}
         <div class="lg:col-span-1 space-y-6">
-            <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs">
+            <div class="card p-6">
                 <div class="flex flex-col items-center text-center pb-5 border-b border-neutral-100">
                     <div class="flex h-16 w-16 items-center justify-center rounded-full bg-neutral-900 text-2xl font-bold text-white shadow-sm">
                         {{ strtoupper(substr($employee->name, 0, 1)) }}
@@ -85,7 +85,7 @@
         {{-- Right Column: Editable Details & Security --}}
         <div class="lg:col-span-2 space-y-6">
             {{-- Edit Contact Info --}}
-            <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs">
+            <div class="card p-6">
                 <h2 class="text-base font-semibold text-neutral-900 border-b border-neutral-100 pb-3">
                     Contact Information
                 </h2>
@@ -93,35 +93,33 @@
                     @csrf
                     @method('PUT')
 
-                    <div>
-                        <label for="name" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700">Full Name</label>
+                    <div class="form-group">
+                        <label for="name" class="form-label">Full Name</label>
                         <input type="text" name="name" id="name" required value="{{ old('name', $employee->name) }}"
-                               class="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs text-neutral-900 focus:border-neutral-900 focus:outline-none">
+                               class="form-input">
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700">Email Address</label>
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email Address</label>
                             <input type="email" name="email" id="email" required value="{{ old('email', $employee->email) }}"
-                                   class="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs text-neutral-900 focus:border-neutral-900 focus:outline-none">
+                                   class="form-input">
                         </div>
-                        <div>
-                            <label for="phone" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700">Phone Number</label>
+                        <div class="form-group">
+                            <label for="phone" class="form-label">Phone Number</label>
                             <input type="text" name="phone" id="phone" value="{{ old('phone', $employee->phone) }}" placeholder="+1 234 567 890"
-                                   class="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs text-neutral-900 focus:border-neutral-900 focus:outline-none">
+                                   class="form-input">
                         </div>
                     </div>
 
                     <div class="pt-2 flex justify-end">
-                        <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800">
-                            Save Changes
-                        </button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
                     </div>
                 </form>
             </div>
 
             {{-- Change Password --}}
-            <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs">
+            <div class="card p-6">
                 <h2 class="text-base font-semibold text-neutral-900 border-b border-neutral-100 pb-3">
                     Security & Password
                 </h2>
@@ -129,30 +127,28 @@
                     @csrf
                     @method('PUT')
 
-                    <div>
-                        <label for="current_password" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700">Current Password</label>
+                    <div class="form-group">
+                        <label for="current_password" class="form-label">Current Password</label>
                         <input type="password" name="current_password" id="current_password" required
-                               class="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs text-neutral-900 focus:border-neutral-900 focus:outline-none">
+                               class="form-input">
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700">New Password</label>
+                        <div class="form-group">
+                            <label for="password" class="form-label">New Password</label>
                             <input type="password" name="password" id="password" required minlength="8"
-                                   class="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs text-neutral-900 focus:border-neutral-900 focus:outline-none">
+                                   class="form-input">
                             <span class="mt-1 text-[11px] text-neutral-400">Must be at least 8 characters with letters & numbers.</span>
                         </div>
-                        <div>
-                            <label for="password_confirmation" class="block text-xs font-semibold uppercase tracking-wider text-neutral-700">Confirm New Password</label>
+                        <div class="form-group">
+                            <label for="password_confirmation" class="form-label">Confirm New Password</label>
                             <input type="password" name="password_confirmation" id="password_confirmation" required minlength="8"
-                                   class="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs text-neutral-900 focus:border-neutral-900 focus:outline-none">
+                                   class="form-input">
                         </div>
                     </div>
 
                     <div class="pt-2 flex justify-end">
-                        <button type="submit" class="rounded-lg bg-neutral-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800">
-                            Update Password
-                        </button>
+                        <button type="submit" class="btn btn-primary">Update Password</button>
                     </div>
                 </form>
             </div>

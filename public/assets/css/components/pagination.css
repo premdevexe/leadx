@@ -1,0 +1,62 @@
+/* ============================================================
+   LeadX — Component: Pagination
+   ============================================================ */
+
+.pagination-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-3) var(--sp-4);
+    border-top: var(--border-width) solid var(--border-color);
+    background: var(--c-neutral-50);
+}
+
+.pagination-info {
+    font-size: var(--text-xs);
+    color: var(--c-neutral-500);
+}
+
+.pagination-links {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+}
+
+.pagination-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 var(--sp-2);
+    font-size: var(--text-sm);
+    border-radius: var(--radius-md);
+    border: var(--border-width) solid var(--border-color);
+    background: var(--c-white);
+    color: var(--c-neutral-700);
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.pagination-link:hover:not(:disabled):not(.active) {
+    background: var(--c-neutral-50);
+    border-color: var(--c-neutral-300);
+}
+.pagination-link:disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination-link.active {
+    background: var(--c-neutral-900);
+    color: var(--c-white);
+    border-color: var(--c-neutral-900);
+}
+.pagination-link.active:hover { background: var(--c-neutral-800); }
+.pagination-link.dots {
+    border: none;
+    background: none;
+    cursor: default;
+    pointer-events: none;
+    min-width: auto;
+}
+
+.pagination-ellipsis {
+    padding: 0 var(--sp-1);
+    color: var(--c-neutral-400);
+    font-size: var(--text-sm);
+}

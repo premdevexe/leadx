@@ -3,7 +3,7 @@
 @section('title', 'Order '.$order->order_number)
 
 @section('content')
-    <h1 class="text-xl font-semibold tracking-tight">Order {{ $order->order_number }}</h1>
+    <h1 class="text-lg">Order {{ $order->order_number }}</h1>
     <p class="mt-1 text-sm text-neutral-500">Created {{ $order->created_at?->diffForHumans() }}</p>
 
     @if (session('status'))
@@ -15,7 +15,7 @@
 
     {{-- Rejection & Resubmission Card (Section 4.2) --}}
     @if ($order->closing_value_status === 'Rejected' && ! ($isViewOnly ?? false))
-        <div class="mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-xs text-red-900 space-y-3">
+        <div class="mt-4 card p-4 text-xs space-y-3 border-red-300">
             <div>
                 <strong class="font-bold text-red-800">Closing Value Rejected by Super Admin:</strong>
                 <p class="mt-1 text-red-700 italic">"{{ $order->closing_approval_notes ?? 'Price discount not accepted.' }}"</p>
@@ -28,12 +28,12 @@
                     <div>
                         <label class="block text-[11px] text-neutral-600">New Closing Value (Floor: {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) ($order->minimum_closing_price_snapshot ?? 0), 2) }})</label>
                         <input type="number" step="0.01" min="{{ $order->minimum_closing_price_snapshot ?? 0.01 }}" name="closing_value" value="{{ old('closing_value', $order->closing_value) }}" required
-                               class="mt-0.5 w-full rounded border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                               class="mt-0.5 form-input">
                     </div>
                     <div>
                         <label class="block text-[11px] text-neutral-600">Resubmission Note</label>
                         <input type="text" name="resubmission_notes" placeholder="Explain adjustment to Admin…"
-                               class="mt-0.5 w-full rounded border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                               class="mt-0.5 form-input">
                     </div>
                 </div>
                 <button type="submit" class="rounded bg-neutral-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800">
@@ -44,7 +44,7 @@
     @endif
 
     @if ($isViewOnly ?? false)
-        <div class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/80 p-3 text-xs text-indigo-900 flex items-center gap-2">
+        <div class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-900 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -55,39 +55,39 @@
     @endif
 
     <div class="mt-6 grid gap-4 sm:grid-cols-2">
-        <div class="rounded-xl border border-neutral-200 bg-white p-5">
+        <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Customer</p>
             <p class="mt-1 text-sm font-medium">{{ $order->customer_name }}</p>
             <p class="text-xs text-neutral-500">{{ $order->customer_phone }}</p>
             @if($order->customer_email)<p class="text-xs text-neutral-500">{{ $order->customer_email }}</p>@endif
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-5">
+        <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Product</p>
             <p class="mt-1 text-sm font-medium">{{ $order->product_name_snapshot ?? $order->product_name }}</p>
             <p class="text-xs text-neutral-500">Duration: {{ $order->product_duration_snapshot ?? $order->duration }}</p>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-5">
+        <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Financials</p>
             <p class="mt-1 text-sm">Value: {{ number_format((float) $order->product_value, 2) }}</p>
             <p class="text-sm">Discount: {{ number_format((float) $order->discount_amount, 2) }}</p>
             <p class="text-sm">Closing: {{ number_format((float) $order->closing_value, 2) }}</p>
         </div>
-        <div class="rounded-xl border border-neutral-200 bg-white p-5">
+        <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Status</p>
             <p class="mt-1 text-sm">Payment: {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}</p>
             <p class="text-sm">Order: {{ ucfirst($order->order_status) }}</p>
             <div class="mt-2 pt-2 border-t border-neutral-100 flex items-center justify-between text-xs">
                 <span class="text-neutral-500">Floor Status:</span>
                 @if ($order->closing_value_status === 'Requested')
-                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                    <span class="inline-flex items-center rounded-full badge-warning px-2.5 py-0.5 text-[11px] font-semibold">
                         Approval Requested
                     </span>
                 @elseif ($order->closing_value_status === 'Rejected')
-                    <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-semibold text-red-800">
+                    <span class="inline-flex items-center rounded-full badge-danger px-2.5 py-0.5 text-[11px] font-semibold">
                         Approval Rejected
                     </span>
                 @else
-                    <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+                    <span class="inline-flex items-center rounded-full badge-success px-2.5 py-0.5 text-[11px] font-semibold">
                         Approved ({{ $order->closing_value_status }})
                     </span>
                 @endif
@@ -96,14 +96,14 @@
     </div>
 
     {{-- API Credentials & Delivery Section --}}
-    <div class="mt-6 rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
+    <div class="mt-6 card p-5">
         <div class="flex items-center justify-between border-b border-neutral-100 pb-3">
             <div>
                 <h2 class="text-sm font-semibold text-neutral-900">Customer API Credential Delivery</h2>
                 <p class="text-xs text-neutral-500">Encrypted customer API key provisioning for activation.</p>
             </div>
             @if ($order->api_key_required_snapshot)
-                <span class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-800">
+                <span class="inline-flex items-center rounded-full badge-purple px-2.5 py-0.5 text-xs font-semibold">
                     API Key Mandatory for Completion
                 </span>
             @endif
@@ -157,7 +157,7 @@
     <div class="mt-6">
         <h2 class="text-sm font-semibold text-neutral-700">Payments</h2>
         @forelse($order->payments as $payment)
-            <div class="mt-2 rounded-lg border border-neutral-200 bg-white p-3 text-sm">
+            <div class="mt-2 rounded-lg border bg-white p-3 text-sm">
                 <p>{{ number_format((float) $payment->amount, 2) }} · {{ ucfirst($payment->payment_status) }}</p>
             </div>
         @empty
@@ -165,7 +165,7 @@
         @endforelse
     </div>
 
-    <div class="mt-6 rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
+    <div class="mt-6 card p-5">
         <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold text-neutral-900">Subscription & Calendar Reminders</h2>
             <span class="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 border border-amber-200">
@@ -177,7 +177,7 @@
         </div>
 
         @if($order->subscription)
-            <div class="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs space-y-1">
+            <div class="mt-3 rounded-lg border bg-neutral-50 p-3 text-xs space-y-1">
                 <p><span class="text-neutral-500">Status:</span> <span class="font-medium text-neutral-800">{{ ucfirst($order->subscription->status) }}</span></p>
                 @if($order->subscription->started_at)<p><span class="text-neutral-500">Started:</span> <span class="font-medium text-neutral-800">{{ $order->subscription->started_at->format('M d, Y') }}</span></p>@endif
                 @if($order->subscription->expires_at)<p><span class="text-neutral-500">Expires:</span> <span class="font-medium text-neutral-800">{{ $order->subscription->expires_at->format('M d, Y') }}</span></p>@endif
@@ -193,7 +193,7 @@
             <a href="{{ $order->googleCalendarUrl() }}"
                target="_blank"
                onclick="window.open(this.href, 'google_calendar_popup', 'width=750,height=650,left=200,top=100,scrollbars=yes,resizable=yes'); return false;"
-               class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 shadow-2xs transition">
+               class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100">
                 <svg class="h-4 w-4" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -207,7 +207,7 @@
 
     {{-- Order Fulfillment & WhatsApp Share Card --}}
     @if (! ($isViewOnly ?? false))
-        <div class="mt-6 rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-4">
+        <div class="mt-6 card p-5 space-y-4">
             <h2 class="text-sm font-semibold text-neutral-900">Order Fulfillment & Delivery</h2>
 
             <div class="flex flex-wrap items-center gap-3">

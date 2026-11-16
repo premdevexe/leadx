@@ -40,7 +40,8 @@ class AdminOrdersFrontendTest extends TestCase
                 'team_id' => $team->id,
                 'assigned_employee_id' => $emp->id,
                 'customer_name' => 'Ada Lovelace',
-                'customer_phone' => '+15551234567',
+                'customer_phone_local' => '5551234567',
+                'customer_country_code' => '+1',
                 'product_name' => 'Pro',
                 'product_value' => 100,
                 'closing_value' => 100,
@@ -109,6 +110,7 @@ class AdminOrdersFrontendTest extends TestCase
             'assigned_employee_id' => $emp->id,
             'customer_name' => 'Original Customer',
             'customer_phone' => '+15551234567',
+            'customer_country_code' => '+1',
             'product_name' => 'Original Package',
         ]);
 
@@ -117,8 +119,9 @@ class AdminOrdersFrontendTest extends TestCase
             ->assertOk()
             ->assertSee('Edit Order')
             ->assertSee('Original Customer')
-            ->assertSee('+15551234567')
-            ->assertSee('Original Package');
+            ->assertSee('Original Package')
+            ->assertSee('value="+1"', false)  // country code selected
+            ->assertSee('5551234567');         // local number prefilled
     }
 
     public function test_admin_can_update_order_details(): void
@@ -139,7 +142,8 @@ class AdminOrdersFrontendTest extends TestCase
             ->put(route('admin.orders.update', $order), [
                 'assigned_employee_id' => $emp2->id,
                 'customer_name' => 'Updated Customer',
-                'customer_phone' => '+15559876543',
+                'customer_phone_local' => '5559876543',
+                'customer_country_code' => '+1',
                 'customer_email' => 'updated@example.com',
                 'product_name' => 'Custom Elite Plan',
                 'duration' => '6m',

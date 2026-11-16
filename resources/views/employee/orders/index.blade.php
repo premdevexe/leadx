@@ -15,14 +15,14 @@
 
         <div class="flex items-center gap-3">
             {{-- Toggle --}}
-            <div class="inline-flex rounded-lg border border-neutral-200 bg-neutral-100 p-1 text-xs font-semibold shadow-xs">
+            <div class="inline-flex rounded-lg border bg-neutral-100 p-1 text-xs font-semibold shadow-sm">
                 <a href="{{ route('employee.orders', ['view' => 'my_data']) }}"
-                   class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode !== 'team_data' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-600 hover:text-neutral-900' }}">
+                   class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode !== 'team_data' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900' }}">
                     My Data
                 </a>
                 @if ($hasTeamAccess)
                     <a href="{{ route('employee.orders', ['view' => 'team_data']) }}"
-                       class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode === 'team_data' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-600 hover:text-neutral-900' }}">
+                       class="rounded-md px-3 py-1.5 transition-colors {{ $viewMode === 'team_data' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900' }}">
                         Team Data
                     </a>
                 @else
@@ -34,9 +34,7 @@
 
             @if ($viewMode !== 'team_data')
                 @canEmployee('orders.create')
-                    <a href="{{ route('employee.orders.create') }}" class="rounded-lg bg-neutral-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800">
-                        + Create Order
-                    </a>
+                    <a href="{{ route('employee.orders.create') }}" class="btn btn-primary btn-sm">+ Create Order</a>
                 @endcanEmployee
             @endif
         </div>
@@ -49,16 +47,16 @@
     @endif
 
     @if ($viewMode === 'team_data' && $activeGrant)
-        <div class="mt-4 rounded-lg border border-indigo-200 bg-indigo-50/70 p-3 text-xs text-indigo-900 flex items-center justify-between">
+        <div class="mt-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-900 flex items-center justify-between">
             <span>
                 <strong>Team Data Window:</strong> {{ $activeGrant->start_date->format('M d, Y') }} &rarr; {{ $activeGrant->end_date->format('M d, Y') }} (View-Only mode).
             </span>
         </div>
     @endif
 
-    <div class="mt-5 overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-xs">
+    <div class="mt-5 overflow-x-auto rounded-xl border bg-white shadow-sm">
         <table class="min-w-full text-left text-sm">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-xs uppercase tracking-wider text-neutral-500 font-semibold">
+            <thead class="border-b border-neutral-200 bg-neutral-50 text-xs uppercase text-neutral-500 font-semibold">
                 <tr>
                     <th class="px-4 py-2.5">Order</th>
                     <th class="px-4 py-2.5">Customer</th>
@@ -72,7 +70,7 @@
             </thead>
             <tbody class="divide-y divide-neutral-100 text-xs">
                 @forelse ($orders as $order)
-                    <tr class="hover:bg-neutral-50/50">
+                    <tr class="hover:bg-neutral-50">
                         <td class="px-4 py-3 font-mono font-medium">
                             <a href="{{ route('employee.orders.show', $order) }}" class="text-neutral-900 hover:underline">
                                 {{ $order->order_number }}
@@ -85,12 +83,12 @@
                         <td class="px-4 py-3 font-medium text-neutral-900">${{ number_format((float) $order->closing_value, 2) }}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold
-                                {{ $order->payment_status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                                {{ $order->payment_status === 'paid' ? 'badge-success' : 'badge-warning' }}">
                                 {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
                             </span>
                         </td>
                         <td class="px-4 py-3">
-                            <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold bg-neutral-100 text-neutral-700">
+                            <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold badge-gray">
                                 {{ ucfirst($order->order_status) }}
                             </span>
                         </td>

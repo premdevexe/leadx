@@ -1,0 +1,134 @@
+/* ============================================================
+   LeadX — Component: Dropdowns
+   ============================================================ */
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + var(--sp-1));
+    right: 0;
+    z-index: 50;
+    min-width: 12rem;
+    background: var(--c-white);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+    padding: var(--sp-1) 0;
+}
+
+.dropdown.open .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--text-sm);
+    color: var(--c-neutral-700);
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.dropdown-item:hover { background: var(--c-neutral-50); }
+.dropdown-item.danger { color: var(--c-red-600); }
+.dropdown-item.danger:hover { background: var(--c-red-50); }
+
+.dropdown-divider {
+    height: var(--border-width);
+    background: var(--border-color);
+    margin: var(--sp-1) 0;
+}
+
+.dropdown-header {
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-neutral-400);
+}
+
+/* Notification dropdown */
+.notification-dropdown {
+    min-width: 20rem;
+    max-height: 24rem;
+    overflow-y: auto;
+}
+
+.notification-dropdown-header {
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: var(--border-width) solid var(--border-color);
+    font-weight: 600;
+    font-size: var(--text-sm);
+}
+
+.notification-item {
+    display: flex;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    font-size: var(--text-sm);
+    border-bottom: var(--border-width) solid var(--border-color);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+.notification-item:last-child { border-bottom: none; }
+.notification-item:hover { background: var(--c-neutral-50); }
+.notification-item.unread { border-left: 3px solid var(--c-indigo-500); }
+
+.notification-item-icon {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background: var(--c-indigo-100);
+    color: var(--c-indigo-600);
+    font-size: var(--text-sm);
+}
+
+.notification-item-content { flex: 1; min-width: 0; }
+.notification-item-title { font-weight: 500; color: var(--c-neutral-900); }
+.notification-item-text { color: var(--c-neutral-500); font-size: var(--text-xs); margin-top: var(--sp-0.5); }
+
+.notification-dropdown-footer {
+    padding: var(--sp-2) var(--sp-4);
+    border-top: var(--border-width) solid var(--border-color);
+    text-align: center;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background: var(--c-red-500);
+    color: var(--c-white);
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--c-white);
+}
+.notification-badge.visible { display: inline-flex; }

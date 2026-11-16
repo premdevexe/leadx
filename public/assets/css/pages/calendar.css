@@ -1,0 +1,85 @@
+/* ============================================================
+   LeadX — Page: Calendar (Google)
+   ============================================================ */
+
+.calendar-layout {
+    display: grid;
+    gap: var(--sp-4);
+}
+
+@media (min-width: 1024px) {
+    .calendar-layout {
+        grid-template-columns: 1fr 320px;
+    }
+}
+
+.calendar-main {
+    background: var(--c-white);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    min-height: 28rem;
+}
+
+.calendar-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 28rem;
+    padding: var(--sp-6);
+    text-align: center;
+    color: var(--c-neutral-500);
+}
+
+.calendar-placeholder-icon {
+    font-size: 4rem;
+    margin-bottom: var(--sp-4);
+    opacity: 0.2;
+}
+
+.calendar-placeholder-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--c-neutral-700);
+    margin-bottom: var(--sp-2);
+}
+
+.calendar-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.calendar-sidebar-card {
+    background: var(--c-white);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: var(--sp-4);
+}
+
+.calendar-sidebar-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--c-neutral-900);
+    margin-bottom: var(--sp-3);
+}
+
+.google-cal-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--c-white);
+    border: var(--border-width) solid var(--c-neutral-200);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--c-neutral-700);
+    cursor: pointer;
+    width: 100%;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.google-cal-btn:hover { background: var(--c-neutral-50); border-color: var(--c-neutral-300); }

@@ -23,8 +23,8 @@
 
         <div class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Date Range</label>
-                <select name="range" id="filter-range" class="mt-1 w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Date Range</label>
+                <select name="range" id="filter-range" class="form-select mt-1 w-full text-xs">
                     <option value="">All Time</option>
                     <option value="today" @selected(($filters['range'] ?? '') === 'today')>Today</option>
                     <option value="last_7_days" @selected(($filters['range'] ?? '') === 'last_7_days')>Last 7 Days</option>
@@ -36,18 +36,18 @@
             </div>
 
             <div id="custom-start-col" class="{{ ($filters['range'] ?? '') === 'custom' || !empty($filters['start_date']) ? '' : 'hidden' }}">
-                <label class="block text-xs font-medium text-neutral-500">Start Date</label>
-                <input type="date" name="start_date" value="{{ $filters['start_date'] ?? '' }}" class="mt-1 w-full rounded-lg border border-neutral-300 px-2 py-1 text-xs focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Start Date</label>
+                <input type="date" name="start_date" value="{{ $filters['start_date'] ?? '' }}" class="form-input mt-1 w-full text-xs">
             </div>
 
             <div id="custom-end-col" class="{{ ($filters['range'] ?? '') === 'custom' || !empty($filters['start_date']) ? '' : 'hidden' }}">
-                <label class="block text-xs font-medium text-neutral-500">End Date</label>
-                <input type="date" name="end_date" value="{{ $filters['end_date'] ?? '' }}" class="mt-1 w-full rounded-lg border border-neutral-300 px-2 py-1 text-xs focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">End Date</label>
+                <input type="date" name="end_date" value="{{ $filters['end_date'] ?? '' }}" class="form-input mt-1 w-full text-xs">
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Product</label>
-                <select name="product_id" class="mt-1 w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Product</label>
+                <select name="product_id" class="form-select mt-1 w-full text-xs">
                     <option value="">All Products</option>
                     @foreach ($catalogProducts as $cp)
                         <option value="{{ $cp->id }}" @selected((string)($filters['product_id'] ?? '') === (string)$cp->id)>{{ $cp->name }}</option>
@@ -56,8 +56,8 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Team</label>
-                <select name="team_id" class="mt-1 w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Team</label>
+                <select name="team_id" class="form-select mt-1 w-full text-xs">
                     <option value="">All Teams</option>
                     @foreach ($allTeams as $tm)
                         <option value="{{ $tm->id }}" @selected((string)($filters['team_id'] ?? '') === (string)$tm->id)>{{ $tm->team_code }} - {{ $tm->team_name }}</option>
@@ -66,8 +66,8 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Employee</label>
-                <select name="employee_id" class="mt-1 w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Employee</label>
+                <select name="employee_id" class="form-select mt-1 w-full text-xs">
                     <option value="">All Employees</option>
                     @foreach ($allEmployees as $em)
                         <option value="{{ $em->id }}" @selected((string)($filters['employee_id'] ?? '') === (string)$em->id)>{{ $em->username }}</option>
@@ -76,8 +76,8 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-neutral-500">Payment Status</label>
-                <select name="payment_status" class="mt-1 w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs focus:border-neutral-500 focus:outline-none">
+                <label class="form-label">Payment Status</label>
+                <select name="payment_status" class="form-select mt-1 w-full text-xs">
                     <option value="">All Statuses</option>
                     <option value="paid" @selected(($filters['payment_status'] ?? '') === 'paid')>Paid</option>
                     <option value="partially_paid" @selected(($filters['payment_status'] ?? '') === 'partially_paid')>Partially Paid</option>
@@ -90,10 +90,10 @@
 
         <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-neutral-100 pt-3">
             <div class="flex flex-wrap items-center gap-2">
-                <button type="submit" class="rounded-lg bg-neutral-900 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-neutral-800 transition">
+                <button type="submit" class="btn btn-primary px-3.5 py-1.5 text-xs font-medium">
                     Apply Filters
                 </button>
-                <a href="{{ route('admin.reports.index', ['tab' => $tab]) }}" class="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition">
+                <a href="{{ route('admin.reports.index', ['tab' => $tab]) }}" class="btn btn-secondary px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50">
                     Reset
                 </a>
             </div>
@@ -104,7 +104,7 @@
     </form>
 
     {{-- Navigation Tabs --}}
-    <div class="mt-6 flex overflow-x-auto border-b border-neutral-200 text-sm font-medium whitespace-nowrap scrollbar-none">
+    <div class="mt-6 flex overflow-x-auto border-b border-neutral-200 text-sm font-medium whitespace-nowrap">
         <a href="{{ request()->fullUrlWithQuery(['tab' => 'overview']) }}"
            class="border-b-2 px-4 py-2.5 transition-colors {{ $tab === 'overview' ? 'border-neutral-900 text-neutral-900 font-semibold' : 'border-transparent text-neutral-500 hover:text-neutral-800' }}">
             Overview & Revenue
@@ -171,15 +171,15 @@
                         <dt class="text-xs text-neutral-500">Total Discounts</dt>
                         <dd class="mt-1 text-lg font-semibold text-neutral-700">{{ $cur }}{{ $revenue['discounts'] }}</dd>
                     </div>
-                    <div class="rounded-lg bg-emerald-50/50 p-3">
+                    <div class="rounded-lg bg-emerald-50 p-3">
                         <dt class="text-xs text-emerald-700">Collected Amount Received</dt>
                         <dd class="mt-1 text-lg font-bold text-emerald-700">{{ $cur }}{{ $revenue['amount_received'] }}</dd>
                     </div>
-                    <div class="rounded-lg bg-amber-50/50 p-3">
+                    <div class="rounded-lg bg-amber-50 p-3">
                         <dt class="text-xs text-amber-700">Pending Uncollected Balance</dt>
                         <dd class="mt-1 text-lg font-bold text-amber-700">{{ $cur }}{{ $revenue['pending_amount'] }}</dd>
                     </div>
-                    <div class="rounded-lg bg-red-50/50 p-3">
+                    <div class="rounded-lg bg-red-50 p-3">
                         <dt class="text-xs text-red-700">Deducted Refunds</dt>
                         <dd class="mt-1 text-lg font-semibold text-red-700">{{ $cur }}{{ $revenue['refunds'] }}</dd>
                     </div>
@@ -204,10 +204,10 @@
 
     {{-- Tab 2: Products --}}
     @if ($tab === 'products')
-        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full min-w-[640px] text-sm whitespace-nowrap">
+        <div class="mt-5 table-wrapper">
+            <table class="data-table w-full" style="min-width:640px">
                 <thead>
-                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                    <tr class="text-left text-xs font-medium text-neutral-500 bg-neutral-50">
                         <th class="px-4 py-3">Product Name</th>
                         <th class="px-4 py-3 text-right">Orders</th>
                         <th class="px-4 py-3 text-right">Collected Revenue</th>
@@ -218,7 +218,7 @@
                 </thead>
                 <tbody>
                     @forelse ($products as $row)
-                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                        <tr class="hover:bg-neutral-50">
                             <td class="px-4 py-3 font-medium text-neutral-900">{{ $row['product'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $row['orders'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">{{ $cur }}{{ $row['collected_revenue'] }}</td>
@@ -236,10 +236,10 @@
 
     {{-- Tab 3: Employees --}}
     @if ($tab === 'employees')
-        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full min-w-[680px] text-sm whitespace-nowrap">
+        <div class="mt-5 table-wrapper">
+            <table class="data-table w-full" style="min-width:680px">
                 <thead>
-                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                    <tr class="text-left text-xs font-medium text-neutral-500 bg-neutral-50">
                         <th class="px-4 py-3">Employee</th>
                         <th class="px-4 py-3">Team</th>
                         <th class="px-4 py-3 text-right">Orders</th>
@@ -251,7 +251,7 @@
                 </thead>
                 <tbody>
                     @forelse ($employees as $row)
-                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                        <tr class="hover:bg-neutral-50">
                             <td class="px-4 py-3">
                                 <span class="font-medium text-neutral-900">{{ $row['employee_name'] }}</span>
                                 <span class="text-xs text-neutral-400">({{ $row['username'] }})</span>
@@ -273,10 +273,10 @@
 
     {{-- Tab 4: Teams --}}
     @if ($tab === 'teams')
-        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full min-w-[760px] text-sm whitespace-nowrap">
+        <div class="mt-5 table-wrapper">
+            <table class="data-table w-full" style="min-width:760px">
                 <thead>
-                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                    <tr class="text-left text-xs font-medium text-neutral-500 bg-neutral-50">
                         <th class="px-4 py-3">Team</th>
                         <th class="px-4 py-3">Code</th>
                         <th class="px-4 py-3 text-right">Members</th>
@@ -289,7 +289,7 @@
                 </thead>
                 <tbody>
                     @forelse ($teams as $row)
-                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                        <tr class="hover:bg-neutral-50">
                             <td class="px-4 py-3 font-medium text-neutral-900">{{ $row['team_name'] }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-neutral-600">{{ $row['team_code'] }}</td>
                             <td class="px-4 py-3 text-right tabular-nums text-neutral-600">{{ $row['members_count'] }}</td>
@@ -309,10 +309,10 @@
 
     {{-- Tab 5: Orders Ledger --}}
     @if ($tab === 'orders')
-        <div class="mt-5 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
-            <table class="w-full min-w-[780px] text-sm whitespace-nowrap">
+        <div class="mt-5 table-wrapper">
+            <table class="data-table w-full" style="min-width:780px">
                 <thead>
-                    <tr class="border-b border-neutral-200 text-left text-xs font-medium text-neutral-500 bg-neutral-50">
+                    <tr class="text-left text-xs font-medium text-neutral-500 bg-neutral-50">
                         <th class="px-4 py-3">Order #</th>
                         <th class="px-4 py-3">Customer</th>
                         <th class="px-4 py-3">Team</th>
@@ -325,7 +325,7 @@
                 </thead>
                 <tbody>
                     @forelse ($orders as $order)
-                        <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50">
+                        <tr class="hover:bg-neutral-50">
                             <td class="px-4 py-3 font-mono text-xs">
                                 <a href="{{ route('admin.orders.show', $order) }}" class="text-neutral-900 hover:text-neutral-500 underline">
                                     {{ $order->order_number ?? '—' }}
@@ -337,12 +337,12 @@
                             <td class="px-4 py-3 text-right tabular-nums font-medium">{{ $cur }}{{ number_format((float)$order->closing_value, 2) }}</td>
                             <td class="px-4 py-3 text-right tabular-nums font-semibold text-emerald-700">{{ $cur }}{{ $order->verifiedPaymentTotal() }}</td>
                             <td class="px-4 py-3">
-                                <span class="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                                <span class="badge badge-neutral">
                                     {{ ucfirst(str_replace('_', ' ', $order->order_status)) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="rounded-full px-2 py-0.5 text-xs {{ $order->payment_status === 'paid' ? 'bg-emerald-50 text-emerald-700' : ($order->payment_status === 'partially_paid' ? 'bg-blue-50 text-blue-700' : 'bg-neutral-100 text-neutral-600') }}">
+                                <span class="badge {{ $order->payment_status === 'paid' ? 'badge-success' : ($order->payment_status === 'partially_paid' ? 'badge-info' : 'badge-neutral') }}">
                                     {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
                                 </span>
                             </td>
