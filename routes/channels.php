@@ -18,6 +18,12 @@ use Illuminate\Support\Facades\Broadcast;
 // model if the team web resolver is ever re-enabled) can't claim a
 // notification channel whose numeric id happens to collide with one of
 // their own.
+//
+// The `guards` option tells the framework's retrieveUser() which auth guards
+// to try, in order, so the SAME ownership check works for:
+//   - the web /broadcasting/auth path (session `employee`/`web` guards), and
+//   - the Flutter app's Bearer-token path (`sanctum` guard).
+// An employee may only ever listen to their OWN channel.
 Broadcast::channel('user.{id}.notifications', function ($user, $id) {
     return $user instanceof \App\Models\User && (int) $user->id === (int) $id;
-});
+}, ['guards' => ['employee', 'web', 'sanctum']]);

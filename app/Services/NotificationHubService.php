@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\NotificationReceived;
+use App\Jobs\SendFcmNotificationJob;
 use App\Jobs\SendWebPushNotificationJob;
 use App\Models\Payment;
 use App\Models\Refund;
@@ -41,6 +42,13 @@ class NotificationHubService
                 interests: ['employee-'.$employee->id],
                 deduplicationKey: 'order_created_emp_'.$order->id
             );
+
+            $this->sendFcmSafely($employee, 'New Order Attributed', "Order {$order->order_number} has been assigned to you.", [
+                'type' => 'order',
+                'order_id' => (string) $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'created',
+            ], 'order_created_emp_'.$order->id);
 
             $this->broadcastSafely($employee, [
                 'title' => 'New Order Attributed',
@@ -94,6 +102,19 @@ class NotificationHubService
             deduplicationKey: 'closing_decision_'.$order->id.'_'.$decision
         );
 
+        $this->sendFcmSafely(
+            $employee,
+            $this->closingValueTitle($decision),
+            $this->closingValueMessage($order, $decision, $notes),
+            [
+                'type' => 'closing_value',
+                'order_id' => (string) $order->id,
+                'order_number' => $order->order_number,
+                'action' => $decision,
+            ],
+            'closing_decision_'.$order->id.'_'.$decision
+        );
+
         $this->broadcastSafely($employee, [
             'title' => $this->closingValueTitle($decision),
             'message' => $this->closingValueMessage($order, $decision, $notes),
@@ -129,6 +150,13 @@ class NotificationHubService
                 interests: ['employee-'.$employee->id],
                 deduplicationKey: 'payment_verified_'.$payment->id
             );
+
+            $this->sendFcmSafely($employee, 'Payment Verified', "Payment of \${$payment->amount} verified for {$order->order_number}.", [
+                'type' => 'payment',
+                'order_id' => (string) $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'payment_verified',
+            ], 'payment_verified_'.$payment->id);
 
             $this->broadcastSafely($employee, [
                 'title' => 'Payment Verified',
@@ -167,6 +195,13 @@ class NotificationHubService
                 deduplicationKey: 'sub_activated_'.$subscription->id
             );
 
+            $this->sendFcmSafely($employee, 'Subscription Activated', 'Subscription for '.$order->order_number.' activated.', [
+                'type' => 'subscription',
+                'order_id' => (string) $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'subscription_activated',
+            ], 'sub_activated_'.$subscription->id);
+
             $this->broadcastSafely($employee, [
                 'title' => 'Subscription Activated',
                 'message' => "Subscription for {$order->order_number} is now active (expires {$subscription->expires_at?->toDateString()}).",
@@ -196,6 +231,13 @@ class NotificationHubService
                 order: $order,
                 action: 'expiring_soon'
             ));
+
+            $this->sendFcmSafely($employee, 'Renewal Reminder', "Order {$order->order_number} subscription expires in {$daysRemaining} days.", [
+                'type' => 'renewal',
+                'order_id' => (string) $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'expiring_soon',
+            ], 'sub_expiring_'.$subscription->id.'_'.$daysRemaining);
 
             $this->broadcastSafely($employee, [
                 'title' => 'Renewal Reminder',
@@ -228,6 +270,13 @@ class NotificationHubService
                 interests: ['employee-'.$employee->id],
                 deduplicationKey: 'order_cancelled_'.$order->id
             );
+
+            $this->sendFcmSafely($employee, 'Order Cancelled', "Order {$order->order_number} has been cancelled.", [
+                'type' => 'order',
+                'order_id' => (string) $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'cancelled',
+            ], 'order_cancelled_'.$order->id);
 
             $this->broadcastSafely($employee, [
                 'title' => 'Order Cancelled',
@@ -266,6 +315,13 @@ class NotificationHubService
                 deduplicationKey: 'refund_processed_'.$refund->id
             );
 
+            $this->sendFcmSafely($employee, 'Refund Processed', "A refund of \${$refund->amount} was processed on order {$order->order_number}.", [
+                'type' => 'refund',
+                'order_id' => (string) $order->id,
+                'order_number' => $order->order_number,
+                'action' => 'refund',
+            ], 'refund_processed_'.$refund->id);
+
             $this->broadcastSafely($employee, [
                 'title' => 'Refund Processed',
                 'message' => "A refund of \${$refund->amount} was processed on order {$order->order_number}.",
@@ -293,6 +349,27 @@ class NotificationHubService
             Log::warning('Web push notification job dispatch failed', [
                 'title' => $title,
                 'interests' => $interests,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Asynchronously push a notification to an employee's registered mobile
+     * devices over FCM. Uses the same dedup key as the web-push path so the
+     * same business event is delivered at most once across Beams + FCM.
+     *
+     * @param  \App\Models\User  $employee
+     * @param  array<string, string>  $data  navigation hints for the FCM data payload
+     */
+    protected function sendFcmSafely(\App\Models\User $employee, string $title, string $body, array $data = [], ?string $deduplicationKey = null): void
+    {
+        try {
+            SendFcmNotificationJob::dispatch($employee->id, $title, $body, $data, $deduplicationKey);
+        } catch (\Throwable $e) {
+            Log::warning('FCM notification job dispatch failed', [
+                'employee_id' => $employee->id,
+                'title' => $title,
                 'error' => $e->getMessage(),
             ]);
         }

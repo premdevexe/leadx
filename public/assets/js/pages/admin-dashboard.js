@@ -3,6 +3,7 @@
    ============================================================ */
 import { $ } from '../core/dom.js';
 import { initSidebar } from '../components/sidebar.js';
+import { initCollapsibleSections } from '../components/collapsible-sections.js';
 import { initNotificationDropdown } from '../components/notifications.js';
 import { initModals, initTriggers } from '../components/modals.js';
 import { initDropdowns } from '../components/dropdowns.js';
@@ -22,6 +23,8 @@ export function initAdminDashboard() {
         closeBtnId: 'sidebar-close-btn',
         localStorageKey: 'leadx-sidebar-desktop',
     });
+
+    initCollapsibleSections(document, { storageKey: 'leadx-admin-sections' });
 
     initNotificationDropdown({
         bellId: 'notification-bell',

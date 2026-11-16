@@ -74,9 +74,9 @@
         </div>
         <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Financials</p>
-            <p class="mt-1 text-sm">Value: {{ number_format((float) $order->product_value, 2) }}</p>
-            <p class="text-sm">Discount: {{ number_format((float) $order->discount_amount, 2) }}</p>
-            <p class="text-sm">Closing: {{ number_format((float) $order->closing_value, 2) }}</p>
+            <p class="mt-1 text-sm">Value: {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->product_value, 2) }}</p>
+            <p class="text-sm">Discount: {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->discount_amount, 2) }}</p>
+            <p class="text-sm">Closing: {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }}</p>
         </div>
         <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Status</p>
@@ -164,7 +164,7 @@
         <h2 class="text-sm font-semibold text-neutral-700">Payments</h2>
         @forelse($order->payments as $payment)
             <div class="mt-2 rounded-lg border bg-white p-3 text-sm">
-                <p>{{ number_format((float) $payment->amount, 2) }} · {{ ucfirst($payment->payment_status) }}</p>
+                <p>{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $payment->amount, 2) }} · {{ ucfirst($payment->payment_status) }}</p>
             </div>
         @empty
             <p class="mt-2 text-sm text-neutral-500">No payments recorded.</p>

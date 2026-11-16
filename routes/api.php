@@ -8,7 +8,19 @@ use App\Http\Controllers\Api\V1\Admin\ReportsController;
 use App\Http\Controllers\Api\V1\Admin\TeamsController;
 use App\Http\Controllers\Api\V1\Employee\AnalyticsController as EmployeeAnalytics;
 use App\Http\Controllers\Api\V1\Employee\AuthenticationController as EmployeeAuth;
+use App\Http\Controllers\Api\V1\Employee\CalendarController as EmployeeCalendar;
+use App\Http\Controllers\Api\V1\Employee\CustomerIssuesController as EmployeeCustomerIssues;
+use App\Http\Controllers\Api\V1\Employee\BroadcastingAuthController as EmployeeBroadcastAuth;
+use App\Http\Controllers\Api\V1\Employee\CustomersController as EmployeeCustomers;
+use App\Http\Controllers\Api\V1\Employee\DashboardController as EmployeeDashboard;
+use App\Http\Controllers\Api\V1\Employee\DevicesController as EmployeeDevices;
+use App\Http\Controllers\Api\V1\Employee\FollowUpsController as EmployeeFollowUps;
 use App\Http\Controllers\Api\V1\Employee\GoogleCalendarController;
+use App\Http\Controllers\Api\V1\Employee\NotificationsController as EmployeeNotifications;
+use App\Http\Controllers\Api\V1\Employee\OrdersController as EmployeeOrders;
+use App\Http\Controllers\Api\V1\Employee\PaymentsController as EmployeePayments;
+use App\Http\Controllers\Api\V1\Employee\ProfileController as EmployeeProfile;
+use App\Http\Controllers\Api\V1\Employee\SubscriptionsController as EmployeeSubscriptions;
 use App\Http\Controllers\Api\V1\FollowUpsController;
 use App\Http\Controllers\Api\V1\GatewayWebhookController;
 use App\Http\Controllers\Api\V1\OrderCredentialController;
@@ -77,16 +89,94 @@ Route::prefix('v1')->group(function () {
     // ---- Individual Employee ----
     Route::post('employee/login', [EmployeeAuth::class, 'login']);
 
-    Route::middleware(['auth:sanctum', 'ensure-role-active:employee'])->group(function () {
+    // log-employee-api records every employee API request (method, path,
+    // status, duration, masked ip, actor) without ever writing a secret; a
+    // log failure never breaks the request.
+    Route::middleware(['auth:sanctum', 'ensure-role-active:employee', 'log-employee-api'])->group(function () {
+        Route::get('employee/me', [EmployeeAuth::class, 'me']);
         Route::get('employee/profile', [EmployeeAuth::class, 'profile']);
         Route::get('employee/analytics', [EmployeeAnalytics::class, 'index']);
         Route::post('employee/logout', [EmployeeAuth::class, 'logout']);
+
+        // Real-time (Reverb) channel authorization for the Flutter app — the
+        // Bearer-token mirror of the web /broadcasting/auth route.
+        Route::post('employee/broadcasting/auth', [EmployeeBroadcastAuth::class, 'authenticate']);
 
         // Phase 08, Module 2: personal Google Calendar OAuth (employee only).
         // The team shared login must never be used here.
         Route::get('employee/google/calendar/connect', [GoogleCalendarController::class, 'connect']);
         Route::get('employee/google/calendar', [GoogleCalendarController::class, 'status']);
         Route::post('employee/google/calendar/disconnect', [GoogleCalendarController::class, 'disconnect']);
+
+        // ── Employee panel REST API (Flutter client) ─────────────────────
+        // Mirrors the 13 employee web pages. Reads respect the same
+        // my_data / team_data scoping as the web panel (an active admin
+        // grant gates team_data); writes are always owned by the caller.
+
+        // Dashboard (page 1)
+        Route::get('employee/dashboard', [EmployeeDashboard::class, 'index']);
+
+        // Orders (pages 12 & 2)
+        Route::get('employee/orders', [EmployeeOrders::class, 'index'])->middleware('permission:orders.view');
+        Route::post('employee/orders', [EmployeeOrders::class, 'store'])->middleware('permission:orders.create');
+        Route::get('employee/orders/{id}', [EmployeeOrders::class, 'show'])->middleware('permission:orders.view');
+        Route::post('employee/orders/{id}/complete', [EmployeeOrders::class, 'complete']);
+        Route::post('employee/orders/{id}/closing-approval/resubmit', [EmployeeOrders::class, 'resubmitClosingValue']);
+        Route::post('employee/orders/{id}/api-key/reveal', [EmployeeOrders::class, 'revealApiKey']);
+        Route::get('employee/orders/{id}/whatsapp-share', [EmployeeOrders::class, 'whatsappShare']);
+        Route::post('employee/orders/{id}/activate', [EmployeeOrders::class, 'activate']);
+
+        // Customers (page 3)
+        Route::get('employee/customers', [EmployeeCustomers::class, 'index'])->middleware('permission:customers.view');
+        Route::get('employee/customers/{id}', [EmployeeCustomers::class, 'show']);
+
+        // Payments (page 4)
+        Route::get('employee/payments', [EmployeePayments::class, 'index'])->middleware('permission:payments.view');
+        Route::get('employee/payments/{id}', [EmployeePayments::class, 'show']);
+
+        // Subscriptions (pages 5 & 7)
+        Route::get('employee/subscriptions', [EmployeeSubscriptions::class, 'index'])->middleware('permission:subscriptions.view');
+        Route::get('employee/subscriptions/expiring', [EmployeeSubscriptions::class, 'expiring'])->middleware('permission:subscriptions.view');
+        Route::get('employee/subscriptions/{id}', [EmployeeSubscriptions::class, 'show']);
+
+        // Follow-ups (page 6)
+        Route::get('employee/follow-ups', [EmployeeFollowUps::class, 'index'])->middleware('permission:follow_ups.view');
+        Route::get('employee/follow-ups/{id}', [EmployeeFollowUps::class, 'show'])->middleware('permission:follow_ups.view');
+        Route::post('employee/follow-ups', [EmployeeFollowUps::class, 'store'])->middleware('permission:follow_ups.create');
+        Route::put('employee/follow-ups/{id}', [EmployeeFollowUps::class, 'update'])->middleware('permission:follow_ups.edit');
+        Route::delete('employee/follow-ups/{id}', [EmployeeFollowUps::class, 'destroy'])->middleware('permission:follow_ups.edit');
+
+        // Notifications (page 8)
+        Route::get('employee/notifications', [EmployeeNotifications::class, 'index']);
+        Route::post('employee/notifications/read-all', [EmployeeNotifications::class, 'markAllRead']);
+        Route::post('employee/notifications/{id}/read', [EmployeeNotifications::class, 'markRead']);
+
+        // Calendar (page 9)
+        Route::get('employee/calendar', [EmployeeCalendar::class, 'index']);
+        Route::post('employee/calendar/events', [EmployeeCalendar::class, 'store']);
+        Route::put('employee/calendar/events/{id}', [EmployeeCalendar::class, 'update']);
+        Route::delete('employee/calendar/events/{id}', [EmployeeCalendar::class, 'destroy']);
+        Route::post('employee/calendar/sync', [EmployeeCalendar::class, 'sync']);
+        Route::get('employee/calendar/connect', [EmployeeCalendar::class, 'connect']);
+
+        // Profile (page 10): GET is owned by the dedicated ProfileController
+        // (returns the same identity document as GET /employee/me's data);
+        // PUT self-service updates name/phone/email or the password.
+        Route::put('employee/profile', [EmployeeProfile::class, 'update']);
+
+        // Customer issues (page 11)
+        Route::get('employee/customer-issues', [EmployeeCustomerIssues::class, 'index']);
+        Route::post('employee/customer-issues', [EmployeeCustomerIssues::class, 'store']);
+        Route::get('employee/customer-issues/{id}', [EmployeeCustomerIssues::class, 'show']);
+        Route::put('employee/customer-issues/{id}', [EmployeeCustomerIssues::class, 'update']);
+
+        // FCM device registration (mobile push). The caller can only manage
+        // their own registered devices — every mutation is scoped to the
+        // token's owning employee.
+        Route::get('employee/devices', [EmployeeDevices::class, 'index']);
+        Route::post('employee/devices/register', [EmployeeDevices::class, 'register']);
+        Route::post('employee/devices/token-refresh', [EmployeeDevices::class, 'tokenRefresh']);
+        Route::delete('employee/devices/unregister', [EmployeeDevices::class, 'unregister']);
     });
 
     // Phase 08, Module 2: OAuth callback is a top-level browser navigation

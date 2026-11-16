@@ -33,11 +33,46 @@ class AuthenticationController extends Controller
     }
 
     /**
+     * GET /api/v1/employee/me
+     *
+     * The caller's identity plus the flags a client needs to decide what to
+     * show — team, active team-data grant, and the permission set the web
+     * panel gates its menu on. (Profile details are also at GET
+     * /employee/profile, which returns the same identity document.)
+     */
+    public function me(Request $request): JsonResponse
+    {
+        /** @var \App\Models\User $employee */
+        $employee = $request->user('sanctum');
+        $employee->loadMissing(['team', 'preset']);
+
+        return response()->json([
+            'data' => new EmployeeResource($employee),
+            'has_team_data_access' => $employee->hasActiveTeamAccess(),
+            'permissions' => [
+                'orders.view' => $employee->hasPermission('orders.view'),
+                'orders.create' => $employee->hasPermission('orders.create'),
+                'orders.complete' => $employee->hasPermission('orders.complete'),
+                'customers.view' => $employee->hasPermission('customers.view'),
+                'payments.view' => $employee->hasPermission('payments.view'),
+                'subscriptions.view' => $employee->hasPermission('subscriptions.view'),
+                'follow_ups.view' => $employee->hasPermission('follow_ups.view'),
+                'follow_ups.create' => $employee->hasPermission('follow_ups.create'),
+                'follow_ups.edit' => $employee->hasPermission('follow_ups.edit'),
+            ],
+        ]);
+    }
+
+    /**
      * GET /api/v1/employee/profile
      */
     public function profile(Request $request): JsonResponse
     {
-        return (new EmployeeResource($request->user('sanctum')))->response();
+        /** @var \App\Models\User $employee */
+        $employee = $request->user('sanctum');
+        $employee->loadMissing(['team', 'preset']);
+
+        return (new EmployeeResource($employee))->response();
     }
 
     /**

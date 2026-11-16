@@ -48,4 +48,25 @@ return [
         'server_key' => env('PUSHER_SERVER_KEY'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Firebase Cloud Messaging (Flutter employee app)
+    |--------------------------------------------------------------------------
+    |
+    | Server-side FCM for the mobile employee app. The service-account JSON is
+    | referenced by a FILE PATH kept on the server (never in the repo / .env):
+    |
+    |   FCM_CREDENTIALS_PATH=/etc/leadx/firebase/leadx-eb5c5-firebaseadmin.json
+    |
+    | Only the file path and project id go in .env; the private key stays in
+    | the referenced file. FcmService::isConfigured() is false until that file
+    | exists, so the whole FCM path degrades silently when unset.
+    */
+    'fcm' => [
+        'project_id' => env('FCM_PROJECT_ID', 'leadx-eb5c5'),
+        'credentials_path' => env('FCM_CREDENTIALS_PATH'),
+        // Android notification channel id used for mobile delivery.
+        'android_channel_id' => env('FCM_ANDROID_CHANNEL_ID', 'leadx_general'),
+    ],
+
 ];

@@ -77,17 +77,30 @@
                     @endphp
 
                     @foreach($sections as $sectionTitle => $items)
-                        <div class="sidebar-section mb-3">
-                            <p class="sidebar-section-title px-3 text-2xs uppercase tracking-wider text-neutral-400 font-semibold mb-1">{{ $sectionTitle }}</p>
-                            <div class="sidebar-menu space-y-0.5">
-                                @foreach ($items as $item)
-                                    <a href="{{ route($item['route']) }}"
-                                       @if(request()->routeIs($item['match'])) aria-current="page" @endif
-                                       class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors {{ request()->routeIs($item['match']) ? 'active bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900' }}">
-                                        {!! $item['icon'] !!}
-                                        <span>{{ $item['label'] }}</span>
-                                    </a>
-                                @endforeach
+                        @php $sectionKey = \Illuminate\Support\Str::slug($sectionTitle, '-'); @endphp
+                        <div class="sidebar-section mb-3" data-collapsible data-section-key="{{ $sectionKey }}">
+                            <button type="button"
+                                    class="sidebar-section-title"
+                                    data-section-toggle
+                                    aria-expanded="true"
+                                    aria-controls="sidebar-section-{{ $sectionKey }}">
+                                <span class="sidebar-section-label">{{ $sectionTitle }}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                     stroke="currentColor" class="sidebar-section-chevron w-4 h-4" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </button>
+                            <div class="sidebar-section-body" data-section-body>
+                                <div id="sidebar-section-{{ $sectionKey }}" class="sidebar-menu space-y-0.5">
+                                    @foreach ($items as $item)
+                                            <a href="{{ route($item['route']) }}"
+                                               @if(request()->routeIs($item['match'])) aria-current="page" @endif
+                                               class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors {{ request()->routeIs($item['match']) ? 'active bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900' }}">
+                                                {!! $item['icon'] !!}
+                                                <span>{{ $item['label'] }}</span>
+                                            </a>
+                                        @endforeach
+                                </div>
                             </div>
                         </div>
                     @endforeach

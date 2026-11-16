@@ -119,7 +119,7 @@ class PermissionSeeder extends Seeder
             'dashboard.orders_count', 'dashboard.active_subscriptions', 'dashboard.expiring_soon',
             'dashboard.total_revenue', 'dashboard.recent_orders', 'dashboard.upcoming_renewals',
             'sidebar.dashboard', 'sidebar.create_order', 'sidebar.orders', 'sidebar.customers',
-            'sidebar.payments', 'sidebar.subscriptions', 'sidebar.follow_ups', 'sidebar.notifications',
+            'sidebar.payments', 'sidebar.subscriptions', 'sidebar.follow_ups', 'sidebar.notifications', 'sidebar.reports',
         ];
         foreach ($permissionModels as $name => $perm) {
             PermissionPresetItem::updateOrCreate(

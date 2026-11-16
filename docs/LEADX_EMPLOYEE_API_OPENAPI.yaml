@@ -1,0 +1,619 @@
+openapi: 3.0.3
+info:
+  title: LeadX Employee Panel REST API
+  version: 1.0.0
+  description: >
+    Versioned REST API (v1) that mirrors the 13-page LeadX employee web panel
+    for the LeadX Flutter Android application. All employee routes are under
+    the /api/v1/employee prefix, are Sanctum-token authenticated, scoped to
+    the individual employee who owns the token, and enforce the same
+    my_data/team_data data-ownership rules as the web panel. Admin endpoints
+    live under /api/v1/admin and are strictly separate.
+
+servers:
+  - url: https://yourdomain.com/api/v1
+    description: LeadX API (production)
+  - url: http://localhost:8000/api/v1
+    description: LeadX API (local development)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+    description: Employee authentication (login/logout/me)
+  - name: dashboard
+    description: Employee dashboard widgets (page: employee/dashboard)
+  - name: orders
+    description: Orders (pages: employee/orders, employee/orders/create)
+  - name: customers
+    description: CRM customers (page: employee/customers)
+  - name: payments
+    description: Payments (page: employee/payments)
+  - name: subscriptions
+    description: Subscriptions (pages: employee/subscriptions, expiring)
+  - name: follow-ups
+    description: Customer follow-ups (page: employee/follow-ups)
+  - name: notifications
+    description: Notifications hub (page: employee/notifications)
+  - name: calendar
+    description: Personal Google Calendar (page: employee/calendar)
+  - name: profile
+    description: Profile (page: employee/profile)
+  - name: customer-issues
+    description: CRM customer issues (page: employee/customer-issues)
+
+paths:
+  /employee/login:
+    post:
+      tags: [auth]
+      operationId: employeeLogin
+      security: []
+      summary: Authenticate an employee and receive a Sanctum Bearer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login: { type: string, example: jane.doe }
+                password: { type: string, example: S3cret! }
+      responses:
+        "200":
+          description: Bearer token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token_type: { type: string, example: Bearer }
+                  token: { type: string, example: 1|abc123... }
+        "422":
+          description: Invalid credentials, inactive account, non-employee, or rate-limited
+
+  /employee/logout:
+    post:
+      tags: [auth]
+      operationId: employeeLogout
+      summary: Revoke the current token
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: Logged out. }
+
+  /employee/me:
+    get:
+      tags: [auth]
+      operationId: employeeMe
+      summary: Identity + permission flags for UI gating
+      responses:
+        "200":
+          description: The caller's profile, team-data access, and permission booleans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Employee" }
+                  has_team_data_access: { type: boolean }
+                  permissions:
+                    type: object
+                    additionalProperties: { type: boolean }
+
+  /employee/dashboard:
+    get:
+      tags: [dashboard]
+      operationId: employeeDashboard
+      summary: Full dashboard widget set (summary cards, recents, 6-month chart)
+      parameters:
+        - $ref: "#/components/parameters/View"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Dashboard data. meta.warning is set when team_data downgrades.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta: { type: object }
+                  summary: { type: object }
+                  recent_orders: { type: object }
+                  recent_follow_ups: { type: object }
+                  expiring_subscriptions: { type: object }
+                  recent_notifications: { type: array }
+                  monthly_sales_chart: { type: array }
+
+  /employee/orders:
+    get:
+      tags: [orders]
+      operationId: employeeOrdersList
+      summary: Paginated orders, scoped per view
+      parameters:
+        - $ref: "#/components/parameters/View"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Page"
+      responses:
+        "200": { $ref: "#/components/responses/PaginatedOrders" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [orders]
+      operationId: employeeOrderCreate
+      summary: Create an order under the caller's own team (assigned to the caller)
+      responses:
+        "201":
+          description: Created order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Order" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422":
+          description: Validation error (missing team, foreign team_id, floor price, ...)
+
+  /employee/orders/{id}:
+    get:
+      tags: [orders]
+      operationId: employeeOrderShow
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/View"
+      responses:
+        "200":
+          description: Order detail + api_key_status + whatsapp_share + view_only flag
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Order" }
+                  view_only: { type: boolean }
+                  api_key_status: { type: object }
+                  whatsapp_share: { type: object }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422":
+          description: Not found or not accessible
+
+  /employee/orders/{id}/complete:
+    post:
+      tags: [orders]
+      summary: Confirm a completed order (permission: orders.complete; owner only)
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      responses:
+        "200": { description: Order confirmed (subscription activated when policy is met) }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { description: Pending closing approval, missing required key, or not owned }
+
+  /employee/orders/{id}/closing-approval/resubmit:
+    post:
+      tags: [orders]
+      summary: Resubmit a rejected closing value for admin re-approval
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [closing_value]
+              properties:
+                closing_value: { type: number }
+                resubmission_notes: { type: string, maxLength: 1000 }
+      responses:
+        "200": { description: Resubmitted (closing_value_status = Requested) }
+        "422": { description: Below the minimum floor price, or not owned }
+
+  /employee/orders/{id}/api-key/reveal:
+    post:
+      tags: [orders]
+      summary: Reveal the stored customer API key (owner + orders.view_api_key; never logged)
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      responses:
+        "200":
+          description: The plaintext key for this order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order_id: { type: integer }
+                  order_number: { type: string }
+                  api_key: { type: string }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { description: No key stored, or not owned }
+
+  /employee/orders/{id}/whatsapp-share:
+    get:
+      tags: [orders]
+      summary: Prefilled WhatsApp share URL for the order (opt-in key inclusion)
+      parameters:
+        - { $ref: "#/components/parameters/Id" }
+        - { in: query, name: include_api_key, schema: { type: boolean, default: false } }
+      responses:
+        "200": { description: Eligibility + click-to-chat URL (the server never sends the message) }
+
+  /employee/orders/{id}/activate:
+    post:
+      tags: [orders]
+      summary: Activate the subscription when verified payments satisfy policy (idempotent)
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      responses:
+        "200": { description: Order resource with subscription attached }
+        "422": { description: Payment policy not satisfied }
+
+  /employee/customers:
+    get:
+      tags: [customers]
+      summary: CRM customers reachable via the employee's orders (per view)
+      parameters:
+        - { $ref: "#/components/parameters/View" }
+        - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
+      responses:
+        "200":
+          description: Paginated customers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta: { type: object }
+                  data: { type: array, items: { $ref: "#/components/schemas/Customer" } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /employee/customers/{id}:
+    get:
+      tags: [customers]
+      summary: Customer detail (only when in scope)
+      parameters: [ { $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/View" } ]
+      responses:
+        "200": { description: Customer detail }
+        "422": { description: Not found or not accessible }
+
+  /employee/payments:
+    get:
+      tags: [payments]
+      summary: Payments on the employee's orders (per view)
+      parameters:
+        - { $ref: "#/components/parameters/View" }
+        - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
+      responses:
+        "200": { description: Paginated payments }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /employee/payments/{id}:
+    get:
+      tags: [payments]
+      summary: Payment detail (only when the order is in scope)
+      parameters: [ { $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/View" } ]
+      responses:
+        "200": { description: Payment detail }
+        "422": { description: Not found or not accessible }
+
+  /employee/subscriptions:
+    get:
+      tags: [subscriptions]
+      summary: Subscriptions for the employee's orders (filter by status)
+      parameters:
+        - { $ref: "#/components/parameters/View" }
+        - { in: query, name: status, schema: { type: string, enum: [pending, active, expired, suspended, cancelled] } }
+        - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
+      responses:
+        "200": { description: Paginated subscriptions }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /employee/subscriptions/expiring:
+    get:
+      tags: [subscriptions]
+      summary: Active subscriptions expiring within 30 days
+      parameters:
+        - { $ref: "#/components/parameters/View" }
+        - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
+      responses:
+        "200": { description: Expiring subscriptions ordered by expires_at }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /employee/subscriptions/{id}:
+    get:
+      tags: [subscriptions]
+      summary: Subscription detail (only when in scope)
+      parameters: [ { $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/View" } ]
+      responses:
+        "200": { description: Subscription detail }
+        "422": { description: Not found or not accessible }
+
+  /employee/follow-ups:
+    get:
+      tags: [follow-ups]
+      summary: Follow-ups assigned to the employee (filters: status, customer_id, follow_up_type)
+      parameters:
+        - { in: query, name: status, schema: { type: string, enum: [scheduled, completed, rescheduled, cancelled, overdue] } }
+        - { in: query, name: customer_id, schema: { type: integer } }
+        - { in: query, name: follow_up_type, schema: { type: string } }
+        - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
+      responses:
+        "200": { description: Paginated follow-ups + open_count }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [follow-ups]
+      summary: Schedule a follow-up (verified customer of the employee; optional Google sync)
+      responses:
+        "201": { description: Created follow-up }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { description: Customer not verified / not in the employee's picker set }
+
+  /employee/follow-ups/{id}:
+    get:
+      tags: [follow-ups]
+      summary: Follow-up detail + history + can_manage
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      responses:
+        "200": { description: Follow-up detail }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { description: Not found or not accessible }
+    put:
+      tags: [follow-ups]
+      summary: Body-driven state command — { action: complete | reschedule | cancel }
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [complete, reschedule, cancel] }
+                outcome: { type: string, maxLength: 4000 }
+                notes: { type: string, maxLength: 2000 }
+                scheduled_at: { type: string, format: date-time, description: required for reschedule }
+                next_follow_up_at: { type: string, format: date-time }
+      responses:
+        "200": { description: Updated follow-up }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { description: Unknown action / not owned / cancelled-follow-up command }
+    delete:
+      tags: [follow-ups]
+      summary: Managed cancel (history is retained; never a hard delete)
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      responses:
+        "200": { description: Follow-up cancelled }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Not found or not owned }
+
+  /employee/notifications:
+    get:
+      tags: [notifications]
+      summary: Database notifications for the employee (unread_count in meta)
+      parameters:
+        - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
+      responses:
+        "200": { description: Paginated notifications }
+
+  /employee/notifications/{id}/read:
+    post:
+      tags: [notifications]
+      summary: Mark one notification read (the id is a UUID)
+      parameters: [ { in: path, name: id, schema: { type: string } } ]
+      responses:
+        "200": { description: Notification serialized with read_at set }
+        "422": { description: Not found or not accessible }
+
+  /employee/notifications/read-all:
+    post:
+      tags: [notifications]
+      summary: Mark every unread notification read
+      responses:
+        "200": { description: "All notifications marked read (N unread)." }
+
+  /employee/calendar:
+    get:
+      tags: [calendar]
+      summary: Google connection status + the employee's personal calendar events
+      responses:
+        "200": { description: Connection state (never exposes tokens) + events }
+
+  /employee/calendar/events:
+    post:
+      tags: [calendar]
+      summary: Create a personal calendar event (201 even when the remote write is pending; /sync retries)
+      responses:
+        "201": { description: Event created locally; meta.synced indicates Google confirmation }
+        "422": { description: Validation error }
+
+  /employee/calendar/events/{id}:
+    put:
+      tags: [calendar]
+      summary: Update one's own event (idempotent remote patch; creates the remote event when missing)
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      responses:
+        "200": { description: Updated }
+        "404": { description: Not found or not owned }
+    delete:
+      tags: [calendar]
+      summary: Delete one's own event (remote delete + local row marked deleted)
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      responses:
+        "200": { description: Deleted }
+        "404": { description: Not found or not owned }
+
+  /employee/calendar/sync:
+    post:
+      tags: [calendar]
+      summary: Retry the employee's pending / errored calendar writes (idempotent)
+      responses:
+        "200": { description: "meta: { events_synced, retried, failed, connected }" }
+
+  /employee/calendar/connect:
+    get:
+      tags: [calendar]
+      summary: Start the personal Google OAuth flow (reuses the shared integration)
+      responses:
+        "200": { description: "url + state + redirect_uri for the browser/webview" }
+        "503": { description: Google Calendar not configured on this server }
+
+  /employee/profile:
+    get:
+      tags: [profile]
+      summary: Identity document (same data as /me data block)
+      responses:
+        "200": { description: Employee profile resource }
+    put:
+      tags: [profile]
+      summary: Update contact fields and/or password (never role/team/preset/status)
+      responses:
+        "200": { description: Updated; a password change revokes all other tokens }
+        "422": { description: Validation error / no updatable fields }
+
+  /employee/customer-issues:
+    get:
+      tags: [customer-issues]
+      summary: The employee's issues with summary counts (search, status, date filters)
+      parameters:
+        - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: status, schema: { type: string, enum: [still_facing, fixed] } }
+        - { in: query, name: date_from, schema: { type: string, format: date } }
+        - { in: query, name: date_to, schema: { type: string, format: date } }
+        - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Page" }
+      responses:
+        "200": { description: Paginated issues + total/fixed/still_facing/customers_affected }
+    post:
+      tags: [customer-issues]
+      summary: Report an issue for one of the employee's authorized customers
+      responses:
+        "201": { description: Created issue (status defaults to still_facing) }
+        "422": { description: Customer not authorized for the employee }
+
+  /employee/customer-issues/{id}:
+    get:
+      tags: [customer-issues]
+      summary: Issue detail (owner only)
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      responses:
+        "200": { description: Issue detail with history }
+        "422": { description: Not owned }
+    put:
+      tags: [customer-issues]
+      summary: Update issue fields / status (owner only; status changes are history-tracked)
+      parameters: [ { $ref: "#/components/parameters/Id" } ]
+      responses:
+        "200": { description: Updated issue }
+        "422": { description: Not owned / invalid status }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum
+
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer }
+    View:
+      in: query
+      name: view
+      schema: { type: string, enum: [my_data, team_data], default: my_data }
+      description: >
+        my_data = records owned by the employee. team_data = team records
+        within the employee's ACTIVE admin grant window; without a grant the
+        view silently downgrades to my_data and meta.warning explains it.
+    PerPage:
+      in: query
+      name: per_page
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Page:
+      in: query
+      name: page
+      schema: { type: integer, minimum: 1 }
+
+  responses:
+    Forbidden:
+      description: Permission missing (403) or role mismatch (team/admin token on employee routes)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string, example: "Forbidden: Missing permission [orders.view]." }
+    PaginatedOrders:
+      description: Paginated orders
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              meta:
+                type: object
+                properties:
+                  view: { type: string }
+                  warning: { type: [string, "null"] }
+                  current_page: { type: integer }
+                  last_page: { type: integer }
+                  per_page: { type: integer }
+                  total: { type: integer }
+              data:
+                type: array
+                items: { $ref: "#/components/schemas/Order" }
+
+  schemas:
+    Employee:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        username: { type: string }
+        email: { type: string }
+        phone: { type: [string, "null"] }
+        role: { type: string, example: employee }
+        status: { type: string, example: active }
+        team: { $ref: "#/components/schemas/TeamSummary" }
+        created_at: { type: string, format: date-time }
+    TeamSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        team_code: { type: string }
+        team_name: { type: string }
+    Order:
+      type: object
+      properties:
+        id: { type: integer }
+        order_number: { type: string }
+        team_id: { type: integer }
+        customer_name: { type: string }
+        customer_phone: { type: [string, "null"] }
+        closing_value: { type: number }
+        payment_status: { type: string }
+        order_status: { type: string }
+        subscription: { type: object }
+        created_at: { type: string, format: date-time }
+    Customer:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        status: { type: string }
+        team_id: { type: [integer, "null"] }
+        purchases_count: { type: integer }
+        total_purchased: { type: number }

@@ -14,12 +14,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', \App\Http\Middleware\CheckInstallation::class);
+        $middleware->appendToGroup('api', \App\Http\Middleware\EnforceApiSettingsAndLog::class);
         $middleware->alias([
             'admin' => \App\Http\Middleware\AuthenticateAdmin::class,
             'ensure-role-active' => \App\Http\Middleware\EnsureRoleActive::class,
             'team.web' => \App\Http\Middleware\AuthenticateTeamWeb::class,
             'employee.web' => \App\Http\Middleware\AuthenticateEmployeeWeb::class,
             'permission' => \App\Http\Middleware\EnsureEmployeePermission::class,
+            'log-employee-api' => \App\Http\Middleware\LogEmployeeApiRequest::class,
+            'api.manage' => \App\Http\Middleware\EnforceApiSettingsAndLog::class,
         ]);
     })
     ->withCommands()

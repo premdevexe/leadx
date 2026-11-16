@@ -11,7 +11,12 @@ return [
     | framework when an event needs to be broadcast. You may set this to
     | any of the connections defined in the "connections" array below.
     |
-    | Supported: "pusher", "ably", "redis", "log", "null"
+    | Supported: "reverb", "pusher", "ably", "redis", "log", "null"
+    |
+    | "reverb" (Laravel Reverb, the recommended driver) publishes to a local
+    | or remote Reverb server (run: php artisan reverb). "log"/"null" keep
+    | broadcasts no-op so the app runs with no websocket server at all — the
+    | Flutter app degrades to polling in that case.
     |
     */
 
@@ -24,6 +29,18 @@ return [
     */
 
     'connections' => [
+
+        'reverb' => [
+            'driver' => 'reverb',
+            'key' => env('REVERB_APP_KEY'),
+            'secret' => env('REVERB_APP_SECRET'),
+            'app_id' => env('REVERB_APP_ID'),
+            'host' => env('REVERB_HOST'),
+            'port' => env('REVERB_PORT', 8080),
+            'scheme' => env('REVERB_SCHEME', 'http'),
+            'useTLS' => env('REVERB_SCHEME', 'http') === 'https',
+            'allowOrigin' => env('REVERB_ALLOW_ORIGIN', '*'),
+        ],
 
         'pusher' => [
             'driver' => 'pusher',

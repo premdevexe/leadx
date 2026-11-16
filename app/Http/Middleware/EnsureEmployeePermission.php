@@ -17,9 +17,14 @@ class EnsureEmployeePermission
      */
     public function handle(Request $request, Closure $next, string $permission): mixed
     {
-        $user = auth()->guard('employee')->user() ?? auth()->user();
+        // Web (session employee guard / default guard) OR API (Sanctum token
+        // belonging to an individual employee). A team or admin token never
+        // satisfies an employee-permission gate.
+        $user = $request->user('sanctum') ?? auth()->guard('employee')->user() ?? auth()->user();
 
-        if (! $user || ! $this->permissionService->hasPermission($user, $permission)) {
+        if (! $user instanceof \App\Models\User
+            || ! $this->permissionService->hasPermission($user, $permission)
+        ) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => "Forbidden: Missing permission [{$permission}]."], 403);
             }

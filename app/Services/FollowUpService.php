@@ -316,7 +316,9 @@ class FollowUpService
         }
 
         $followUp->forceFill(['status' => 'cancelled'])->save();
-        $this->recordHistory($followUp, 'cancelled', $actor, $notes);
+        // A cancel records no new scheduled_at (the row keeps its original
+        // history), so pass null explicitly for recordHistory's 5th arg.
+        $this->recordHistory($followUp, 'cancelled', $actor, $notes, null);
         $this->calendar->syncCancel($followUp, $this->syncTarget($followUp, $actor));
 
         return $followUp->fresh();

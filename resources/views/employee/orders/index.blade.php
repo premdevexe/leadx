@@ -80,7 +80,7 @@
                         @if ($viewMode === 'team_data')
                             <td class="px-4 py-3 text-neutral-600">{{ $order->assignedEmployee?->name ?? 'Unassigned' }}</td>
                         @endif
-                        <td class="px-4 py-3 font-medium text-neutral-900">${{ number_format((float) $order->closing_value, 2) }}</td>
+                        <td class="px-4 py-3 font-medium text-neutral-900">{{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $order->closing_value, 2) }}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold
                                 {{ $order->payment_status === 'paid' ? 'badge-success' : 'badge-warning' }}">
