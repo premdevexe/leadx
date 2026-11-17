@@ -62,10 +62,11 @@ class EnforceApiSettingsAndLog
             ], 403);
         }
 
-        // 4. Rate Limiting
+        // 4. Rate Limiting (per-user for authenticated app requests; per-IP for unauthenticated)
         if ($app->rate_limit_per_minute > 0) {
-            $clientIp = $request->ip() ?: 'unknown';
-            $rateKey = 'leadx_api_rate:' . md5($clientIp);
+            $user = $request->user('sanctum');
+            $rateIdentifier = $user ? 'user_' . $user->getAuthIdentifier() : ($request->ip() ?: 'unknown');
+            $rateKey = 'leadx_api_rate:' . md5($rateIdentifier);
             $currentHits = (int) Cache::get($rateKey, 0);
 
             if ($currentHits >= $app->rate_limit_per_minute) {

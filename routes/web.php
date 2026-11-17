@@ -64,19 +64,21 @@ Route::prefix('install')->name('install.')->middleware('guest')->group(function 
 // ── Application Routes ──────────────────────────────────────
 
 Route::get('/', function () {
-    if (auth()->guard('admin')->check()) {
-        return redirect()->route('admin.dashboard');
-    }
-    if (auth()->guard('employee')->check() || (auth()->check() && auth()->user()->role === 'employee')) {
+    // Normal root route (/) is dedicated to the Employee portal.
+    // If authenticated as an active employee, go to employee dashboard.
+    // Otherwise, redirect to the Employee login screen.
+    // (Admins access their portal via /admin or /admin/login)
+    if (auth()->guard('employee')->check() || (auth()->check() && auth()->user()?->role === 'employee')) {
         return redirect()->route('employee.dashboard');
     }
-    return auth()->check()
-        ? redirect()->route('dashboard')
-        : redirect()->route('login');
+
+    return redirect()->route('employee.login');
 });
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::get('/login', function () {
+        return redirect()->route('employee.login');
+    })->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
 });
 
@@ -96,6 +98,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 });
 
+// ---- Public customer-facing order share links (unauthenticated) ----
+// The 40-char URL token is the entire credential. Rate limits keep a leaked
+// token from being hammered for the optional API-key reveal; the token
+// space (240 bits) makes blind enumeration infeasible.
+Route::middleware(['throttle:public-order-view'])->group(function () {
+    Route::get('/public/orders/{token}', [\App\Http\Controllers\Public\OrdersController::class, 'show'])->name('public.orders.show');
+});
+Route::post('/public/orders/{token}/api-key/reveal', [\App\Http\Controllers\Public\OrdersController::class, 'revealApiKey'])
+    ->name('public.orders.api-key.reveal')
+    ->middleware(['throttle:public-order-reveal']);
+
 // Broadcast auth routes (POST /broadcasting/auth, GET /broadcasting/auth).
 // Employee authentication goes through the employee guard, so we protect
 // the broadcast endpoint with the employee.web middleware and a dedicated
@@ -111,11 +124,15 @@ Route::middleware('guest:admin')->group(function () {
     Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.attempt');
 });
 
-Route::middleware('admin')->group(function () {
-    Route::get('/admin', function () {
+Route::get('/admin', function () {
+    if (auth()->guard('admin')->check()) {
         return redirect()->route('admin.dashboard');
-    })->name('admin');
+    }
 
+    return redirect()->route('admin.login');
+})->name('admin');
+
+Route::middleware('admin')->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::post('/admin/dashboard/preferences', [DashboardController::class, 'savePreferences'])->name('admin.dashboard.preferences.save');
     Route::post('/admin/dashboard/preferences/reset', [DashboardController::class, 'resetPreferences'])->name('admin.dashboard.preferences.reset');
@@ -147,6 +164,10 @@ Route::middleware('admin')->group(function () {
     Route::put('/admin/orders/{order}', [OrdersController::class, 'update'])->name('admin.orders.update');
     Route::put('/admin/orders/{order}/activate', [OrdersController::class, 'activate'])->name('admin.orders.activate');
     Route::post('/admin/orders/{order}/whatsapp-share-log', [OrdersController::class, 'recordWhatsappShareLog'])->name('admin.orders.whatsapp-log');
+
+    // Public customer share link (unauthenticated, token-protected)
+    Route::post('/admin/orders/{order}/public-share', [OrdersController::class, 'publicOrderShare'])->name('admin.orders.public-share.store');
+    Route::post('/admin/orders/{order}/public-share/revoke', [OrdersController::class, 'publicOrderShareRevoke'])->name('admin.orders.public-share.revoke');
 
     // Order delivery: the customer's own API key, stored per order.
     // Status is rendered on the order detail page; store/reveal are the only
@@ -291,6 +312,8 @@ Route::middleware('team.web')->group(function () {
     Route::get('/team/orders/create', [TeamCreateOrderController::class, 'create'])->name('team.orders.create');
     Route::post('/team/orders', [TeamCreateOrderController::class, 'store'])->name('team.orders.store');
     Route::get('/team/orders/{order}', [TeamOrdersController::class, 'show'])->name('team.orders.show');
+    Route::post('/team/orders/{order}/public-share', [TeamOrdersController::class, 'publicOrderShare'])->name('team.orders.public-share.store');
+    Route::post('/team/orders/{order}/public-share/revoke', [TeamOrdersController::class, 'publicOrderShareRevoke'])->name('team.orders.public-share.revoke');
     Route::get('/team/customers', [TeamCustomersController::class, 'index'])->name('team.customers');
     Route::get('/team/payments', [TeamPaymentsController::class, 'index'])->name('team.payments');
     Route::get('/team/subscriptions', [TeamSubscriptionsController::class, 'index'])->name('team.subscriptions');
@@ -347,6 +370,10 @@ Route::middleware('employee.web')->group(function () {
     });
     Route::post('/employee/orders/{order}/api-key', [EmployeeOrdersController::class, 'storeApiKey'])->name('employee.orders.api-key.store');
     Route::post('/employee/orders/{order}/api-key/reveal', [EmployeeOrdersController::class, 'revealApiKey'])->name('employee.orders.api-key.reveal');
+
+    // Public customer share link (unauthenticated, token-protected)
+    Route::post('/employee/orders/{order}/public-share', [EmployeeOrdersController::class, 'publicOrderShare'])->name('employee.orders.public-share.store');
+    Route::post('/employee/orders/{order}/public-share/revoke', [EmployeeOrdersController::class, 'publicOrderShareRevoke'])->name('employee.orders.public-share.revoke');
     Route::get('/employee/customers', [EmployeeCustomersController::class, 'index'])->name('employee.customers')->middleware('permission:customers.view');
     Route::get('/employee/payments', [EmployeePaymentsController::class, 'index'])->name('employee.payments')->middleware('permission:payments.view');
     Route::get('/employee/subscriptions', [EmployeeSubscriptionsController::class, 'index'])->name('employee.subscriptions')->middleware('permission:subscriptions.view');

@@ -62,4 +62,51 @@ class AuditLogPolymorphicActorTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('System');
     }
+
+    public function test_root_slug_redirects_to_employee_login_for_unauthenticated_visitors(): void
+    {
+        $response = $this->get('/');
+        $response->assertRedirect(route('employee.login'));
+    }
+
+    public function test_root_slug_redirects_to_employee_dashboard_when_logged_in_as_employee(): void
+    {
+        $team = \App\Models\Team::factory()->create();
+        $employee = \App\Models\User::factory()->create(['team_id' => $team->id, 'role' => 'employee']);
+
+        $response = $this->actingAs($employee, 'employee')->get('/');
+        $response->assertRedirect(route('employee.dashboard'));
+    }
+
+    public function test_root_slug_does_not_redirect_to_admin_even_if_admin_is_authenticated(): void
+    {
+        $admin = Admin::create([
+            'name' => 'Admin User',
+            'username' => 'adminuser',
+            'email' => 'adminuser@leadx.com',
+            'password' => bcrypt('password123'),
+            'role' => 'admin',
+        ]);
+
+        // When logged in as admin, visiting / must NOT redirect to admin dashboard; it directs to employee login
+        $response = $this->actingAs($admin, 'admin')->get('/');
+        $response->assertRedirect(route('employee.login'));
+    }
+
+    public function test_admin_slug_redirects_to_admin_dashboard_when_authenticated_and_admin_login_when_guest(): void
+    {
+        // Unauthenticated visitor to /admin
+        $this->get('/admin')->assertRedirect(route('admin.login'));
+
+        // Authenticated admin to /admin
+        $admin = Admin::create([
+            'name' => 'Admin User 2',
+            'username' => 'adminuser2',
+            'email' => 'adminuser2@leadx.com',
+            'password' => bcrypt('password123'),
+            'role' => 'admin',
+        ]);
+
+        $this->actingAs($admin, 'admin')->get('/admin')->assertRedirect(route('admin.dashboard'));
+    }
 }
