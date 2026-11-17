@@ -54,6 +54,18 @@
     object-fit: contain;
 }
 
+/* Standalone login pages: larger brand mark above the title. */
+.auth-brand--stacked img {
+    height: 3.25rem;
+    max-width: 10rem;
+}
+
+.auth-brand--stacked .auth-brand-icon {
+    width: 3rem;
+    height: 3rem;
+    font-size: var(--text-base);
+}
+
 .auth-brand-icon {
     display: flex;
     align-items: center;
