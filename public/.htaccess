@@ -1,9 +1,10 @@
+# LeadX — public document root (cPanel / Apache shared hosting)
 <IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
-
     RewriteEngine On
+
+    # If the site is installed in a subfolder (example.com/leadx),
+    # uncomment and set the correct path prefix:
+    # RewriteBase /leadx/
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -21,10 +22,19 @@
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    RewriteRule ^ index\.php [L]
 </IfModule>
 
-# Block direct access to sensitive files, lock files, and backups
+# Serve index.php by default (prevents 403 "directory index forbidden")
+DirectoryIndex index.php
+
+<IfModule mod_negotiation.c>
+    Options -MultiViews
+</IfModule>
+
+Options -Indexes
+
+# Block direct access to sensitive files
 <FilesMatch "^(\.env|\.git|composer\.|package\.|artisan|.*\.lock)$">
     <IfModule mod_authz_core.c>
         Require all denied
@@ -35,4 +45,10 @@
     </IfModule>
 </FilesMatch>
 
-Options -Indexes
+# cPanel MultiPHP / LiteSpeed PHP 8.2 Handler
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>
+<IfModule lsapi_module>
+  AddHandler application/x-httpd-php82 .php
+</IfModule>

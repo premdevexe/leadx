@@ -1,12 +1,27 @@
-# LeadX Root Security Hardening (cPanel & Apache Shared Hosting)
+# LeadX Root .htaccess - cPanel Shared Hosting & LiteSpeed Routing
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Prevent direct access to hidden files and sensitive project files
+    # Block direct access to hidden files and sensitive project files
     RewriteRule ^\.(.*)$ - [F,L]
     RewriteRule ^(composer\.(json|lock)|package\.(json|lock)|artisan|\.env.*|.*\.lock)$ - [F,L]
-    RewriteRule ^storage/app/installer/(.*)$ - [F,L]
+    RewriteRule ^storage/app/(.*)$ - [F,L]
+    RewriteRule ^storage/framework/(.*)$ - [F,L]
+    RewriteRule ^storage/logs/(.*)$ - [F,L]
+    RewriteRule ^bootstrap/cache/(.*)$ - [F,L]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Transparently route all web requests into the public/ directory
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
+
+# Serve index.php or public/index.php by default
+DirectoryIndex index.php public/index.php
 
 <FilesMatch "^(\.env|\.git|composer\.|package\.|artisan|.*\.lock)$">
     <IfModule mod_authz_core.c>
@@ -19,3 +34,11 @@
 </FilesMatch>
 
 Options -Indexes
+
+# cPanel MultiPHP / LiteSpeed PHP 8.2 Handler
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>
+<IfModule lsapi_module>
+  AddHandler application/x-httpd-php82 .php
+</IfModule>
