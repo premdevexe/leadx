@@ -17,7 +17,6 @@
             <div class="auth-brand auth-brand--stacked">
                 <span class="auth-brand-icon">{{ strtoupper(substr(\App\Models\Setting::siteName(), 0, 1)) }}</span>
                 <h1 class="auth-title">Team Login</h1>
-                <p class="auth-subtitle">{{ \App\Models\Setting::siteName() }}</p>
             </div>
 
             <div class="auth-box">

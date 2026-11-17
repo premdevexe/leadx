@@ -36,14 +36,15 @@
     margin-bottom: var(--sp-4);
 }
 
-/* Stacked variant for standalone auth pages: logo on top, title + site name
-   centered below (employee/team login). The base .auth-brand above stays a
+/* Stacked variant for standalone auth pages: logo on top, title centered
+   below (employee/team login). The base .auth-brand above stays a
    horizontal row for compact "logo + name" strips (admin auth, installer). */
 .auth-brand--stacked {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
+    margin-bottom: var(--sp-5);
 }
 
 .auth-brand img {
@@ -114,7 +115,8 @@
 /* Title: 20px semibold, a touch of breathing room below the brand. */
 .auth-page .auth-title {
     font-size: var(--text-xl);
-    margin-top: var(--sp-2);
+    margin-top: var(--sp-3);
+    letter-spacing: -0.01em;
 }
 
 /* Uniform 16px rhythm between fields; field groups carry no own margin
