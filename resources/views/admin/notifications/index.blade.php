@@ -3,7 +3,20 @@
 @section('title', 'Send Notification')
 
 @section('content')
-    <h1 class="text-xl font-semibold tracking-tight">Send notification</h1>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-neutral-200">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-neutral-900">Web Push Console</h1>
+            <p class="text-xs text-neutral-500 mt-1">Send browser web push notifications via Pusher Beams.</p>
+        </div>
+        <div class="inline-flex p-1 rounded-lg bg-neutral-100 text-xs font-medium">
+            <a href="{{ route('admin.notifications.index') }}" class="px-3 py-1.5 rounded-md text-neutral-600 hover:text-neutral-900 transition-colors">
+                App Notifications
+            </a>
+            <a href="{{ route('admin.notifications') }}" class="px-3 py-1.5 rounded-md bg-white text-neutral-900 shadow-sm font-semibold">
+                Web Push
+            </a>
+        </div>
+    </div>
 
     @if (session('status'))
         <div class="mt-4 alert alert-success text-sm">{{ session('status') }}</div>

@@ -257,6 +257,12 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/notifications/{log}/resend', [NotificationsController::class, 'resend'])->name('admin.notifications.resend');
     Route::delete('/admin/notifications', [NotificationsController::class, 'clear'])->name('admin.notifications.clear');
 
+    // Mobile App Push Notifications (Pusher Beams FCM for Flutter App)
+    Route::get('/admin/app-notifications', [\App\Http\Controllers\Admin\AppNotificationController::class, 'index'])->name('admin.notifications.index');
+    Route::post('/admin/app-notifications/send', [\App\Http\Controllers\Admin\AppNotificationController::class, 'send'])->name('admin.notifications.send');
+    Route::get('/admin/app-notifications/list', [\App\Http\Controllers\Admin\AppNotificationController::class, 'index'])->name('admin.app-notifications.index');
+    Route::post('/admin/app-notifications', [\App\Http\Controllers\Admin\AppNotificationController::class, 'send'])->name('admin.app-notifications.send');
+
     // ── Installer Recovery & Diagnostics ────────────────────────
     Route::get('/admin/installer/recovery', [\App\Http\Controllers\Admin\InstallRecoveryController::class, 'index'])->name('admin.installer.recovery');
     Route::post('/admin/installer/recovery/action', [\App\Http\Controllers\Admin\InstallRecoveryController::class, 'performAction'])->name('admin.installer.recovery.action');

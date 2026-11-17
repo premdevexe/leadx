@@ -48,6 +48,11 @@ return [
         'server_key' => env('PUSHER_SERVER_KEY'),
     ],
 
+    'pusher_beams' => [
+        'instance_id' => env('PUSHER_BEAMS_INSTANCE_ID', env('PUSHER_INSTANCE_ID')),
+        'secret_key'  => env('PUSHER_BEAMS_SECRET_KEY', env('PUSHER_SERVER_KEY')),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Firebase Cloud Messaging (Flutter employee app)
