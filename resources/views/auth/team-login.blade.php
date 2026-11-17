@@ -14,10 +14,10 @@
 <body>
     <main class="auth-page">
         <div class="auth-card">
-            <div class="auth-brand" style="margin-bottom: 2rem; text-align: center;">
-                <span class="auth-brand-icon" style="margin: 0 auto;">{{ strtoupper(substr(\App\Models\Setting::siteName(), 0, 1)) }}</span>
-                <h1 class="auth-title" style="text-align: center; margin-top: 1rem; font-size: var(--text-lg); font-weight: 600; color: var(--c-neutral-900);">Team Login</h1>
-                <p style="text-align: center; margin-top: var(--sp-1); font-size: var(--text-sm); color: var(--c-neutral-500);">{{ \App\Models\Setting::siteName() }}</p>
+            <div class="auth-brand auth-brand--stacked">
+                <span class="auth-brand-icon">{{ strtoupper(substr(\App\Models\Setting::siteName(), 0, 1)) }}</span>
+                <h1 class="auth-title">Team Login</h1>
+                <p class="auth-subtitle">{{ \App\Models\Setting::siteName() }}</p>
             </div>
 
             <div class="auth-box" style="border: var(--border-width) solid var(--c-neutral-200); background: var(--c-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--sp-5);">

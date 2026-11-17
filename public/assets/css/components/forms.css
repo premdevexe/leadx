@@ -66,6 +66,24 @@
     cursor: not-allowed;
 }
 
+/* Chrome/Edge paint autofilled fields with a light-blue wash and draw their
+   own blue focus ring on top of ours. Force the app's neutral surface + text
+   colors back over the autofill state (the inset shadow hides the wash; the
+   slow transition prevents the color flicker). */
+.form-input:-webkit-autofill,
+.form-select:-webkit-autofill,
+.form-textarea:-webkit-autofill {
+    -webkit-text-fill-color: var(--c-neutral-900);
+    -webkit-box-shadow: 0 0 0 1000px var(--c-white) inset;
+    transition: background-color 9999s ease-in-out 0s;
+}
+
+.form-input:-webkit-autofill:focus,
+.form-select:-webkit-autofill:focus,
+.form-textarea:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--c-white) inset, 0 0 0 3px rgb(23 23 23 / 0.1);
+}
+
 .form-input.error,
 .form-select.error,
 .form-textarea.error {

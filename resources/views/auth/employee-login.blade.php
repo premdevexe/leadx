@@ -14,16 +14,14 @@
 <body>
     <main class="auth-page">
         <div class="auth-card">
-            <div class="auth-brand" style="margin-bottom: 2rem; text-align: center;">
+            <div class="auth-brand auth-brand--stacked">
                 @if (\App\Models\Setting::logoUrl())
-                    <img src="{{ \App\Models\Setting::logoUrl() }}" alt="{{ \App\Models\Setting::siteName() }}" class="auth-brand-img" style="margin: 0 auto; height: 2.5rem; max-width: 180px; width: auto; object-fit: contain;">
+                    <img src="{{ \App\Models\Setting::logoUrl() }}" alt="{{ \App\Models\Setting::siteName() }}" class="auth-brand-img">
                 @else
-                    <span class="auth-brand-icon" style="margin: 0 auto; width: 2.5rem; height: 2.5rem; border-radius: var(--radius-md); background: var(--c-neutral-900); color: var(--c-white); font-size: var(--text-sm); font-weight: 600; display: flex; align-items: center; justify-content: center;">
-                        {{ strtoupper(substr(\App\Models\Setting::siteName(), 0, 1)) }}
-                    </span>
+                    <span class="auth-brand-icon">{{ strtoupper(substr(\App\Models\Setting::siteName(), 0, 1)) }}</span>
                 @endif
-                <h1 class="auth-title" style="text-align: center; margin-top: 1rem; font-size: var(--text-lg); font-weight: 600; color: var(--c-neutral-900);">Employee Login</h1>
-                <p style="text-align: center; margin-top: var(--sp-1); font-size: var(--text-sm); color: var(--c-neutral-500);">{{ \App\Models\Setting::siteName() }}</p>
+                <h1 class="auth-title">Employee Login</h1>
+                <p class="auth-subtitle">{{ \App\Models\Setting::siteName() }}</p>
             </div>
 
             <div class="auth-box" style="border: var(--border-width) solid var(--c-neutral-200); background: var(--c-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--sp-5);">
