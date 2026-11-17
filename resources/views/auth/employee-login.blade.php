@@ -57,12 +57,6 @@
                     <button type="submit" class="btn btn-primary btn-block">Sign in</button>
                 </form>
             </div>
-
-            <p style="margin-top: var(--sp-4); text-align: center; font-size: var(--text-xs); color: var(--c-neutral-500);">
-                <a href="{{ route('login') }}" style="color: var(--c-blue-600); text-decoration: underline;">Back</a>
-                &nbsp;&middot;&nbsp;
-                <a href="{{ route('admin.login') }}" style="color: var(--c-blue-600); text-decoration: underline;">Admin login</a>
-            </p>
         </div>
     </main>
 </body>
