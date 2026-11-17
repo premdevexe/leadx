@@ -27,6 +27,7 @@
 @import url('./pages/dashboard.css');
 @import url('./pages/settings.css');
 @import url('./pages/calendar.css');
+@import url('./pages/public-order.css');
 
 /* Shared accessibility and responsive behavior */
 @import url('./components/accessibility.css');

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
 use App\Models\EmployeeTeamAccessGrant;
+use App\Models\PublicOrderShare;
 use App\Models\SalesOrder;
+use App\Services\PublicOrderShareService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -92,12 +94,16 @@ class OrdersController extends Controller
         $apiKeyStatus = app(\App\Services\OrderCredentialService::class)->status($order);
         $whatsappShare = app(\App\Services\WhatsappShareService::class)->prepare($order, $employee->hasPermission('orders.view_api_key'));
 
+        // The order's live public link, if any (exactly one per order).
+        $publicShare = \App\Models\PublicOrderShare::where('order_id', $order->id)->firstWhere('revoked_at', null);
+
         return view('employee.orders.show', [
             'order' => $order,
             'employee' => $employee,
             'isViewOnly' => $isViewOnly,
             'apiKeyStatus' => $apiKeyStatus,
             'whatsappShare' => $whatsappShare,
+            'publicShare' => $publicShare,
         ]);
     }
 
@@ -135,6 +141,64 @@ class OrdersController extends Controller
             : "Order {$order->order_number} status updated to confirmed.";
 
         return redirect()->route('employee.orders.show', $order)->with('status', $msg);
+    }
+
+    /**
+     * POST /employee/orders/{order}/public-share - mint (or refresh) the
+     * unauthenticated customer-facing link for an order the employee is
+     * assigned to. The API-key opt-in is honored only when the employee
+     * holds orders.view_api_key, mirroring the in-portal key reveal.
+     */
+    public function publicOrderShare(Request $request, SalesOrder $order): \Illuminate\Http\RedirectResponse
+    {
+        /** @var \App\Models\User $employee */
+        $employee = $request->user();
+
+        abort_if((int) $order->assigned_employee_id !== (int) $employee->id, 403, 'You can only share links for your own orders.');
+
+        $data = $request->validate([
+            'include_api_key' => ['sometimes', 'boolean'],
+            'expires_at' => ['nullable', 'date'],
+        ]);
+
+        $includeKey = filter_var($data['include_api_key'] ?? false, FILTER_VALIDATE_BOOL);
+        if ($includeKey && ! $employee->hasPermission('orders.view_api_key')) {
+            $includeKey = false;
+        }
+
+        $share = app(PublicOrderShareService::class)->createForOrder(
+            $order,
+            $employee,
+            $includeKey,
+            ! empty($data['expires_at']) ? \Illuminate\Support\Carbon::parse($data['expires_at']) : null,
+        );
+
+        $statusMsg = $share->include_api_key
+            ? 'Public link generated with API key included.'
+            : 'Public link generated (no API key included).';
+
+        return back()->with('status', $statusMsg);
+    }
+
+    /**
+     * POST /employee/orders/{order}/public-share/revoke
+     */
+    public function publicOrderShareRevoke(Request $request, SalesOrder $order): \Illuminate\Http\RedirectResponse
+    {
+        /** @var \App\Models\User $employee */
+        $employee = $request->user();
+
+        abort_if((int) $order->assigned_employee_id !== (int) $employee->id, 403, 'You can only manage links for your own orders.');
+
+        $share = PublicOrderShare::where('order_id', $order->id)->firstWhere('revoked_at', null);
+
+        if ($share === null) {
+            return back()->with('error', 'This order has no live public link to revoke.');
+        }
+
+        $share->revoke($employee);
+
+        return back()->with('status', 'Public link for '.$order->order_number.' has been revoked.');
     }
 
     public function revealApiKey(Request $request, SalesOrder $order): \Illuminate\Http\RedirectResponse

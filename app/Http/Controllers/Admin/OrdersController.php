@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\Subscription;
+use App\Models\PublicOrderShare;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\WhatsappShareLog;
 use App\Services\OrderService;
+use App\Services\PublicOrderShareService;
 use App\Services\WhatsappShareService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -160,16 +162,63 @@ class OrdersController extends Controller
 
         $credentials = app(\App\Services\OrderCredentialService::class);
 
+        // The order's live public link, if any (exactly one per order).
+        $publicShare = PublicOrderShare::where('order_id', $order->id)->firstWhere('revoked_at', null);
+
         return view('admin.orders.show', [
             'order' => $order,
             'share' => $share,
             'logs' => $logs,
+            'publicShare' => $publicShare,
             'enabledPaymentMethods' => \App\Models\Setting::enabledPaymentMethods(),
             // Per-order customer API key status (masked — never the value).
             'apiKeyStatus' => $credentials->status($order),
             'apiKeyAvailable' => $credentials->hasKey($order),
             'revealedKey' => session('order_api_key_reveal'),
         ]);
+    }
+
+    /**
+     * POST /admin/orders/{order}/public-share - mint (or refresh) the
+     * unauthenticated customer-facing link for this order.
+     */
+    public function publicOrderShare(Request $request, SalesOrder $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'include_api_key' => ['sometimes', 'boolean'],
+            'expires_at' => ['nullable', 'date'],
+        ]);
+
+        $actor = $request->user('admin');
+        $expiresAt = ! empty($data['expires_at']) ? \Illuminate\Support\Carbon::parse($data['expires_at']) : null;
+
+        $share = app(PublicOrderShareService::class)->createForOrder(
+            $order,
+            $actor,
+            filter_var($data['include_api_key'] ?? false, FILTER_VALIDATE_BOOL),
+            $expiresAt,
+        );
+
+        return redirect()
+            ->route('admin.orders.show', $order)
+            ->with('status', 'Public link generated for '.$order->order_number.' — it is now the only live link for this order.');
+    }
+
+    /**
+     * POST /admin/orders/{order}/public-share/revoke - retire the order's
+     * live public link (idempotent; the audit row is kept).
+     */
+    public function publicOrderShareRevoke(Request $request, SalesOrder $order): RedirectResponse
+    {
+        $share = PublicOrderShare::where('order_id', $order->id)->firstWhere('revoked_at', null);
+
+        if ($share === null) {
+            return back()->with('error', 'This order has no live public link to revoke.');
+        }
+
+        $share->revoke($request->user('admin'));
+
+        return back()->with('status', 'Public link for '.$order->order_number.' has been revoked.');
     }
 
     /**

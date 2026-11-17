@@ -588,6 +588,60 @@
                 @endif
             </div>
 
+            {{-- Public customer share link --}}
+            <div class="rounded-xl border border-neutral-200 bg-white p-5">
+                <h2 class="text-sm font-semibold text-neutral-500">Public link</h2>
+                <p class="mt-1 text-xs text-neutral-400">
+                    A secure, no-login link you can send to the customer. Only one live link exists at a time.
+                </p>
+
+                @if ($publicShare)
+                    <div class="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <code class="break-all font-mono text-xs text-neutral-800" id="public-link-url">{{ $publicShare->url() }}</code>
+                            <button type="button" class="btn btn-outline btn-sm shrink-0"
+                                    onclick="navigator.clipboard.writeText(document.getElementById('public-link-url').textContent)"
+                                    title="Copy the public link">
+                                Copy
+                            </button>
+                        </div>
+                        <div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-neutral-400">
+                            <span>{{ $publicShare->include_api_key ? 'Includes the customer API key' : 'Status-only (no API key)' }}</span>
+                            @if ($publicShare->expires_at)
+                                <span>· expires {{ $publicShare->expires_at->toDateTimeString() }}</span>
+                            @else
+                                <span>· no expiry</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center gap-4">
+                        <form method="POST" action="{{ route('admin.orders.public-share.revoke', $order) }}">
+                            @csrf
+                            <button type="submit" class="text-xs font-medium text-red-600 hover:text-red-800 underline"
+                                    onclick="return confirm('Revoke this public link? The customer will lose access. You can generate a new one.')">
+                                Revoke link
+                            </button>
+                        </form>
+                        <span class="text-xs text-neutral-400">Generated {{ $publicShare->created_at->diffForHumans() }}</span>
+                    </div>
+                @else
+                    <form method="POST" action="{{ route('admin.orders.public-share.store', $order) }}" class="mt-3 space-y-2">
+                        @csrf
+                        @if (($share['eligible'] ?? false) && $apiKeyAvailable)
+                            <label class="flex items-center gap-2 text-xs text-neutral-600">
+                                <input type="checkbox" name="include_api_key" value="1" class="h-3.5 w-3.5 rounded border-neutral-300 text-neutral-900">
+                                Include the customer API key on the page
+                            </label>
+                        @endif
+                        <div>
+                            <label class="block text-[11px] text-neutral-500">Link expiry (optional)</label>
+                            <input type="datetime-local" name="expires_at" class="form-input mt-0.5 w-full text-xs">
+                        </div>
+                        <button type="submit" class="btn btn-primary px-3 py-1.5 text-xs font-medium">Generate public link</button>
+                    </form>
+                @endif
+            </div>
+
             {{-- Super Admin Order Cancellation Card (Phase 11) --}}
             @if ($order->order_status !== 'cancelled')
                 <div class="rounded-xl border border-red-200 bg-white p-5 shadow-xs">

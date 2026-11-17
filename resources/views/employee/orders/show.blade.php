@@ -211,6 +211,61 @@
         </div>
     </div>
 
+    {{-- Public customer share link --}}
+    @if (! ($isViewOnly ?? false))
+        <div class="mt-6 card p-5">
+            <h2 class="text-sm font-semibold text-neutral-900">Public Link</h2>
+            <p class="mt-1 text-xs text-neutral-500">
+                A secure, no-login link you can share with the customer to view their order status. Only one live link exists at a time.
+            </p>
+
+            @if ($publicShare)
+                <div class="mt-3 rounded-lg bg-neutral-50 p-3 border border-neutral-200">
+                    <div class="flex items-center justify-between gap-2">
+                        <code class="break-all font-mono text-xs text-neutral-800" id="public-link-url">{{ $publicShare->url() }}</code>
+                        <button type="button"
+                                onclick="navigator.clipboard.writeText(document.getElementById('public-link-url').textContent)"
+                                class="rounded border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50 shrink-0">
+                            Copy
+                        </button>
+                    </div>
+                    <p class="mt-2 text-[11px] text-neutral-400">
+                        {{ $publicShare->include_api_key ? 'Includes the customer API key' : 'Status-only (no API key) ' }}
+                        @if ($publicShare->expires_at)
+                            · expires {{ $publicShare->expires_at->toDateTimeString() }}
+                        @else
+                            · no expiry
+                        @endif
+                    </p>
+                    <form method="POST" action="{{ route('employee.orders.public-share.revoke', $order) }}" class="mt-2">
+                        @csrf
+                        <button type="submit" class="text-xs text-red-600 hover:text-red-800 underline"
+                                onclick="return confirm('Revoke this public link? The customer will lose access.')">
+                            Revoke link
+                        </button>
+                    </form>
+                </div>
+            @else
+                <form method="POST" action="{{ route('employee.orders.public-share.store', $order) }}" class="mt-3 space-y-2">
+                    @csrf
+                    @if ($order->isShareEligible() && ($apiKeyStatus['configured'] ?? false))
+                        <label class="flex items-center gap-2 text-xs text-neutral-600">
+                            <input type="checkbox" name="include_api_key" value="1" class="h-3.5 w-3.5 rounded border-neutral-300">
+                            Include the customer API key on the page
+                        </label>
+                    @endif
+                    <div>
+                        <label class="block text-[11px] text-neutral-500">Link expiry (optional)</label>
+                        <input type="datetime-local" name="expires_at" class="form-input mt-0.5 w-full text-xs">
+                    </div>
+                    <button type="submit" class="rounded bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800">
+                        Generate public link
+                    </button>
+                </form>
+            @endif
+        </div>
+    @endif
+
     {{-- Order Fulfillment & WhatsApp Share Card --}}
     @if (! ($isViewOnly ?? false))
         <div class="mt-6 card p-5 space-y-4">

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\AuditLog;
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,7 +38,7 @@ class LogEmployeeApiRequest
             $maskedIp = $this->maskIp($request->ip());
 
             AuditLog::create([
-                'auditable_type' => $actor ? get_class($actor) : \App\Models\User::class,
+                'auditable_type' => $actor ? get_class($actor) : User::class,
                 'auditable_id' => $actor?->getKey() ?? 0,
                 'event' => 'api.employee.request',
                 'new_values' => [
