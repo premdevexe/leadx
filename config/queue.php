@@ -13,7 +13,9 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => (! file_exists(storage_path('app/installer/installed.lock')) && ! file_exists(base_path('installed.lock')))
+        ? 'sync'
+        : env('QUEUE_CONNECTION', 'sync'),
 
     /*
     |--------------------------------------------------------------------------

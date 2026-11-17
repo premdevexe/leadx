@@ -52,8 +52,11 @@ class ResetInstallCommand extends Command
                 'DB_DATABASE' => '',
                 'DB_USERNAME' => '',
                 'DB_PASSWORD' => '',
+                'SESSION_DRIVER' => 'file',
+                'CACHE_STORE' => 'file',
+                'QUEUE_CONNECTION' => 'sync',
             ]);
-            $this->info('Cleared database credentials in .env (APP_KEY preserved).');
+            $this->info('Cleared database credentials in .env and ensured file session/cache drivers.');
         }
 
         // 3. Clear application caches
