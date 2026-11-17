@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\AdminLoginController;
 use App\Http\Controllers\Admin\AdminsController;
+use App\Http\Controllers\Admin\ApiManagementController;
 use App\Http\Controllers\Admin\CustomersController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailSettingsController;
@@ -238,6 +239,8 @@ Route::middleware('admin')->group(function () {
     // ── Installer Recovery & Diagnostics ────────────────────────
     Route::get('/admin/installer/recovery', [\App\Http\Controllers\Admin\InstallRecoveryController::class, 'index'])->name('admin.installer.recovery');
     Route::post('/admin/installer/recovery/action', [\App\Http\Controllers\Admin\InstallRecoveryController::class, 'performAction'])->name('admin.installer.recovery.action');
+    Route::get('/admin/setup/core', [\App\Http\Controllers\Admin\InstallRecoveryController::class, 'index'])->name('admin.setup.core');
+    Route::post('/admin/setup/core/action', [\App\Http\Controllers\Admin\InstallRecoveryController::class, 'performAction'])->name('admin.setup.core.action');
 
     // ── Backup & Disaster Recovery (Phase 16) ───────────────────
     Route::get('/admin/backups', [\App\Http\Controllers\Admin\BackupController::class, 'index'])->name('admin.backups.index');
@@ -250,6 +253,21 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/backups/{backup}/verify', [\App\Http\Controllers\Admin\BackupController::class, 'verify'])->name('admin.backups.verify');
     Route::get('/admin/backups/{backup}/download', [\App\Http\Controllers\Admin\BackupController::class, 'download'])->name('admin.backups.download');
     Route::delete('/admin/backups/{backup}', [\App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('admin.backups.destroy');
+
+    // ── API Management (Super Admin only) ───────────────────────
+    Route::prefix('admin/api-management')->name('admin.api-management.')->group(function () {
+        Route::get('/', [ApiManagementController::class, 'index'])->name('index');
+        Route::post('/keys/generate', [ApiManagementController::class, 'generateKey'])->name('keys.generate');
+        Route::post('/keys/{key}/regenerate', [ApiManagementController::class, 'regenerateKey'])->name('keys.regenerate');
+        Route::post('/keys/{key}/revoke', [ApiManagementController::class, 'revokeKey'])->name('keys.revoke');
+        Route::post('/keys/{key}/toggle', [ApiManagementController::class, 'toggleKey'])->name('keys.toggle');
+        Route::put('/config', [ApiManagementController::class, 'updateConfig'])->name('config.update');
+        Route::get('/health', [ApiManagementController::class, 'healthCheck'])->name('health');
+        Route::get('/docs/openapi', [ApiManagementController::class, 'docsOpenApi'])->name('docs.openapi');
+        Route::get('/docs/swagger', [ApiManagementController::class, 'docsSwagger'])->name('docs.swagger');
+        Route::get('/docs/postman', [ApiManagementController::class, 'docsPostman'])->name('docs.postman');
+        Route::get('/docs/flutter', [ApiManagementController::class, 'docsFlutter'])->name('docs.flutter');
+    });
 
     Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
 });

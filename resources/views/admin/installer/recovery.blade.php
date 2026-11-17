@@ -109,6 +109,14 @@
 
             <form method="POST" action="{{ route('admin.installer.recovery.action') }}" style="display: inline;">
                 @csrf
+                <input type="hidden" name="action" value="storage_link">
+                <button type="submit" class="btn btn-secondary">
+                    Connect Storage Link
+                </button>
+            </form>
+
+            <form method="POST" action="{{ route('admin.installer.recovery.action') }}" style="display: inline;">
+                @csrf
                 <input type="hidden" name="action" value="ensure_key">
                 <button type="submit" class="btn btn-secondary">
                     Verify APP_KEY
@@ -118,9 +126,9 @@
             @if ($telemetry['is_installed'])
                 <form method="POST" action="{{ route('admin.installer.recovery.action') }}" style="display: inline;">
                     @csrf
-                    <input type="hidden" name="action" value="unlock_installer">
-                    <button type="submit" class="btn btn-secondary" style="color: var(--c-amber-800);" onclick="return confirm('Temporarily unlock the installer wizard? Public visitors to / will be redirected to the wizard until re-locked.');">
-                        Unlock Installer Wizard
+                    <input type="hidden" name="action" value="reset_install">
+                    <button type="submit" class="btn btn-secondary" style="color: var(--c-amber-800);" onclick="return confirm('Reset installer lock and unlock setup wizard? Visitors will be redirected to /install.');">
+                        Reset Install & Unlock
                     </button>
                 </form>
             @else

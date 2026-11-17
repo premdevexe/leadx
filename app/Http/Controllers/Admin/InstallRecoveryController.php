@@ -105,6 +105,21 @@ class InstallRecoveryController extends Controller
 
                     return back()->with('status', 'Application encryption key verified/secured.');
 
+                case 'storage_link':
+                    Artisan::call('storage:link');
+                    $output = Artisan::output();
+
+                    return back()->with('status', 'Storage symbolic link created successfully. ' . trim($output));
+
+                case 'reset_install':
+                    $this->stateManager->unlock();
+                    Artisan::call('cache:clear');
+                    Artisan::call('config:clear');
+                    Artisan::call('route:clear');
+                    Artisan::call('view:clear');
+
+                    return back()->with('status', 'LeadX installer successfully unlocked and caches cleared. Public visitors will be redirected to /install until locked again.');
+
                 case 'lock_installer':
                     $this->stateManager->lock([
                         'locked_by' => 'admin_recovery',

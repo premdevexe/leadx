@@ -33,8 +33,8 @@ class CheckInstallation
             || $request->is('installer')
             || $request->is('installer/*');
 
-        // Exemption: Admin recovery route is handled by auth:admin, not blocked
-        if ($request->is('admin/installer/recovery*')) {
+        // Exemption: Admin recovery / setup core routes are handled by auth:admin, not blocked
+        if ($request->is('admin/installer/recovery*') || $request->is('admin/setup/core*')) {
             return $next($request);
         }
 

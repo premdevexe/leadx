@@ -14,6 +14,36 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// Helpful developer aliases for common command shortcuts and typos:
+Artisan::command('miggrate', function () {
+    $this->info('Running database migrations (alias for "php artisan migrate")...');
+    $this->call('migrate', ['--force' => true]);
+})->purpose('Alias for migrate command');
+
+Artisan::command('clear:all', function () {
+    $this->info('Clearing all application, route, config, and view caches (alias for "php artisan optimize:clear")...');
+    $this->call('optimize:clear');
+})->purpose('Clear all framework caches (alias for optimize:clear)');
+
+Artisan::command('storage', function () {
+    $this->info('Linking storage (alias for "php artisan storage:link")...');
+    $this->call('storage:link');
+})->purpose('Alias for storage:link command');
+
+Artisan::command('reset {target?}', function (?string $target = null) {
+    if ($target === 'install' || $target === null) {
+        $this->info('Resetting installer lock and clearing caches (alias for "php artisan reset:install")...');
+        $this->call('reset:install', ['--force' => true]);
+        return;
+    }
+    $this->warn("Unknown reset target [{$target}]. Did you mean 'php artisan reset install'?");
+})->purpose('Alias for reset:install command');
+
+Artisan::command('setup:core', function () {
+    $this->info('Displaying LeadX core installation & telemetry status...');
+    $this->call('installer:status');
+})->purpose('Display core setup and installer telemetry');
+
 // Phase 07: subscription lifecycle maintenance.
 Schedule::command(ProcessSubscriptionsExpiry::class)->dailyAt('00:05')->withoutOverlapping();
 Schedule::command(SendSubscriptionReminders::class)->dailyAt('08:00')->withoutOverlapping();
