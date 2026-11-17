@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Admin\PaymentsController;
 use App\Http\Controllers\Api\V1\Admin\ReportsController;
 use App\Http\Controllers\Api\V1\Admin\TeamsController;
 use App\Http\Controllers\Api\V1\Employee\AnalyticsController as EmployeeAnalytics;
+use App\Http\Controllers\Api\V1\Employee\AppConfigController as EmployeeAppConfig;
 use App\Http\Controllers\Api\V1\Employee\AuthenticationController as EmployeeAuth;
 use App\Http\Controllers\Api\V1\Employee\CalendarController as EmployeeCalendar;
 use App\Http\Controllers\Api\V1\Employee\CustomerIssuesController as EmployeeCustomerIssues;
@@ -115,6 +116,11 @@ Route::prefix('v1')->group(function () {
 
         // Dashboard (page 1)
         Route::get('employee/dashboard', [EmployeeDashboard::class, 'index']);
+
+        // App configuration (currency + formatting, admin settings mirror).
+        // The Flutter client caches this locally so figures stay formatted
+        // correctly offline; refreshes on pull-to-refresh.
+        Route::get('employee/app-config', [EmployeeAppConfig::class, 'index']);
 
         // Orders (pages 12 & 2)
         Route::get('employee/orders', [EmployeeOrders::class, 'index'])->middleware('permission:orders.view');

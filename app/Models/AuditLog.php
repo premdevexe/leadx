@@ -35,6 +35,28 @@ class AuditLog extends Model
     }
 
     /**
+     * Ensure the polymorphic type resolves safely, even if legacy logs contained arbitrary strings.
+     */
+    public function getAuditableTypeAttribute(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        if ($value === 'api_request') {
+            return ApiRequestLog::class;
+        }
+
+        $resolvedClass = Model::getActualClassNameForMorph($value);
+
+        if (! class_exists($resolvedClass)) {
+            return ApiRequestLog::class;
+        }
+
+        return $value;
+    }
+
+    /**
      * The audited record (user, team, ...).
      */
     public function actor(): MorphTo

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\PermissionService;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
@@ -21,6 +22,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Polymorphic mapping for non-class legacy audit/request identifiers
+        Relation::morphMap([
+            'api_request' => \App\Models\ApiRequestLog::class,
+        ]);
+
         Blade::if('canEmployee', function (string $permission) {
             $user = auth()->guard('employee')->user() ?? auth()->user();
             if (! $user) {

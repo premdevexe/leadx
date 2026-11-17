@@ -37,8 +37,8 @@ class LogEmployeeApiRequest
             $maskedIp = $this->maskIp($request->ip());
 
             AuditLog::create([
-                'auditable_type' => 'api_request',
-                'auditable_id' => 0,
+                'auditable_type' => $actor ? get_class($actor) : \App\Models\User::class,
+                'auditable_id' => $actor?->getKey() ?? 0,
                 'event' => 'api.employee.request',
                 'new_values' => [
                     'method' => $request->method(),

@@ -197,6 +197,43 @@ class EmployeePanelApiTest extends TestCase
         $this->assertNotNull($response->json('meta.warning'));
     }
 
+    public function test_app_config_mirrors_the_admin_currency_setting(): void
+    {
+        // Default state: no saved setting -> backend default ('USD').
+        $response = $this->getJson('/api/v1/employee/app-config', $this->employeeHeaders())
+            ->assertOk();
+
+        $response->assertJsonStructure([
+            'success',
+            'data' => [
+                'currency' => [
+                    'code', 'symbol', 'symbol_position', 'decimal_places',
+                    'thousands_separator', 'decimal_separator',
+                ],
+                'currencies',
+                'site_name',
+            ],
+        ]);
+
+        $this->assertSame('USD', $response->json('data.currency.code'));
+        $this->assertSame('$', $response->json('data.currency.symbol'));
+        $this->assertSame(2, $response->json('data.currency.decimal_places'));
+
+        // Admin switches the currency: the app endpoint follows immediately.
+        \App\Models\Setting::setCurrency('EUR');
+        \App\Models\Setting::setSiteName('Acme Sales');
+
+        $updated = $this->getJson('/api/v1/employee/app-config', $this->employeeHeaders());
+        $this->assertSame('EUR', $updated->json('data.currency.code'));
+        $this->assertSame('€', $updated->json('data.currency.symbol'));
+        $this->assertSame('Acme Sales', $updated->json('data.site_name'));
+    }
+
+    public function test_app_config_requires_an_employee_token(): void
+    {
+        $this->getJson('/api/v1/employee/app-config')->assertStatus(401);
+    }
+
     /*
     |----------------------------------------------------------------------
     | 2 + 13. employee/orders & employee/orders/create
