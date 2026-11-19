@@ -51,13 +51,14 @@ class ProfileController extends Controller
 
         $profileUpdated = false;
 
-        if ($request->input('name') !== null || $request->input('email') !== null || $request->input('phone') !== null) {
+        if ($request->input('name') !== null || $request->input('username') !== null || $request->input('email') !== null || $request->input('phone') !== null) {
             $validated = $request->validated();
 
             // Untouched fields keep their current values — only what the
             // client actually sent is written.
             $employee->update([
                 'name' => $validated['name'] ?? $employee->name,
+                'username' => array_key_exists('username', $validated) ? $validated['username'] : $employee->username,
                 'phone' => array_key_exists('phone', $validated) ? $validated['phone'] : $employee->phone,
                 'email' => $validated['email'] ?? $employee->email,
             ]);

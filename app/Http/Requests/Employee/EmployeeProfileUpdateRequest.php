@@ -41,6 +41,14 @@ class EmployeeProfileUpdateRequest extends FormRequest
             // "Sometimes required": a field may be omitted (and is then left
             // unchanged), but if sent it must be valid and non-empty.
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'username' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:50',
+                'alpha_dash',
+                Rule::unique('users', 'username')->ignore($employee->id),
+            ],
             'phone' => ['sometimes', 'nullable', 'string', 'max:30'],
             'email' => [
                 'sometimes',
