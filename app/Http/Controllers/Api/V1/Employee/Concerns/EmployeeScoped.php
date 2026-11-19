@@ -80,23 +80,15 @@ trait EmployeeScoped
     protected function resolveView(User $employee, ?string $requestedView): array
     {
         if ($requestedView === 'team_data') {
-            if (! $employee->hasActiveTeamAccess() || ! $employee->team_id) {
+            if (! $employee->team_id) {
                 return [
                     'view' => 'my_data',
                     'grant' => null,
-                    'warning' => 'You do not have an active Team Data access grant; showing your own data only.',
+                    'warning' => 'You are not assigned to a team.',
                 ];
             }
 
             $grant = $this->activeTeamGrant($employee);
-
-            if (! $grant) {
-                return [
-                    'view' => 'my_data',
-                    'grant' => null,
-                    'warning' => 'Your Team Data access grant has lapsed; showing your own data only.',
-                ];
-            }
 
             return ['view' => 'team_data', 'grant' => $grant, 'warning' => null];
         }
@@ -114,10 +106,12 @@ trait EmployeeScoped
         // Table-prefixed columns: callers may join `payments` onto this
         // query (e.g. the dashboard's verified-revenue stat), where the bare
         // names would become ambiguous.
-        if ($view === 'team_data' && $grant && $employee->team_id) {
-            $query->where('sales_orders.team_id', $employee->team_id)
-                ->whereDate('sales_orders.created_at', '>=', $grant->start_date)
-                ->whereDate('sales_orders.created_at', '<=', $grant->end_date);
+        if ($view === 'team_data' && $employee->team_id) {
+            $query->where('sales_orders.team_id', $employee->team_id);
+            if ($grant) {
+                $query->whereDate('sales_orders.created_at', '>=', $grant->start_date)
+                    ->whereDate('sales_orders.created_at', '<=', $grant->end_date);
+            }
         } else {
             $query->where('sales_orders.assigned_employee_id', $employee->id);
         }
@@ -132,11 +126,13 @@ trait EmployeeScoped
     {
         $query = Subscription::query()->with(['order.product', 'order.team', 'order.assignedEmployee', 'plan']);
 
-        if ($view === 'team_data' && $grant && $employee->team_id) {
+        if ($view === 'team_data' && $employee->team_id) {
             $query->whereHas('order', function ($q) use ($employee, $grant): void {
-                $q->where('team_id', $employee->team_id)
-                    ->whereDate('created_at', '>=', $grant->start_date)
-                    ->whereDate('created_at', '<=', $grant->end_date);
+                $q->where('team_id', $employee->team_id);
+                if ($grant) {
+                    $q->whereDate('created_at', '>=', $grant->start_date)
+                        ->whereDate('created_at', '<=', $grant->end_date);
+                }
             });
         } else {
             $query->whereHas('order', function ($q) use ($employee): void {
@@ -154,11 +150,13 @@ trait EmployeeScoped
     {
         $query = FollowUp::query()->with(['customer', 'team', 'assignedEmployee', 'order']);
 
-        if ($view === 'team_data' && $grant && $employee->team_id) {
-            $orderIds = SalesOrder::where('team_id', $employee->team_id)
-                ->whereDate('created_at', '>=', $grant->start_date)
-                ->whereDate('created_at', '<=', $grant->end_date)
-                ->pluck('id');
+        if ($view === 'team_data' && $employee->team_id) {
+            $orderQuery = SalesOrder::where('team_id', $employee->team_id);
+            if ($grant) {
+                $orderQuery->whereDate('created_at', '>=', $grant->start_date)
+                    ->whereDate('created_at', '<=', $grant->end_date);
+            }
+            $orderIds = $orderQuery->pluck('id');
 
             $query->whereIn('order_id', $orderIds);
         } else {

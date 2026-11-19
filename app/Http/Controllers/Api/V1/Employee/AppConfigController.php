@@ -42,6 +42,8 @@ class AppConfigController extends Controller
                 // through this map.
                 'currencies' => Setting::CURRENCIES,
                 'site_name' => Setting::siteName(),
+                'site_logo' => Setting::logoTransparentUrl() ?? Setting::logoUrl(),
+                'site_favicon' => Setting::faviconUrl(),
             ],
         ]);
     }

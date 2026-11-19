@@ -48,7 +48,7 @@ class AuthenticationController extends Controller
 
         return response()->json([
             'data' => new EmployeeResource($employee),
-            'has_team_data_access' => $employee->hasActiveTeamAccess(),
+            'has_team_data_access' => $employee->hasActiveTeamAccess() || ! empty($employee->team_id),
             'permissions' => [
                 'orders.view' => $employee->hasPermission('orders.view'),
                 'orders.create' => $employee->hasPermission('orders.create'),
