@@ -106,7 +106,38 @@ class FcmService
         $project = config('services.fcm.project_id') ?: 'leadx-eb5c5';
         $endpoint = 'https://fcm.googleapis.com/v1/projects/'.$project.'/messages:send';
 
-        $message = ['token' => $token];
+        $stringData = [];
+        foreach ($data as $k => $v) {
+            $stringData[(string) $k] = is_scalar($v) ? (string) $v : json_encode($v);
+        }
+
+        $channelId = (string) (config('services.fcm.android_channel_id') ?: 'leadx_general');
+        if (($data['type'] ?? '') === 'closing_value' || ($data['type'] ?? '') === 'payment') {
+            $channelId = 'leadx_high_priority';
+        }
+
+        $message = [
+            'token' => $token,
+            'android' => [
+                'priority' => 'HIGH',
+                'notification' => [
+                    'channel_id' => $channelId,
+                    'default_sound' => true,
+                    'default_vibrate_timings' => true,
+                ],
+            ],
+            'apns' => [
+                'headers' => [
+                    'apns-priority' => '10',
+                ],
+                'payload' => [
+                    'aps' => [
+                        'sound' => 'default',
+                        'badge' => 1,
+                    ],
+                ],
+            ],
+        ];
 
         if ($title !== '' || $body !== '') {
             $message['notification'] = array_filter([
@@ -115,21 +146,12 @@ class FcmService
             ], fn ($v) => $v !== '');
         }
 
-        if (! empty($data)) {
-            $message['data'] = $data;
-        }
-
-        if ($deduplicationKey !== null && $deduplicationKey !== '') {
-            // FCM treats `message_id` as a de-duplication key (12h window).
-            $message['message_id'] = $deduplicationKey;
+        if (! empty($stringData)) {
+            $message['data'] = $stringData;
         }
 
         $payload = [
             'message' => $message,
-            'android' => [
-                'priority' => 'high',
-                'notification' => ['channel_id' => (string) config('services.fcm.android_channel_id')],
-            ],
             'validate_only' => false,
         ];
 
