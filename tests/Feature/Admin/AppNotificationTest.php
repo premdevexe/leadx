@@ -6,6 +6,7 @@ use App\Models\Admin;
 use App\Models\AppNotification;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\FcmService;
 use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -63,14 +64,26 @@ class AppNotificationTest extends TestCase
 
     public function test_send_push_notification_to_general_interest_success(): void
     {
-        // Mock PushNotificationService
+        // Mock PushNotificationService. send() now calls isConfigured() before
+        // delivery, so stub it; keep FcmService off so no real device-token
+        // query / FCM send runs during the test.
         $mockService = Mockery::mock(PushNotificationService::class);
+        $mockService->shouldReceive('isConfigured')->andReturn(true);
         $mockService->shouldReceive('sendToInterests')
             ->once()
-            ->with(['hello'], 'Test Title', 'Test Body', ['action' => 'orders'])
+            ->with(
+                ['hello'],
+                'Test Title',
+                'Test Body',
+                ['action' => 'orders', 'title' => 'Test Title', 'body' => 'Test Body'],
+            )
             ->andReturn('pub_test_12345');
 
+        $fcmMock = Mockery::mock(FcmService::class);
+        $fcmMock->shouldReceive('isConfigured')->andReturn(false);
+
         $this->app->instance(PushNotificationService::class, $mockService);
+        $this->app->instance(FcmService::class, $fcmMock);
 
         $response = $this->actingAs($this->admin, 'admin')->post(route('admin.notifications.send'), [
             'title' => 'Test Title',
@@ -98,12 +111,22 @@ class AppNotificationTest extends TestCase
         $employee = User::factory()->create(['team_id' => $team->id, 'role' => 'employee']);
 
         $mockService = Mockery::mock(PushNotificationService::class);
+        $mockService->shouldReceive('isConfigured')->andReturn(true);
         $mockService->shouldReceive('sendToInterests')
             ->once()
-            ->with(["user_{$employee->id}"], 'Direct Alert', 'Direct Message', ['action' => 'customers'])
+            ->with(
+                ["user_{$employee->id}"],
+                'Direct Alert',
+                'Direct Message',
+                ['action' => 'customers', 'title' => 'Direct Alert', 'body' => 'Direct Message'],
+            )
             ->andReturn('pub_user_999');
 
+        $fcmMock = Mockery::mock(FcmService::class);
+        $fcmMock->shouldReceive('isConfigured')->andReturn(false);
+
         $this->app->instance(PushNotificationService::class, $mockService);
+        $this->app->instance(FcmService::class, $fcmMock);
 
         $response = $this->actingAs($this->admin, 'admin')->post(route('admin.notifications.send'), [
             'title' => 'Direct Alert',
