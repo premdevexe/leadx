@@ -498,6 +498,13 @@ class InstallController extends Controller
                 'ip' => $request->ip(),
             ]);
 
+            // Lock the instance into production mode - .env.example ships APP_DEBUG=true
+            // and no earlier wizard step turns it off.
+            $this->envManager->update([
+                'APP_ENV' => 'production',
+                'APP_DEBUG' => 'false',
+            ]);
+
             // Clear all application caches
             Artisan::call('config:clear');
             Artisan::call('route:clear');

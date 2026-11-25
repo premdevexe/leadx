@@ -1,9 +1,9 @@
 {
-    "name": "LeadX — Admin",
+    "name": "LeadX — Employee Portal",
     "short_name": "LeadX",
-    "description": "LeadX admin dashboard — manage teams and employees.",
-    "start_url": "/admin/dashboard",
-    "scope": "/admin",
+    "description": "LeadX employee portal — manage orders, customers, follow-ups, and billing.",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "orientation": "any",
     "background_color": "#f9fafb",
@@ -19,7 +19,7 @@
             "src": "/icons/leadx-512.svg",
             "sizes": "512x512",
             "type": "image/svg+xml",
-            "purpose": "any"
+            "purpose": "any maskable"
         }
     ]
 }

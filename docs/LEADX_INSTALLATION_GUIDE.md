@@ -8,16 +8,28 @@
 
 ## Table of Contents
 
-1. [Server Requirements](#server-requirements)
-2. [Installation Steps](#installation-steps)
-3. [Database Configuration](#database-configuration)
-4. [Initial Admin Setup](#initial-admin-setup)
-5. [Environment Configuration](#environment-configuration)
-6. [Scheduler Configuration](#scheduler-configuration)
-7. [Queue Worker Configuration](#queue-worker-configuration)
-8. [Storage Permissions](#storage-permissions)
-9. [Production Setup](#production-setup)
-10. [Troubleshooting](#troubleshooting)
+1. [Web Server Document Root](#web-server-document-root)
+2. [Server Requirements](#server-requirements)
+3. [Installation Steps](#installation-steps)
+4. [Database Configuration](#database-configuration)
+5. [Initial Admin Setup](#initial-admin-setup)
+6. [Environment Configuration](#environment-configuration)
+7. [Scheduler Configuration](#scheduler-configuration)
+8. [Queue Worker Configuration](#queue-worker-configuration)
+9. [Storage Permissions](#storage-permissions)
+10. [Production Setup](#production-setup)
+11. [Troubleshooting](#troubleshooting)
+
+---
+
+## Web Server Document Root
+
+Configuring the correct document root is critical to prevent exposing `.env`, `config/`, `vendor/`, `database/`, or `docs/` over HTTP.
+
+1. **PREFERRED (VPS / Nginx / Apache vhost):** Point your web server document root directly at `<repo>/public` and delete or ignore the root `index.php` shim. This requires zero `.htaccess` reliance.
+2. **FALLBACK (shared cPanel hosting only):** If your host forces document root to the repository root, you **must** run Apache with both `mod_rewrite` enabled and `AllowOverride All` active so the root `.htaccess` rules protect sensitive directories and rewrite into `public/`.
+   - **Mandatory verification test:** After deploying, visit `https://<your-site>/composer.json` in a browser or via `curl -I`. It **must** return HTTP `403` or `404`. If `composer.json` downloads, your server is misconfigured and all project files are publicly readable.
+3. **Nginx users:** Nginx ignores `.htaccess` files entirely — you **must** set `root /path/to/LeadX/public;` in your server block (never the repository root).
 
 ---
 
