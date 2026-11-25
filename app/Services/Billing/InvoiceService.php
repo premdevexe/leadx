@@ -14,6 +14,7 @@ use App\Models\SalesOrder;
 use App\Models\Setting;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\PaymentService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -237,24 +238,24 @@ class InvoiceService
      */
     public function recordPayment(Invoice $invoice, array $data, ?Admin $admin = null, ?User $employee = null): Payment
     {
-        if (in_array($invoice->status, [Invoice::STATUS_CANCELLED, Invoice::STATUS_REFUNDED], true)) {
-            throw ValidationException::withMessages(['payment' => 'Cannot record payment for a cancelled or refunded invoice.']);
-        }
-
         $amount = round((float) $data['amount'], 2);
         if ($amount <= 0) {
             throw ValidationException::withMessages(['amount' => 'Payment amount must be greater than zero.']);
         }
 
-        $remaining = round((float) $invoice->balance_due, 2);
-        if ($amount > $remaining + 0.01) {
-            throw ValidationException::withMessages([
-                'amount' => 'Payment amount cannot exceed remaining balance due ('.number_format($remaining, 2).').',
-            ]);
-        }
-
         return DB::transaction(function () use ($invoice, $data, $admin, $employee, $amount) {
             $lockedInvoice = Invoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+
+            if (in_array($lockedInvoice->status, [Invoice::STATUS_CANCELLED, Invoice::STATUS_REFUNDED], true)) {
+                throw ValidationException::withMessages(['payment' => 'Cannot record payment for a cancelled or refunded invoice.']);
+            }
+
+            $remaining = round((float) $lockedInvoice->balance_due, 2);
+            if ($amount > $remaining + 0.01) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Payment amount cannot exceed remaining balance due ('.number_format($remaining, 2).').',
+                ]);
+            }
 
             $isConfirmed = $admin !== null || (bool) ($data['confirmed'] ?? false);
 
@@ -331,16 +332,26 @@ class InvoiceService
     public function recordRefund(Invoice $invoice, array $data, Admin $admin): Refund
     {
         $amount = round((float) $data['amount'], 2);
-        $netPaid = round((float) $invoice->amount_paid - (float) $invoice->amount_refunded, 2);
-
-        if ($amount <= 0 || $amount > $netPaid + 0.01) {
+        if ($amount <= 0) {
             throw ValidationException::withMessages([
-                'amount' => 'Refund amount must be between 0.01 and the net paid amount ('.number_format($netPaid, 2).').',
+                'amount' => 'Refund amount must be greater than zero.',
             ]);
         }
 
         return DB::transaction(function () use ($invoice, $data, $admin, $amount) {
             $lockedInvoice = Invoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+
+            $alreadyRefunded = round((float) $lockedInvoice->refunds()->sum('amount'), 2);
+            $netPaid = round((float) $lockedInvoice->amount_paid - $alreadyRefunded, 2);
+
+            if ($amount > $netPaid + 0.01) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Refund amount must be between 0.01 and the net paid amount ('.number_format(max(0, $netPaid), 2).').',
+                ]);
+            }
+
+            $totalRefunded = round($alreadyRefunded + $amount, 2);
+            $refundType = $totalRefunded >= (float) $lockedInvoice->amount_paid ? 'full' : 'partial';
 
             $refund = Refund::create([
                 'order_id' => $lockedInvoice->order_id,
@@ -349,14 +360,13 @@ class InvoiceService
                 'customer_id' => $lockedInvoice->customer_id,
                 'admin_id' => $admin->id,
                 'amount' => $amount,
-                'type' => $amount >= (float) $lockedInvoice->amount_paid ? 'full' : 'partial',
+                'type' => $refundType,
                 'status' => $data['status'] ?? 'processed',
                 'gateway_reference' => $data['gateway_reference'] ?? null,
                 'processed_at' => now(),
                 'reason' => (string) $data['reason'],
             ]);
 
-            $totalRefunded = round((float) $lockedInvoice->refunds()->sum('amount'), 2);
             $newStatus = $totalRefunded >= (float) $lockedInvoice->amount_paid
                 ? Invoice::STATUS_REFUNDED
                 : $lockedInvoice->status;
@@ -366,9 +376,14 @@ class InvoiceService
                 'status' => $newStatus,
             ]);
 
+            if ($lockedInvoice->order_id && ($order = $lockedInvoice->order()->first())) {
+                app(PaymentService::class)->syncOrder($order);
+            }
+
             $this->audit->log($lockedInvoice, 'refund.recorded', [], [
                 'refund_id' => $refund->id,
                 'amount' => $refund->amount,
+                'type' => $refundType,
                 'reason' => $refund->reason,
                 'invoice_status' => $newStatus,
             ]);
@@ -408,7 +423,7 @@ class InvoiceService
     /**
      * Recompute amount_paid, balance_due, and invoice status strictly from confirmed payments.
      */
-    public function recalculateInvoicePaymentStatus(Invoice $invoice): Invoice
+    public function recalculateInvoicePaymentStatus(Invoice $invoice, bool $syncOrder = true): Invoice
     {
         $confirmedPaid = round((float) $invoice->payments()
             ->where('payment_status', 'paid')
@@ -439,17 +454,9 @@ class InvoiceService
             'paid_at' => $status === Invoice::STATUS_PAID ? ($invoice->paid_at ?? now()) : null,
         ]);
 
-        // Keep linked SalesOrder & Customer totals in sync if linked
-        if ($invoice->order_id && $invoice->order) {
-            $invoice->order->update([
-                'amount_received' => $confirmedPaid,
-                'payment_status' => match ($status) {
-                    Invoice::STATUS_PAID => 'paid',
-                    Invoice::STATUS_PARTIALLY_PAID => 'partially_paid',
-                    Invoice::STATUS_REFUNDED => 'refunded',
-                    default => $invoice->order->payment_status,
-                },
-            ]);
+        // Recompute linked SalesOrder totals from ALL of the order's verified payments & refunds
+        if ($syncOrder && $invoice->order_id && ($order = $invoice->order()->first())) {
+            app(PaymentService::class)->syncOrder($order);
         }
 
         return $invoice->fresh();
@@ -533,6 +540,13 @@ class InvoiceService
     /**
      * Server-side computation of line items, subtotal, discount, tax, and grand total.
      *
+     * Precedence:
+     *   1. Line-level discount_amount is subtracted from (qty * unit_price).
+     *   2. Line-level tax_rate is applied to the discounted line taxable amount to yield line_total.
+     *   3. Invoice subtotal is the sum of all line_totals.
+     *   4. Invoice-level discount (fixed or percent) is applied to subtotal.
+     *   5. Invoice-level tax_rate is applied to (subtotal - invoice discount).
+     *
      * @param  array<int, array<string, mixed>>  $rawItems
      * @return array<string, mixed>
      */
@@ -554,7 +568,13 @@ class InvoiceService
                 $description = $product?->name ?? 'Service Item';
             }
 
-            $lineTotal = round($qty * $unitPrice, 2);
+            $lineGross = round($qty * $unitPrice, 2);
+            $lineDiscount = min($lineGross, max(0.0, round((float) ($row['discount_amount'] ?? 0), 2)));
+            $lineTaxable = max(0.0, round($lineGross - $lineDiscount, 2));
+            $lineTaxRate = max(0.0, min(100.0, round((float) ($row['tax_rate'] ?? 0), 2)));
+            $lineTaxAmount = round($lineTaxable * $lineTaxRate / 100, 2);
+            $lineTotal = round($lineTaxable + $lineTaxAmount, 2);
+
             $subtotal += $lineTotal;
 
             $items[] = [
@@ -563,9 +583,9 @@ class InvoiceService
                 'duration' => $row['duration'] ?? $product?->duration,
                 'quantity' => $qty,
                 'unit_price' => $unitPrice,
-                'discount_amount' => 0,
-                'tax_rate' => 0,
-                'tax_amount' => 0,
+                'discount_amount' => $lineDiscount,
+                'tax_rate' => $lineTaxRate,
+                'tax_amount' => $lineTaxAmount,
                 'line_total' => $lineTotal,
                 'sort_order' => $idx,
             ];

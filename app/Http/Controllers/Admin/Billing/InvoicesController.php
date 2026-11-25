@@ -276,6 +276,8 @@ class InvoicesController extends Controller
             'items.*.duration' => 'nullable|string|max:50',
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.discount_amount' => 'nullable|numeric|min:0',
+            'items.*.tax_rate' => 'nullable|numeric|min:0|max:100',
         ]);
     }
 

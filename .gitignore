@@ -7,7 +7,8 @@
 /install.lock
 # User-uploaded assets are runtime files, not source (older sets are
 # already tracked; they should be untracked in a follow-up cleanup)
-/public/uploads/
+/public/uploads/*
+!/public/uploads/.htaccess
 # Plaintext .env backups written by the installer's EnvironmentManager
 /storage/app/installer/
 .phpactor.json

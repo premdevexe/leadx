@@ -7,6 +7,7 @@ use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -53,11 +54,13 @@ class BillingSettingsController extends Controller
             $logoPath = null;
         }
 
-        if ($request->hasFile('billing_logo')) {
+        if ($request->hasFile('billing_logo') && $request->file('billing_logo')->isValid()) {
             $dir = public_path('uploads/branding');
             File::ensureDirectoryExists($dir);
             $file = $request->file('billing_logo');
-            $filename = 'billing_logo_'.time().'.'.$file->getClientOriginalExtension();
+            $guessed = strtolower((string) ($file->guessExtension() ?: 'bin'));
+            $ext = in_array($guessed, ['jpg', 'jpeg', 'png', 'webp'], true) ? $guessed : 'bin';
+            $filename = 'billing_logo_'.time().'_'.Str::random(10).'.'.$ext;
             $file->move($dir, $filename);
             $logoPath = 'uploads/branding/'.$filename;
         }

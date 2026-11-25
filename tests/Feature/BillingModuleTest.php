@@ -7,17 +7,23 @@ use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Invoice;
+use App\Models\InvoiceSequence;
 use App\Models\Payment;
+use App\Models\PermissionPreset;
 use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\Setting;
 use App\Models\Subscription;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\Billing\InvoiceNumberService;
 use App\Services\Billing\InvoiceService;
+use App\Services\PaymentService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class BillingModuleTest extends TestCase
@@ -393,5 +399,327 @@ class BillingModuleTest extends TestCase
             ->get(route('admin.billing.settings'))
             ->assertOk()
             ->assertSee('data-template-selector="default_template"', false);
+    }
+
+    public function test_bug1_two_payment_flows_preserve_order_totals_and_verify_syncs_invoice(): void
+    {
+        $order = SalesOrder::create([
+            'order_number' => 'ORD-SYNC-001',
+            'team_id' => $this->team->id,
+            'customer_name' => $this->customer->name,
+            'customer_phone' => $this->customer->phone,
+            'product_id' => $this->productA->id,
+            'product_name' => $this->productA->name,
+            'duration' => '1y',
+            'product_value' => 8000,
+            'discount_amount' => 0,
+            'closing_value' => 8000,
+            'amount_received' => 0,
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+        ]);
+
+        // Direct verified payment of 5000 on the order via PaymentService::verify()
+        $directPayment = Payment::create([
+            'order_id' => $order->id,
+            'customer_id' => $this->customer->id,
+            'payment_method' => 'bank_transfer',
+            'transaction_reference' => 'DIRECT-5000',
+            'amount' => 5000,
+            'currency' => 'USD',
+            'payment_date' => now(),
+            'payment_status' => 'pending',
+            'source' => 'manual',
+        ]);
+        app(PaymentService::class)->verify($directPayment, $this->admin->id);
+
+        $order->refresh();
+        $this->assertEquals(5000.00, (float) $order->amount_received);
+        $this->assertSame('partially_paid', $order->payment_status);
+
+        // Now create an invoice for that order with a confirmed payment of 3000
+        $invoiceService = app(InvoiceService::class);
+        $invoice = $invoiceService->createInvoice([
+            'customer_id' => $this->customer->id,
+            'order_id' => $order->id,
+            'status' => 'sent',
+            'issue_date' => now()->toDateString(),
+            'items' => [['description' => 'Balance Invoice', 'quantity' => 1, 'unit_price' => 3000]],
+        ], $this->admin);
+
+        $invoiceService->recordPayment($invoice, [
+            'amount' => 3000,
+            'payment_method' => 'upi',
+            'transaction_reference' => 'INV-3000',
+        ], $this->admin);
+
+        // Order total must be 8000 (5000 + 3000), NOT 3000!
+        $order->refresh();
+        $this->assertEquals(8000.00, (float) $order->amount_received);
+        $this->assertSame('paid', $order->payment_status);
+
+        // Now test verifying an invoice-linked pending payment via PaymentService::verify()
+        $invoice2 = $invoiceService->createInvoice([
+            'customer_id' => $this->customer->id,
+            'order_id' => $order->id,
+            'status' => 'sent',
+            'issue_date' => now()->toDateString(),
+            'items' => [['description' => 'Addon', 'quantity' => 1, 'unit_price' => 1000]],
+        ], $this->admin);
+
+        $pendingInvPayment = $invoiceService->recordPayment($invoice2, [
+            'amount' => 600,
+            'payment_method' => 'upi',
+            'confirmed' => false,
+        ]);
+        $this->assertSame('sent', $invoice2->fresh()->status);
+
+        app(PaymentService::class)->verify($pendingInvPayment, $this->admin->id);
+        $invoice2->refresh();
+        $this->assertSame(Invoice::STATUS_PARTIALLY_PAID, $invoice2->status);
+        $this->assertEquals(600.00, (float) $invoice2->amount_paid);
+    }
+
+    public function test_bug2_uploads_derive_safe_extension_from_mime_and_htaccess_blocks_php(): void
+    {
+        $this->assertFileExists(public_path('uploads/.htaccess'));
+        $htaccess = file_get_contents(public_path('uploads/.htaccess'));
+        $this->assertStringContainsString('php_flag engine off', $htaccess);
+        $this->assertStringContainsString('Require all denied', $htaccess);
+
+        // Minimal valid 1x1 PNG binary
+        $pngBinary = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+
+        // 1. Direct .php extension is rejected by validation
+        $tmpPhp = tempnam(sys_get_temp_dir(), 'polyphp');
+        file_put_contents($tmpPhp, $pngBinary);
+        $disguisedPhp = new UploadedFile($tmpPhp, 'shell.php', 'image/png', null, true);
+
+        $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.billing.expenses.store'), [
+                'title' => 'Blocked PHP Upload',
+                'category' => 'software',
+                'amount' => 25,
+                'expense_date' => now()->toDateString(),
+                'payment_method' => 'card',
+                'receipt' => $disguisedPhp,
+            ])->assertSessionHasErrors('receipt');
+
+        // 2. Polyglot with non-php executable extension (e.g. .html / .pht) carrying PNG content is stored as .png from MIME sniff
+        $tmpPoly = tempnam(sys_get_temp_dir(), 'polyhtml');
+        file_put_contents($tmpPoly, $pngBinary);
+        $disguisedHtml = new UploadedFile($tmpPoly, 'payload.html', 'image/png', null, true);
+
+        $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.billing.expenses.store'), [
+                'title' => 'Disguised Receipt',
+                'category' => 'software',
+                'amount' => 25,
+                'expense_date' => now()->toDateString(),
+                'payment_method' => 'card',
+                'receipt' => $disguisedHtml,
+            ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $expense = Expense::latest('id')->firstOrFail();
+        $this->assertNotNull($expense->receipt_path);
+        $this->assertStringEndsWith('.png', $expense->receipt_path);
+        $this->assertStringNotContainsString('.html', $expense->receipt_path);
+        if (file_exists(public_path($expense->receipt_path))) {
+            @unlink(public_path($expense->receipt_path));
+        }
+
+        // Valid PNG logo upload keeps .png
+        $validPng = UploadedFile::fake()->image('company-logo.png', 100, 100);
+        $this->actingAs($this->admin, 'admin')
+            ->put(route('admin.billing.settings.update'), [
+                'company_name' => 'LeadX Corp',
+                'invoice_prefix' => 'INV',
+                'next_sequence' => 1,
+                'default_currency' => 'USD',
+                'default_tax_rate' => 0,
+                'default_tax_label' => 'Tax',
+                'default_due_days' => 14,
+                'default_template' => 'classic_navy',
+                'pdf_paper_size' => 'a4',
+                'billing_logo' => $validPng,
+            ])->assertRedirect();
+
+        $logoPath = Setting::billing()['billing_logo'] ?? '';
+        $this->assertStringEndsWith('.png', $logoPath);
+        if ($logoPath && file_exists(public_path($logoPath))) {
+            @unlink(public_path($logoPath));
+        }
+    }
+
+    public function test_bug3_and_bug4_overpayment_rejected_and_refund_types_sync_order_status(): void
+    {
+        $order = SalesOrder::create([
+            'order_number' => 'ORD-REF-001',
+            'team_id' => $this->team->id,
+            'customer_name' => $this->customer->name,
+            'customer_phone' => $this->customer->phone,
+            'product_id' => $this->productA->id,
+            'product_name' => $this->productA->name,
+            'duration' => '1y',
+            'product_value' => 1000,
+            'discount_amount' => 0,
+            'closing_value' => 1000,
+            'amount_received' => 0,
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+        ]);
+
+        $service = app(InvoiceService::class);
+        $invoice = $service->createInvoice([
+            'customer_id' => $this->customer->id,
+            'order_id' => $order->id,
+            'status' => 'sent',
+            'issue_date' => now()->toDateString(),
+            'items' => [['description' => 'Suite', 'quantity' => 1, 'unit_price' => 1000]],
+        ], $this->admin);
+
+        // First payment of 700 succeeds; second payment of 400 (sum 1100 > 1000) must fail
+        $service->recordPayment($invoice, ['amount' => 700, 'payment_method' => 'upi'], $this->admin);
+        try {
+            $service->recordPayment($invoice, ['amount' => 400, 'payment_method' => 'upi'], $this->admin);
+            $this->fail('Expected ValidationException on overpayment.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('amount', $e->errors());
+        }
+
+        // Complete full payment (300)
+        $service->recordPayment($invoice, ['amount' => 300, 'payment_method' => 'upi'], $this->admin);
+        $this->assertSame('paid', $order->fresh()->payment_status);
+
+        // Partial refund 1: 400 -> type=partial, order=partially_refunded
+        $ref1 = $service->recordRefund($invoice, ['amount' => 400, 'reason' => 'Partial refund'], $this->admin);
+        $this->assertSame('partial', $ref1->type);
+        $this->assertSame('partially_refunded', $order->fresh()->payment_status);
+
+        // Second refund covering remaining 600 -> type=full (400+600 >= 1000), order=refunded
+        $ref2 = $service->recordRefund($invoice, ['amount' => 600, 'reason' => 'Remaining refund'], $this->admin);
+        $this->assertSame('full', $ref2->type);
+        $this->assertSame(Invoice::STATUS_REFUNDED, $invoice->fresh()->status);
+        $this->assertSame('refunded', $order->fresh()->payment_status);
+    }
+
+    public function test_bug5_deleting_order_nullifies_payment_order_id_instead_of_cascade_deleting(): void
+    {
+        $order = SalesOrder::create([
+            'order_number' => 'ORD-DEL-001',
+            'team_id' => $this->team->id,
+            'customer_name' => $this->customer->name,
+            'customer_phone' => $this->customer->phone,
+            'product_id' => $this->productA->id,
+            'product_name' => $this->productA->name,
+            'duration' => '1y',
+            'product_value' => 500,
+            'discount_amount' => 0,
+            'closing_value' => 500,
+            'amount_received' => 0,
+            'payment_status' => 'pending',
+            'order_status' => 'pending',
+        ]);
+
+        $service = app(InvoiceService::class);
+        $invoice = $service->createInvoice([
+            'customer_id' => $this->customer->id,
+            'order_id' => $order->id,
+            'status' => 'sent',
+            'issue_date' => now()->toDateString(),
+            'items' => [['description' => 'Service', 'quantity' => 1, 'unit_price' => 500]],
+        ], $this->admin);
+
+        $payment = $service->recordPayment($invoice, ['amount' => 500, 'payment_method' => 'cash'], $this->admin);
+        $order->delete();
+
+        $payment->refresh();
+        $this->assertNull($payment->order_id);
+        $this->assertSame($invoice->id, $payment->invoice_id);
+        $this->assertEquals(500.00, (float) $invoice->fresh()->amount_paid);
+    }
+
+    public function test_bug6_invoice_number_sequence_handles_fresh_month_concurrently(): void
+    {
+        InvoiceSequence::query()->delete();
+        $numberService = app(InvoiceNumberService::class);
+
+        $n1 = $numberService->nextInvoiceNumber();
+        $n2 = $numberService->nextInvoiceNumber();
+
+        $this->assertNotSame($n1, $n2);
+        $this->assertMatchesRegularExpression('/^INV-\d{6}-0001$/', $n1);
+        $this->assertMatchesRegularExpression('/^INV-\d{6}-0002$/', $n2);
+    }
+
+    public function test_bug7_bug8_bug9_bug10_ui_sidebar_layouts_and_line_item_tax_discount(): void
+    {
+        // Bug 8: Unique sidebar orders
+        $orders = array_column(\App\Http\Controllers\Employee\DashboardController::DEFAULT_SIDEBAR_MODULES, 'order');
+        $this->assertCount(count($orders), array_unique($orders));
+
+        // Bug 9: Six legacy admin pages use layouts.admin-dashboard with Billing nav
+        $preset = PermissionPreset::firstOrFail();
+        $employee = User::create([
+            'name' => 'Layout Emp',
+            'username' => 'layoutemp',
+            'email' => 'layout-emp@example.com',
+            'password' => Hash::make('secret123'),
+            'role' => 'employee',
+            'status' => 'active',
+            'team_id' => $this->team->id,
+        ]);
+
+        foreach ([
+            route('admin.permissions.index'),
+            route('admin.presets'),
+            route('admin.presets.create'),
+            route('admin.presets.edit', $preset),
+            route('admin.presets.employee', $employee),
+            route('admin.installer.recovery'),
+        ] as $url) {
+            $res = $this->actingAs($this->admin, 'admin')->get($url);
+            $res->assertOk();
+            $res->assertSee('Billing Dashboard');
+        }
+
+        // Bug 7: Employee multi-item invoice create form + Bug 10: line-level discount & tax
+        auth()->guard('admin')->logout();
+        $empForm = $this->actingAs($employee, 'employee')->get(route('employee.billing.create'));
+        $empForm->assertOk();
+        $empForm->assertSee('emp-add-item-btn');
+
+        $this->actingAs($employee, 'employee')
+            ->post(route('employee.billing.store'), [
+                'customer_id' => $this->customer->id,
+                'issue_date' => now()->toDateString(),
+                'discount_type' => 'fixed',
+                'discount_value' => 10,
+                'tax_rate' => 10,
+                'items' => [
+                    [
+                        'product_id' => $this->productA->id,
+                        'description' => 'Line 1',
+                        'quantity' => 2,
+                        'unit_price' => 100,
+                        'discount_amount' => 20, // taxable = 180
+                        'tax_rate' => 10, // line tax = 18 -> line total = 198
+                    ],
+                    [
+                        'description' => 'Line 2',
+                        'quantity' => 1,
+                        'unit_price' => 112, // line total = 112
+                    ],
+                ],
+            ])->assertRedirect();
+
+        $empInv = Invoice::latest('id')->firstOrFail();
+        $this->assertCount(2, $empInv->items);
+        // Line 1: 198, Line 2: 112 -> subtotal = 310; invoice discount = 10 -> base = 300; invoice tax 10% = 30 -> grand = 330
+        $this->assertEquals(20.00, (float) $empInv->items[0]->discount_amount);
+        $this->assertEquals(18.00, (float) $empInv->items[0]->tax_amount);
+        $this->assertEquals(198.00, (float) $empInv->items[0]->line_total);
+        $this->assertEquals(310.00, (float) $empInv->subtotal);
+        $this->assertEquals(330.00, (float) $empInv->grand_total);
     }
 }

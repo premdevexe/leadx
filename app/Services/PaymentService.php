@@ -153,97 +153,99 @@ class PaymentService
     {
         $order = $payment->order()->with(['team', 'assignedEmployee'])->first();
 
-        if (! $order) {
-            return;
-        }
+        if ($order) {
+            $customer = null;
 
-        $customer = null;
+            // The CRM upsert happens only for verified purchases - pending or
+            // failed gateway rows never create or promote a customer.
+            if ($payment->isVerified()) {
+                try {
+                    $customer = $this->crm->upsertForPurchase(
+                        $order,
+                        \App\Support\Money::toCents($payment->amount),
+                        $adminId,
+                    );
 
-        // The CRM upsert happens only for verified purchases - pending or
-        // failed gateway rows never create or promote a customer.
-        if ($payment->isVerified()) {
-            try {
-                $customer = $this->crm->upsertForPurchase(
-                    $order,
-                    \App\Support\Money::toCents($payment->amount),
-                    $adminId,
-                );
-
-                // Link the verified payment to the CRM customer it settled,
-                // so the customer's purchase and payment history stay
-                // traversable from both sides.
-                if ($customer->id !== $payment->customer_id) {
-                    $payment->forceFill(['customer_id' => $customer->id])->save();
+                    // Link the verified payment to the CRM customer it settled,
+                    // so the customer's purchase and payment history stay
+                    // traversable from both sides.
+                    if ($customer->id !== $payment->customer_id) {
+                        $payment->forceFill(['customer_id' => $customer->id])->save();
+                    }
+                } catch (Throwable) {
+                    // An unresolvable customer never blocks activation; the
+                    // admin can resolve it manually.
+                    $customer = null;
                 }
-            } catch (Throwable) {
-                // An unresolvable customer never blocks activation; the
-                // admin can resolve it manually.
-                $customer = null;
-            }
-        }
-
-        $this->syncOrder($order);
-        $this->activator->maybeActivate($order, $adminId, $customer);
-
-        if ($payment->isVerified()) {
-            $this->notify($order, new PaymentVerifiedNotification($payment));
-
-            try {
-                app(\App\Services\NotificationHubService::class)->notifyPaymentVerified($payment);
-            } catch (\Throwable) {
             }
 
-            // Payment emails fire ONLY after the payment is actually
-            // verified (Section 5). All non-blocking and admin-toggleable.
-            $verifiedContext = [
-                'order_id'         => $order->id,
-                'customer_id'      => $order->customer_id,
-                'customer_email'   => $order->customer_email,
-                'customer_name'    => $order->customer_name,
-                'team_name'        => $order->team?->team_name,
-                'order_number'     => $order->order_number,
-                'product_name'     => $order->product_name_snapshot ?? '—',
-                'closing_value'    => number_format((float) $order->closing_value, 2),
-                'payment_method'   => $payment->payment_method,
-                'payment_status'   => 'verified',
-                'amount_received'  => number_format((float) $payment->amount, 2),
-            ];
+            $this->syncOrder($order);
+            $this->activator->maybeActivate($order, $adminId, $customer);
 
-            try {
-                app(\App\Services\EmailService::class)->dispatch('payment.verified', $verifiedContext + [
-                    'to_email' => $order->customer_email,
-                    'order'    => $order,
-                ]);
-            } catch (\Throwable) {
-                // Email failure must never break the payment pipeline.
-            }
+            if ($payment->isVerified()) {
+                $this->notify($order, new PaymentVerifiedNotification($payment));
 
-            try {
-                app(\App\Services\EmailService::class)->dispatch('payment.receipt', $verifiedContext + [
-                    'to_email' => $order->customer_email,
-                    'order'    => $order,
-                ]);
-            } catch (\Throwable) {
-            }
+                try {
+                    app(\App\Services\NotificationHubService::class)->notifyPaymentVerified($payment);
+                } catch (\Throwable) {
+                }
 
-            try {
-                app(\App\Services\EmailService::class)->dispatch('team.payment_status', $verifiedContext + [
-                    'team'   => $order->team,
-                    'order'  => $order,
-                    'status' => 'verified',
-                ]);
-            } catch (\Throwable) {
-            }
+                // Payment emails fire ONLY after the payment is actually
+                // verified (Section 5). All non-blocking and admin-toggleable.
+                $verifiedContext = [
+                    'order_id'         => $order->id,
+                    'customer_id'      => $order->customer_id,
+                    'customer_email'   => $order->customer_email,
+                    'customer_name'    => $order->customer_name,
+                    'team_name'        => $order->team?->team_name,
+                    'order_number'     => $order->order_number,
+                    'product_name'     => $order->product_name_snapshot ?? '—',
+                    'closing_value'    => number_format((float) $order->closing_value, 2),
+                    'payment_method'   => $payment->payment_method,
+                    'payment_status'   => 'verified',
+                    'amount_received'  => number_format((float) $payment->amount, 2),
+                ];
 
-            try {
-                if ($order->assigned_employee_id) {
-                    app(\App\Services\EmailService::class)->dispatch('employee.payment_update', $verifiedContext + [
+                try {
+                    app(\App\Services\EmailService::class)->dispatch('payment.verified', $verifiedContext + [
+                        'to_email' => $order->customer_email,
                         'order'    => $order,
-                        'employee' => $order->team ? \App\Models\User::find($order->assigned_employee_id) : null,
                     ]);
+                } catch (\Throwable) {
+                    // Email failure must never break the payment pipeline.
                 }
-            } catch (\Throwable) {
+
+                try {
+                    app(\App\Services\EmailService::class)->dispatch('payment.receipt', $verifiedContext + [
+                        'to_email' => $order->customer_email,
+                        'order'    => $order,
+                    ]);
+                } catch (\Throwable) {
+                }
+
+                try {
+                    app(\App\Services\EmailService::class)->dispatch('team.payment_status', $verifiedContext + [
+                        'team'   => $order->team,
+                        'order'  => $order,
+                        'status' => 'verified',
+                    ]);
+                } catch (\Throwable) {
+                }
+
+                try {
+                    if ($order->assigned_employee_id) {
+                        app(\App\Services\EmailService::class)->dispatch('employee.payment_update', $verifiedContext + [
+                            'order'    => $order,
+                            'employee' => $order->team ? \App\Models\User::find($order->assigned_employee_id) : null,
+                        ]);
+                    }
+                } catch (\Throwable) {
+                }
             }
+        }
+
+        if ($payment->invoice_id && ($invoice = $payment->invoice()->first())) {
+            app(\App\Services\Billing\InvoiceService::class)->recalculateInvoicePaymentStatus($invoice, false);
         }
     }
 
@@ -251,53 +253,55 @@ class PaymentService
     {
         $order = $payment->order()->first();
 
-        if (! $order) {
-            return;
+        if ($order) {
+            $this->syncOrder($order);
+
+            // A rejection invalidates any activation that no longer has a
+            // sufficient verified total.
+            $subscription = $order->subscription;
+
+            if ($subscription && $subscription->status === 'active' && ! $this->activator->policySatisfied($order)) {
+                $subscription->forceFill(['status' => 'suspended'])->save();
+                $order->forceFill(['order_status' => 'suspended'])->save();
+            }
+
+            // Failed-payment alerts (non-blocking, admin-toggleable).
+            $failedContext = [
+                'order_id'       => $order->id,
+                'order_number'   => $order->order_number,
+                'customer_name'  => $order->customer_name,
+                'customer_email' => $order->customer_email,
+                'team_name'      => $order->team?->team_name,
+                'product_name'   => $order->product_name_snapshot ?? '—',
+                'closing_value'  => number_format((float) $order->closing_value, 2),
+                'payment_method' => $payment->payment_method,
+            ];
+
+            try {
+                app(\App\Services\EmailService::class)->dispatch('admin.payment.failed', $failedContext);
+            } catch (\Throwable) {
+            }
+
+            try {
+                app(\App\Services\EmailService::class)->dispatch('team.payment_status', $failedContext + [
+                    'team'  => $order->team,
+                    'order' => $order,
+                    'status' => 'failed',
+                ]);
+            } catch (\Throwable) {
+            }
         }
 
-        $this->syncOrder($order);
-
-        // A rejection invalidates any activation that no longer has a
-        // sufficient verified total.
-        $subscription = $order->subscription;
-
-        if ($subscription && $subscription->status === 'active' && ! $this->activator->policySatisfied($order)) {
-            $subscription->forceFill(['status' => 'suspended'])->save();
-            $order->forceFill(['order_status' => 'suspended'])->save();
-        }
-
-        // Failed-payment alerts (non-blocking, admin-toggleable).
-        $failedContext = [
-            'order_id'       => $order->id,
-            'order_number'   => $order->order_number,
-            'customer_name'  => $order->customer_name,
-            'customer_email' => $order->customer_email,
-            'team_name'      => $order->team?->team_name,
-            'product_name'   => $order->product_name_snapshot ?? '—',
-            'closing_value'  => number_format((float) $order->closing_value, 2),
-            'payment_method' => $payment->payment_method,
-        ];
-
-        try {
-            app(\App\Services\EmailService::class)->dispatch('admin.payment.failed', $failedContext);
-        } catch (\Throwable) {
-        }
-
-        try {
-            app(\App\Services\EmailService::class)->dispatch('team.payment_status', $failedContext + [
-                'team'  => $order->team,
-                'order' => $order,
-                'status' => 'failed',
-            ]);
-        } catch (\Throwable) {
+        if ($payment->invoice_id && ($invoice = $payment->invoice()->first())) {
+            app(\App\Services\Billing\InvoiceService::class)->recalculateInvoicePaymentStatus($invoice, false);
         }
     }
 
     /**
      * Keep the order's collected amount and payment status consistent with
-     * its verified payments.
+     * its verified payments and processed refunds.
      */
-    protected function syncOrder(SalesOrder $order): void
+    public function syncOrder(SalesOrder $order): void
     {
         $order->amount_received = $order->verifiedPaymentTotal();
         $order->payment_status = $this->orderPaymentStatusFor($order);
@@ -306,10 +310,19 @@ class PaymentService
         SalesAnalyticsService::invalidateCache();
     }
 
-    protected function orderPaymentStatusFor(SalesOrder $order): string
+    public function orderPaymentStatusFor(SalesOrder $order): string
     {
         $dueCents = \App\Support\Money::toCents($order->amountDue());
         $verifiedCents = \App\Support\Money::toCents($order->verifiedPaymentTotal());
+        $refundedCents = \App\Support\Money::toCents((string) $order->totalRefunded());
+
+        if ($refundedCents > 0) {
+            if ($verifiedCents <= 0 || $refundedCents >= $verifiedCents) {
+                return 'refunded';
+            }
+
+            return 'partially_refunded';
+        }
 
         if ($dueCents > 0 && $verifiedCents >= $dueCents) {
             return 'paid';
@@ -321,6 +334,10 @@ class PaymentService
 
         if ($order->payments()->where('payment_status', 'failed')->exists()) {
             return 'failed';
+        }
+
+        if ($order->payments()->where('payment_status', 'refunded')->exists()) {
+            return 'refunded';
         }
 
         return 'pending';

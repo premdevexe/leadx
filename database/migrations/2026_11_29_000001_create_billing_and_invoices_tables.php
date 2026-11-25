@@ -121,13 +121,21 @@ return new class extends Migration
 
         // 6. Extend existing payments & refunds tables to link to invoices
         Schema::table('payments', function (Blueprint $table) {
+            $table->dropForeign(['order_id']);
+        });
+        Schema::table('payments', function (Blueprint $table) {
             $table->unsignedBigInteger('order_id')->nullable()->change();
+            $table->foreign('order_id')->references('id')->on('sales_orders')->nullOnDelete();
             $table->foreignId('invoice_id')->nullable()->after('order_id')->constrained('invoices')->nullOnDelete();
             $table->foreignId('recorded_by_user_id')->nullable()->after('verified_by_admin_id')->constrained('users')->nullOnDelete();
         });
 
         Schema::table('refunds', function (Blueprint $table) {
+            $table->dropForeign(['order_id']);
+        });
+        Schema::table('refunds', function (Blueprint $table) {
             $table->unsignedBigInteger('order_id')->nullable()->change();
+            $table->foreign('order_id')->references('id')->on('sales_orders')->nullOnDelete();
             $table->foreignId('invoice_id')->nullable()->after('order_id')->constrained('invoices')->nullOnDelete();
             $table->foreignId('payment_id')->nullable()->after('invoice_id')->constrained('payments')->nullOnDelete();
             $table->foreignId('customer_id')->nullable()->after('payment_id')->constrained('customers')->nullOnDelete();
@@ -137,6 +145,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('refunds', function (Blueprint $table) {
+            $table->dropForeign(['order_id']);
             $table->dropForeign(['invoice_id']);
             $table->dropForeign(['payment_id']);
             $table->dropForeign(['customer_id']);
@@ -144,6 +153,7 @@ return new class extends Migration
         });
 
         Schema::table('payments', function (Blueprint $table) {
+            $table->dropForeign(['order_id']);
             $table->dropForeign(['invoice_id']);
             $table->dropForeign(['recorded_by_user_id']);
             $table->dropColumn(['invoice_id', 'recorded_by_user_id']);

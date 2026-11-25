@@ -12,6 +12,7 @@ use App\Services\Billing\InvoiceNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -85,11 +86,13 @@ class ExpensesController extends Controller
         ]);
 
         $receiptPath = null;
-        if ($request->hasFile('receipt')) {
+        if ($request->hasFile('receipt') && $request->file('receipt')->isValid()) {
             $dir = public_path('uploads/receipts');
             File::ensureDirectoryExists($dir);
             $file = $request->file('receipt');
-            $filename = 'receipt_'.now()->format('Ymd_His').'_'.uniqid().'.'.$file->getClientOriginalExtension();
+            $guessed = strtolower((string) ($file->guessExtension() ?: 'bin'));
+            $ext = in_array($guessed, ['jpg', 'jpeg', 'png', 'pdf'], true) ? $guessed : 'bin';
+            $filename = 'receipt_'.now()->format('Ymd_His').'_'.Str::random(10).'.'.$ext;
             $file->move($dir, $filename);
             $receiptPath = 'uploads/receipts/'.$filename;
         }
