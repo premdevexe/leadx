@@ -18,7 +18,11 @@ class Payment extends Model
      */
     public const METHODS = [
         'upi',
+        'phonepe',
+        'gpay',
         'bank_transfer',
+        'cash',
+        'card',
         'gateway',
         'other',
     ];
@@ -53,6 +57,7 @@ class Payment extends Model
      */
     protected $fillable = [
         'order_id',
+        'invoice_id',
         'customer_id',
         'payment_method',
         'transaction_reference',
@@ -62,6 +67,7 @@ class Payment extends Model
         'payment_status',
         'source',
         'verified_by_admin_id',
+        'recorded_by_user_id',
         'verification_source',
         'verified_at',
         'admin_notes',
@@ -82,6 +88,16 @@ class Payment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(SalesOrder::class, 'order_id');
+    }
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function recordedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by_user_id');
     }
 
     protected static function booted(): void

@@ -68,6 +68,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'sidebar.orders', 'module' => 'sidebar', 'action' => 'orders', 'description' => 'View My Orders sidebar menu item'],
             ['name' => 'sidebar.customers', 'module' => 'sidebar', 'action' => 'customers', 'description' => 'View Customers sidebar menu item'],
             ['name' => 'sidebar.payments', 'module' => 'sidebar', 'action' => 'payments', 'description' => 'View Payments sidebar menu item'],
+            ['name' => 'sidebar.billing', 'module' => 'sidebar', 'action' => 'billing', 'description' => 'View Billing & Invoices sidebar menu item'],
             ['name' => 'sidebar.subscriptions', 'module' => 'sidebar', 'action' => 'subscriptions', 'description' => 'View Subscriptions sidebar menu item'],
             ['name' => 'sidebar.follow_ups', 'module' => 'sidebar', 'action' => 'follow_ups', 'description' => 'View Follow-ups sidebar menu item'],
             ['name' => 'sidebar.team_data', 'module' => 'sidebar', 'action' => 'team_data', 'description' => 'View Team Data sidebar menu item'],
@@ -75,6 +76,16 @@ class PermissionSeeder extends Seeder
             ['name' => 'sidebar.notifications', 'module' => 'sidebar', 'action' => 'notifications', 'description' => 'View Notifications sidebar menu item'],
             ['name' => 'sidebar.settings', 'module' => 'sidebar', 'action' => 'settings', 'description' => 'View Settings sidebar menu item'],
             ['name' => 'sidebar.help', 'module' => 'sidebar', 'action' => 'help', 'description' => 'View Help sidebar menu item'],
+
+            // Billing & Invoices
+            ['name' => 'billing.view', 'module' => 'billing', 'action' => 'view', 'description' => 'View billing & customer invoices'],
+            ['name' => 'billing.invoices.create', 'module' => 'billing', 'action' => 'invoices_create', 'description' => 'Create new invoices'],
+            ['name' => 'billing.invoices.edit', 'module' => 'billing', 'action' => 'invoices_edit', 'description' => 'Edit draft/unpaid invoices'],
+            ['name' => 'billing.payments.create', 'module' => 'billing', 'action' => 'payments_create', 'description' => 'Record manual payments against invoices'],
+            ['name' => 'billing.refunds.manage', 'module' => 'billing', 'action' => 'refunds_manage', 'description' => 'Record refunds and credit notes'],
+            ['name' => 'billing.expenses.manage', 'module' => 'billing', 'action' => 'expenses_manage', 'description' => 'Manage business expenses'],
+            ['name' => 'billing.reports.view', 'module' => 'billing', 'action' => 'reports_view', 'description' => 'View financial reports and net profit'],
+            ['name' => 'billing.settings.manage', 'module' => 'billing', 'action' => 'settings_manage', 'description' => 'Configure billing & invoice settings'],
         ];
 
         $permissionModels = [];
@@ -114,12 +125,13 @@ class PermissionSeeder extends Seeder
             'orders.view', 'orders.create', 'orders.complete', 'orders.view_api_key', 'orders.copy_api_key',
             'customers.view', 'customers.create', 'customers.edit',
             'payments.view',
+            'billing.view', 'billing.invoices.create',
             'subscriptions.view',
             'follow_ups.view', 'follow_ups.create', 'follow_ups.edit',
             'dashboard.orders_count', 'dashboard.active_subscriptions', 'dashboard.expiring_soon',
             'dashboard.total_revenue', 'dashboard.recent_orders', 'dashboard.upcoming_renewals',
             'sidebar.dashboard', 'sidebar.create_order', 'sidebar.orders', 'sidebar.customers',
-            'sidebar.payments', 'sidebar.subscriptions', 'sidebar.follow_ups', 'sidebar.notifications', 'sidebar.reports',
+            'sidebar.payments', 'sidebar.billing', 'sidebar.subscriptions', 'sidebar.follow_ups', 'sidebar.notifications', 'sidebar.reports',
         ];
         foreach ($permissionModels as $name => $perm) {
             PermissionPresetItem::updateOrCreate(

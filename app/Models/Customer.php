@@ -72,6 +72,16 @@ class Customer extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class)->latest('issue_date')->latest('id');
+    }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class)->latest('id');
+    }
+
     public function scopePaying(Builder $query): Builder
     {
         return $query->where('status', 'paying');

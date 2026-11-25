@@ -23,6 +23,7 @@ class Setting extends Model
         'upi' => 'UPI',
         'bank_transfer' => 'Bank Transfer',
         'cash' => 'Cash',
+        'card' => 'Card',
     ];
 
     public const KEY_PAYMENT_METHODS = 'payment_methods';
@@ -48,6 +49,7 @@ class Setting extends Model
     public const KEY_LOGO = 'site_logo';
     public const KEY_LOGO_TRANSPARENT = 'site_logo_transparent';
     public const KEY_FAVICON = 'site_favicon';
+    public const KEY_BILLING = 'billing_settings';
 
     /**
      * The attributes that are mass assignable.
@@ -357,5 +359,83 @@ class Setting extends Model
         if ($path !== '') {
             static::create(['key' => self::KEY_FAVICON, 'value' => $path]);
         }
+    }
+
+    /**
+     * Enterprise Billing & Invoice configuration with safe defaults.
+     *
+     * @return array<string, mixed>
+     */
+    public static function billing(): array
+    {
+        $stored = static::where('key', self::KEY_BILLING)->value('value');
+        $stored = is_array($stored) ? $stored : [];
+
+        return array_merge([
+            'company_name' => static::siteName(),
+            'company_address' => '',
+            'gstin' => '',
+            'pan' => '',
+            'billing_logo' => null,
+            'invoice_prefix' => 'INV',
+            'next_sequence' => 1,
+            'default_currency' => static::currency(),
+            'default_tax_rate' => 0.0,
+            'default_tax_label' => 'Tax / GST',
+            'default_payment_terms' => 'Due within 14 days of issue',
+            'default_due_days' => 14,
+            'invoice_footer_text' => 'Thank you for your business. This is a computer-generated invoice.',
+            'support_email' => 'billing@leadx.local',
+            'support_phone' => '',
+            'default_template' => 'classic_navy',
+            'pdf_paper_size' => 'a4',
+            'pdf_show_gstin' => true,
+            'pdf_show_pan' => true,
+            'pdf_show_digital_verification' => true,
+        ], $stored);
+    }
+
+    /**
+     * Persist Billing & Invoice configuration.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function setBilling(array $data): void
+    {
+        $merged = array_merge(static::billing(), $data);
+        static::updateOrCreate(
+            ['key' => self::KEY_BILLING],
+            ['value' => $merged]
+        );
+    }
+
+    /**
+     * Full URL or filesystem path for the billing logo (falls back to site logo).
+     */
+    public static function billingLogoUrl(): ?string
+    {
+        $billing = static::billing();
+        $path = $billing['billing_logo'] ?? null;
+        if (is_string($path) && $path !== '' && file_exists(public_path($path))) {
+            return asset($path);
+        }
+
+        return static::logoUrl() ?? static::logoTransparentUrl();
+    }
+
+    public static function billingLogoLocalPath(): ?string
+    {
+        $billing = static::billing();
+        $path = $billing['billing_logo'] ?? null;
+        if (is_string($path) && $path !== '' && file_exists(public_path($path))) {
+            return public_path($path);
+        }
+
+        $siteLogo = static::logoPath() ?? static::logoTransparentPath();
+        if ($siteLogo && file_exists(public_path($siteLogo))) {
+            return public_path($siteLogo);
+        }
+
+        return null;
     }
 }

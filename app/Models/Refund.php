@@ -12,6 +12,9 @@ class Refund extends Model
 
     protected $fillable = [
         'order_id',
+        'invoice_id',
+        'payment_id',
+        'customer_id',
         'admin_id',
         'amount',
         'type',
@@ -32,6 +35,21 @@ class Refund extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(SalesOrder::class, 'order_id');
+    }
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class, 'payment_id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
     public function admin(): BelongsTo

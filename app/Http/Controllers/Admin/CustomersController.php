@@ -59,6 +59,9 @@ class CustomersController extends Controller
             'team',
             'subscriptions.product',
             'payments.order',
+            'payments.invoice',
+            'invoices.items',
+            'refunds.invoice',
         ]);
 
         // Resolve all orders linked to this customer via phone or email
@@ -76,9 +79,29 @@ class CustomersController extends Controller
             ->latest('id')
             ->get();
 
+        $totalInvoiced = (float) $customer->invoices
+            ->whereNotIn('status', [\App\Models\Invoice::STATUS_DRAFT, \App\Models\Invoice::STATUS_CANCELLED])
+            ->sum('grand_total');
+        $totalPaid = (float) $customer->payments->where('payment_status', 'paid')->sum('amount');
+        $outstandingBalance = (float) $customer->invoices
+            ->whereIn('status', [
+                \App\Models\Invoice::STATUS_SENT,
+                \App\Models\Invoice::STATUS_PARTIALLY_PAID,
+                \App\Models\Invoice::STATUS_OVERDUE,
+            ])
+            ->sum('balance_due');
+        $totalRefunded = (float) $customer->refunds->sum('amount');
+
         return view('admin.customers.show', [
             'customer' => $customer,
             'orders' => $orders,
+            'billingSummary' => [
+                'total_purchased' => max((float) $customer->total_purchased, $totalInvoiced),
+                'total_paid' => $totalPaid,
+                'pending_amount' => $outstandingBalance,
+                'outstanding_balance' => $outstandingBalance,
+                'total_refunded' => $totalRefunded,
+            ],
         ]);
     }
 }

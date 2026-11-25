@@ -14,10 +14,19 @@
                 Customer profile · Team {{ $customer->team?->team_code ?? '—' }} · Member since {{ $customer->created_at->format('M d, Y') }}
             </p>
         </div>
-        <a href="{{ route('admin.customers') }}" class="text-sm text-neutral-600 hover:text-neutral-900">&larr; All customers</a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('admin.billing.invoices.create', ['customer_id' => $customer->id]) }}" class="btn btn-primary text-xs">+ Create Invoice</a>
+            <a href="{{ route('admin.customers') }}" class="text-sm text-neutral-600 hover:text-neutral-900">&larr; All customers</a>
+        </div>
     </div>
 
-    <div class="mt-5 grid gap-5 lg:grid-cols-3">
+    {{-- Profile Tabs --}}
+    <div class="mt-4 flex gap-2 border-b border-neutral-200 pb-2">
+        <button type="button" data-tab-btn="overview" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-neutral-900 text-white">Overview &amp; Orders</button>
+        <button type="button" data-tab-btn="billing" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-neutral-100 text-neutral-700 hover:bg-neutral-200">Billing History ({{ $customer->invoices->count() }})</button>
+    </div>
+
+    <div id="tab-overview" class="mt-5 grid gap-5 lg:grid-cols-3">
         {{-- Profile Card --}}
         <div class="rounded-xl border border-neutral-200 bg-white p-5 lg:col-span-1">
             <h2 class="text-sm font-semibold text-neutral-500">Customer Info</h2>
@@ -151,4 +160,123 @@
             @endif
         </div>
     </div>
+
+    {{-- Billing Tab --}}
+    <div id="tab-billing" class="mt-5 space-y-5 hidden">
+        <div class="grid gap-4 sm:grid-cols-4">
+            <div class="rounded-xl border border-neutral-200 bg-white p-4">
+                <div class="text-xs text-neutral-500">Total Purchased</div>
+                <div class="mt-1 text-xl font-bold tabular-nums">{{ $cur }}{{ number_format($billingSummary['total_purchased'] ?? 0, 2) }}</div>
+            </div>
+            <div class="rounded-xl border border-neutral-200 bg-white p-4">
+                <div class="text-xs text-neutral-500">Total Paid</div>
+                <div class="mt-1 text-xl font-bold tabular-nums text-emerald-700">{{ $cur }}{{ number_format($billingSummary['total_paid'] ?? 0, 2) }}</div>
+            </div>
+            <div class="rounded-xl border border-neutral-200 bg-white p-4">
+                <div class="text-xs text-neutral-500">Pending Amount</div>
+                <div class="mt-1 text-xl font-bold tabular-nums text-amber-700">{{ $cur }}{{ number_format($billingSummary['pending_amount'] ?? 0, 2) }}</div>
+            </div>
+            <div class="rounded-xl border border-neutral-200 bg-white p-4">
+                <div class="text-xs text-neutral-500">Outstanding Balance</div>
+                <div class="mt-1 text-xl font-bold tabular-nums text-red-600">{{ $cur }}{{ number_format($billingSummary['outstanding_balance'] ?? 0, 2) }}</div>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-neutral-200 bg-white p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-semibold text-neutral-800">Invoice History</h2>
+                <a href="{{ route('admin.billing.invoices.create', ['customer_id' => $customer->id]) }}" class="text-xs font-semibold text-emerald-700 hover:underline">+ New Invoice</a>
+            </div>
+            @if ($customer->invoices->isEmpty())
+                <p class="text-sm text-neutral-400">No invoices issued for this customer.</p>
+            @else
+                <div class="table-wrapper">
+                    <table class="data-table w-full">
+                        <thead>
+                            <tr>
+                                <th class="px-3 py-2 text-left">Invoice #</th>
+                                <th class="px-3 py-2 text-left">Issue Date</th>
+                                <th class="px-3 py-2 text-right">Total</th>
+                                <th class="px-3 py-2 text-right">Balance</th>
+                                <th class="px-3 py-2 text-left">Status</th>
+                                <th class="px-3 py-2 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($customer->invoices as $inv)
+                                <tr>
+                                    <td class="px-3 py-2 font-mono text-xs font-semibold">
+                                        <a href="{{ route('admin.billing.invoices.show', $inv) }}" class="hover:underline">{{ $inv->invoice_number }}</a>
+                                    </td>
+                                    <td class="px-3 py-2 text-xs text-neutral-600">{{ $inv->issue_date->format('M d, Y') }}</td>
+                                    <td class="px-3 py-2 text-right tabular-nums text-xs font-semibold">{{ \App\Models\Setting::currencySymbolFor($inv->currency) }}{{ number_format((float) $inv->grand_total, 2) }}</td>
+                                    <td class="px-3 py-2 text-right tabular-nums text-xs">{{ \App\Models\Setting::currencySymbolFor($inv->currency) }}{{ number_format((float) $inv->balance_due, 2) }}</td>
+                                    <td class="px-3 py-2 text-xs"><span class="badge badge-neutral">{{ \App\Models\Invoice::STATUSES[$inv->status] ?? ucfirst($inv->status) }}</span></td>
+                                    <td class="px-3 py-2 text-right text-xs space-x-2">
+                                        <a href="{{ route('admin.billing.invoices.show', $inv) }}" class="text-neutral-700 hover:underline">Open</a>
+                                        <a href="{{ route('admin.billing.invoices.pdf', $inv) }}" class="text-emerald-700 hover:underline">PDF</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+
+        <div class="grid gap-5 lg:grid-cols-2">
+            <div class="rounded-xl border border-neutral-200 bg-white p-5">
+                <h2 class="text-sm font-semibold text-neutral-800 mb-3">Payment History</h2>
+                @if ($customer->payments->isEmpty())
+                    <p class="text-sm text-neutral-400">No payments recorded.</p>
+                @else
+                    <ul class="space-y-2 text-xs">
+                        @foreach ($customer->payments as $p)
+                            <li class="flex justify-between border-b border-neutral-100 pb-1.5">
+                                <span>{{ $p->payment_date?->format('M d, Y') ?? $p->created_at->format('M d, Y') }} &middot; {{ strtoupper($p->payment_method) }} {{ $p->invoice ? '('.$p->invoice->invoice_number.')' : '' }}</span>
+                                <span class="font-semibold tabular-nums text-emerald-700">{{ \App\Models\Setting::currencySymbolFor($p->currency) }}{{ number_format((float) $p->amount, 2) }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+
+            <div class="rounded-xl border border-neutral-200 bg-white p-5">
+                <h2 class="text-sm font-semibold text-neutral-800 mb-3">Refund History</h2>
+                @if ($customer->refunds->isEmpty())
+                    <p class="text-sm text-neutral-400">No refunds recorded.</p>
+                @else
+                    <ul class="space-y-2 text-xs">
+                        @foreach ($customer->refunds as $r)
+                            <li class="flex justify-between border-b border-neutral-100 pb-1.5">
+                                <span>{{ $r->processed_at?->format('M d, Y') ?? $r->created_at->format('M d, Y') }} &middot; {{ $r->reason }}</span>
+                                <span class="font-semibold tabular-nums text-red-600">-{{ $cur }}{{ number_format((float) $r->amount, 2) }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const buttons = document.querySelectorAll('[data-tab-btn]');
+            const overview = document.getElementById('tab-overview');
+            const billing = document.getElementById('tab-billing');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.dataset.tabBtn;
+                    buttons.forEach(b => {
+                        b.classList.remove('bg-neutral-900', 'text-white');
+                        b.classList.add('bg-neutral-100', 'text-neutral-700');
+                    });
+                    btn.classList.remove('bg-neutral-100', 'text-neutral-700');
+                    btn.classList.add('bg-neutral-900', 'text-white');
+                    overview.classList.toggle('hidden', target !== 'overview');
+                    billing.classList.toggle('hidden', target !== 'billing');
+                });
+            });
+        })();
+    </script>
 @endsection

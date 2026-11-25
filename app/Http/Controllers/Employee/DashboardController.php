@@ -34,6 +34,7 @@ class DashboardController extends Controller
         ['key' => 'orders', 'route' => 'employee.orders', 'label' => 'My Orders', 'visible' => true, 'order' => 3, 'match' => 'employee.orders*', 'params' => []],
         ['key' => 'customers', 'route' => 'employee.customers', 'label' => 'Customers (CRM)', 'visible' => true, 'order' => 4, 'match' => 'employee.customers*', 'params' => []],
         ['key' => 'payments', 'route' => 'employee.payments', 'label' => 'My Payments', 'visible' => true, 'order' => 5, 'match' => 'employee.payments*', 'params' => []],
+        ['key' => 'billing', 'route' => 'employee.billing.index', 'label' => 'Invoices & Billing', 'visible' => true, 'order' => 5, 'match' => 'employee.billing*', 'params' => []],
         ['key' => 'subscriptions', 'route' => 'employee.subscriptions', 'label' => 'My Subscriptions', 'visible' => true, 'order' => 6, 'match' => 'employee.subscriptions*', 'params' => []],
         ['key' => 'follow_ups', 'route' => 'employee.follow-ups', 'label' => 'My Follow-ups', 'visible' => true, 'order' => 7, 'match' => 'employee.follow-ups*', 'params' => []],
         ['key' => 'expiry_reminders', 'route' => 'employee.subscriptions.expiring', 'label' => 'Expiry Reminders', 'visible' => true, 'order' => 8, 'match' => 'employee.subscriptions.expiring*', 'params' => []],

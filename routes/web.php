@@ -251,6 +251,39 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/customers', [CustomersController::class, 'index'])->name('admin.customers');
     Route::get('/admin/customers/{customer}', [CustomersController::class, 'show'])->name('admin.customers.show');
 
+    // ── Billing & Invoice Management ─────────────────────────────
+    Route::prefix('admin/billing')->name('admin.billing.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\Billing\BillingDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/invoices', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'index'])->name('invoices.index');
+        Route::get('/invoices/create', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'create'])->name('invoices.create');
+        Route::post('/invoices', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'store'])->name('invoices.store');
+        Route::get('/invoices/{invoice}', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'show'])->name('invoices.show');
+        Route::get('/invoices/{invoice}/edit', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'edit'])->name('invoices.edit');
+        Route::put('/invoices/{invoice}', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'update'])->name('invoices.update');
+        Route::post('/invoices/{invoice}/send', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'send'])->name('invoices.send');
+        Route::post('/invoices/{invoice}/cancel', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'cancel'])->name('invoices.cancel');
+        Route::get('/invoices/{invoice}/preview', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'preview'])->name('invoices.preview');
+        Route::get('/invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'pdf'])->name('invoices.pdf');
+        Route::post('/invoices/{invoice}/email', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'email'])->name('invoices.email');
+        Route::post('/invoices/{invoice}/payments', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'recordPayment'])->name('invoices.payments.store');
+        Route::post('/payments/{payment}/confirm', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'confirmPayment'])->name('payments.confirm');
+        Route::post('/invoices/{invoice}/refunds', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'recordRefund'])->name('invoices.refunds.store');
+        Route::post('/invoices/{invoice}/adjustments', [\App\Http\Controllers\Admin\Billing\InvoicesController::class, 'storeAdjustment'])->name('invoices.adjustments.store');
+
+        Route::get('/payments', [\App\Http\Controllers\Admin\Billing\PaymentsController::class, 'index'])->name('payments.index');
+
+        Route::get('/recurring', [\App\Http\Controllers\Admin\Billing\RecurringBillingController::class, 'index'])->name('recurring.index');
+        Route::post('/recurring/{subscription}/generate', [\App\Http\Controllers\Admin\Billing\RecurringBillingController::class, 'generate'])->name('recurring.generate');
+
+        Route::get('/expenses', [\App\Http\Controllers\Admin\Billing\ExpensesController::class, 'index'])->name('expenses.index');
+        Route::post('/expenses', [\App\Http\Controllers\Admin\Billing\ExpensesController::class, 'store'])->name('expenses.store');
+        Route::delete('/expenses/{expense}', [\App\Http\Controllers\Admin\Billing\ExpensesController::class, 'destroy'])->name('expenses.destroy');
+
+        Route::get('/settings', [\App\Http\Controllers\Admin\Billing\BillingSettingsController::class, 'index'])->name('settings');
+        Route::put('/settings', [\App\Http\Controllers\Admin\Billing\BillingSettingsController::class, 'update'])->name('settings.update');
+    });
+
     // Notification sending (Pusher Beams web push)
     Route::get('/admin/notifications', [NotificationsController::class, 'index'])->name('admin.notifications');
     Route::post('/admin/notifications', [NotificationsController::class, 'store'])->name('admin.notifications.store');
@@ -382,6 +415,12 @@ Route::middleware('employee.web')->group(function () {
     Route::post('/employee/orders/{order}/public-share/revoke', [EmployeeOrdersController::class, 'publicOrderShareRevoke'])->name('employee.orders.public-share.revoke');
     Route::get('/employee/customers', [EmployeeCustomersController::class, 'index'])->name('employee.customers')->middleware('permission:customers.view');
     Route::get('/employee/payments', [EmployeePaymentsController::class, 'index'])->name('employee.payments')->middleware('permission:payments.view');
+    Route::get('/employee/billing', [\App\Http\Controllers\Employee\BillingController::class, 'index'])->name('employee.billing.index')->middleware('permission:billing.view');
+    Route::get('/employee/billing/create', [\App\Http\Controllers\Employee\BillingController::class, 'create'])->name('employee.billing.create')->middleware('permission:billing.invoices.create');
+    Route::post('/employee/billing', [\App\Http\Controllers\Employee\BillingController::class, 'store'])->name('employee.billing.store')->middleware('permission:billing.invoices.create');
+    Route::get('/employee/billing/{invoice}', [\App\Http\Controllers\Employee\BillingController::class, 'show'])->name('employee.billing.show')->middleware('permission:billing.view');
+    Route::get('/employee/billing/{invoice}/pdf', [\App\Http\Controllers\Employee\BillingController::class, 'pdf'])->name('employee.billing.pdf')->middleware('permission:billing.view');
+    Route::post('/employee/billing/{invoice}/payments', [\App\Http\Controllers\Employee\BillingController::class, 'recordPayment'])->name('employee.billing.payments.store')->middleware('permission:billing.payments.create');
     Route::get('/employee/subscriptions', [EmployeeSubscriptionsController::class, 'index'])->name('employee.subscriptions')->middleware('permission:subscriptions.view');
     Route::get('/employee/follow-ups', [FollowUpsController::class, 'index'])->name('employee.follow-ups')->middleware('permission:follow_ups.view');
     Route::get('/employee/follow-ups/create', [FollowUpsController::class, 'create'])->name('employee.follow-ups.create')->middleware('permission:follow_ups.create');
