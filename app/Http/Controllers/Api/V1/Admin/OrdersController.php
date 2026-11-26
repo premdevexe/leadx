@@ -105,6 +105,7 @@ class OrdersController extends Controller
             ? User::find($data['assigned_employee_id'])
             : User::where('team_id', $team->id)->where('status', 'active')->orderBy('id')->first();
 
+        $data['is_admin'] = true;
         $order = $this->orders->createForTeam($team, $employee, $data);
 
         DB::table('audit_logs')->insert([
@@ -117,7 +118,7 @@ class OrdersController extends Controller
             'updated_at' => now(),
         ]);
 
-        return (new OrderResource($order->loadMissing(['team', 'subscription', 'product'])))->response()->setStatusCode(201);
+        return (new OrderResource($order->loadMissing(['team', 'subscription', 'product', 'items'])))->response()->setStatusCode(201);
     }
 
     /**

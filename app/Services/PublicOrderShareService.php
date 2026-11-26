@@ -63,7 +63,7 @@ class PublicOrderShareService
 
         try {
             $share = PublicOrderShare::where('token', $token)
-                ->with(['order' => fn ($q) => $q->with(['team', 'subscription'])])
+                ->with(['order' => fn ($q) => $q->with(['team', 'subscription', 'subscriptions.orderItem', 'items'])])
                 ->first();
         } catch (Throwable) {
             return null;

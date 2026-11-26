@@ -71,7 +71,7 @@ class InvoicesController extends Controller
         $billing = Setting::billing();
         $selectedCustomerId = $request->integer('customer_id') ?: null;
         $selectedOrderId = $request->integer('order_id') ?: null;
-        $selectedOrder = $selectedOrderId ? SalesOrder::with('product')->find($selectedOrderId) : null;
+        $selectedOrder = $selectedOrderId ? SalesOrder::with(['product', 'items'])->find($selectedOrderId) : null;
 
         return view('admin.billing.invoices.form', [
             'invoice' => null,

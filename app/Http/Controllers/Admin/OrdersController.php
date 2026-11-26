@@ -114,7 +114,12 @@ class OrdersController extends Controller
             'customer_phone_local' => ['nullable', 'string', 'max:30'],
             'customer_country_code' => ['nullable', 'string', 'max:10'],
             'customer_email' => ['nullable', 'string', 'max:255'],
+            'items' => ['sometimes', 'array', 'min:1'],
+            'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
+            'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+            'items.*.duration' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
             'product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
             'product_name' => ['nullable', 'string', 'max:255'],
             'duration' => ['sometimes', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
             'product_value' => ['nullable', 'numeric', 'min:0'],
@@ -127,21 +132,12 @@ class OrdersController extends Controller
             'order_status' => ['in:'.implode(',', SalesOrder::STATUSES)],
         ]);
 
-        // Build E.164 phone from country code + local number
-        $this->normalizePhone($data);
-
         $team = Team::find($data['team_id']);
-
-        // When a catalog product is chosen, OrderService resolves its
-        // authoritative name/price/duration from the database and rejects
-        // inactive products - client-submitted values for those fields are
-        // ignored. Manual orders keep their submitted values.
-        // Attribution: an admin-created order defaults to the first active
-        // employee of the team when none is explicitly chosen.
         $employee = ! empty($data['assigned_employee_id'])
             ? User::find($data['assigned_employee_id'])
             : User::where('team_id', $team->id)->orderBy('id')->first();
 
+        $data['is_admin'] = true;
         $order = $this->orders->createForTeam($team, $employee, $data);
 
         return redirect()
@@ -154,7 +150,12 @@ class OrdersController extends Controller
      */
     public function show(SalesOrder $order): View
     {
-        $order->loadMissing(['team', 'assignedEmployee', 'subscription', 'payments.verifiedByAdmin', 'product', 'refunds.admin', 'editHistories.admin', 'closingValueHistories']);
+        $order->loadMissing([
+            'team', 'assignedEmployee', 'subscription', 'subscriptions.orderItem',
+            'payments.verifiedByAdmin', 'product', 'items.product', 'items.subscription',
+            'items.apiCredential', 'apiCredentials', 'refunds.admin', 'editHistories.admin',
+            'closingValueHistories',
+        ]);
 
         $share = $this->whatsapp->prepare($order);
 
@@ -226,11 +227,16 @@ class OrdersController extends Controller
      */
     public function edit(SalesOrder $order): View
     {
-        $order->loadMissing(['team', 'assignedEmployee', 'product']);
+        $order->loadMissing(['team', 'assignedEmployee', 'product', 'items.product']);
 
         $activeProducts = $this->orders->activeProducts();
         if ($order->product && ! $activeProducts->contains('id', $order->product_id)) {
             $activeProducts->push($order->product);
+        }
+        foreach ($order->items as $item) {
+            if ($item->product && ! $activeProducts->contains('id', $item->product_id)) {
+                $activeProducts->push($item->product);
+            }
         }
 
         return view('admin.orders.edit', [
@@ -239,6 +245,7 @@ class OrdersController extends Controller
             'products' => $activeProducts,
             'orderStatuses' => SalesOrder::STATUSES,
             'paymentStatuses' => SalesOrder::PAYMENT_STATUSES,
+            'itemsLocked' => $this->orders->isItemEditLocked($order),
         ]);
     }
 
@@ -254,9 +261,14 @@ class OrdersController extends Controller
             'customer_phone_local' => ['nullable', 'string', 'max:30'],
             'customer_country_code' => ['nullable', 'string', 'max:10'],
             'customer_email' => ['nullable', 'email', 'max:255'],
+            'items' => ['sometimes', 'array', 'min:1'],
+            'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
+            'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+            'items.*.duration' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
             'product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
             'product_name' => ['nullable', 'string', 'max:255'],
-            'duration' => ['required', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
+            'duration' => ['sometimes', 'required', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
             'product_value' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'closing_value' => ['nullable', 'numeric', 'min:0'],
@@ -265,65 +277,8 @@ class OrdersController extends Controller
             'order_status' => ['required', 'in:'.implode(',', SalesOrder::STATUSES)],
         ]);
 
-        $productId = ! empty($data['product_id']) ? (int) $data['product_id'] : null;
-        if ($productId) {
-            $catalogProduct = Product::find($productId);
-            if ($catalogProduct) {
-                $data['product_id'] = $catalogProduct->id;
-                $data['product_name_snapshot'] = $catalogProduct->name;
-                $data['product_price_snapshot'] = $catalogProduct->price;
-                $data['product_duration_snapshot'] = $catalogProduct->duration;
-                $data['product_name'] = $catalogProduct->name;
-                $data['product_value'] = $catalogProduct->price;
-                $data['duration'] = $catalogProduct->duration;
-            }
-        } else {
-            $data['product_id'] = null;
-            $data['product_name_snapshot'] = $data['product_name'] ?? null;
-            $data['product_price_snapshot'] = $data['product_value'] ?? 0;
-            $data['product_duration_snapshot'] = $data['duration'] ?? '1y';
-        }
-
-        // Closing value is the rep's input; the discount is *derived* as the
-        // gap between list price and closing price, never typed. A blank
-        // closing value keeps the stored one (falling back to list price),
-        // and the discount is re-derived whenever either side changes so the
-        // stored figure can never drift from product_value - closing_value.
-        $productVal = (float) (isset($data['product_value']) && $data['product_value'] !== ''
-            ? $data['product_value']
-            : ($order->product_value ?? 0));
-
-        $closingVal = (isset($data['closing_value']) && $data['closing_value'] !== '')
-            ? (float) $data['closing_value']
-            : ((float) ($order->closing_value ?? 0) > 0 ? (float) $order->closing_value : $productVal);
-
-        $data['closing_value'] = $closingVal;
-        $data['discount_amount'] = round(max(0.0, $productVal - $closingVal), 2);
-        $data['product_value'] = $productVal;
-
-        // Normalize phone: combine country code + local number into E.164
-        $this->normalizePhone($data);
-
         $editReason = $request->input('edit_reason', 'Order updated via Admin Panel');
-
-        $order->fill($data);
-        $dirty = $order->getDirty();
-
-        foreach ($dirty as $field => $newValue) {
-            if (in_array($field, ['updated_at'])) {
-                continue;
-            }
-            $oldValue = $order->getOriginal($field);
-            $order->editHistories()->create([
-                'admin_id' => auth('admin')->id(),
-                'field_name' => $field,
-                'old_value' => is_scalar($oldValue) ? (string) $oldValue : json_encode($oldValue),
-                'new_value' => is_scalar($newValue) ? (string) $newValue : json_encode($newValue),
-                'reason' => $editReason,
-            ]);
-        }
-
-        $order->save();
+        $order = $this->orders->updateFromAdmin($order, $data, (int) auth('admin')->id(), $editReason);
 
         return redirect()
             ->route('admin.orders.show', $order)

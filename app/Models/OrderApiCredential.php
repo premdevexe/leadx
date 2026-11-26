@@ -27,6 +27,7 @@ class OrderApiCredential extends Model
      */
     protected $fillable = [
         'order_id',
+        'order_item_id',
         'key',
         'updated_by_id',
         'updated_by_type',
@@ -60,6 +61,11 @@ class OrderApiCredential extends Model
         return $this->belongsTo(SalesOrder::class, 'order_id', 'id');
     }
 
+    public function orderItem(): BelongsTo
+    {
+        return $this->belongsTo(SalesOrderItem::class, 'order_item_id', 'id');
+    }
+
     /**
      * The actor (Admin or User) who last wrote the key.
      */
@@ -73,7 +79,13 @@ class OrderApiCredential extends Model
      */
     public static function forOrder(int $orderId): ?self
     {
-        return static::where('order_id', $orderId)->first();
+        return static::where('order_id', $orderId)->whereNull('order_item_id')->first()
+            ?? static::where('order_id', $orderId)->first();
+    }
+
+    public static function forOrderItem(int $orderItemId): ?self
+    {
+        return static::where('order_item_id', $orderItemId)->first();
     }
 
     /**
@@ -81,7 +93,14 @@ class OrderApiCredential extends Model
      */
     public static function hasKeyFor(int $orderId): bool
     {
-        $credential = static::forOrder($orderId);
+        return static::where('order_id', $orderId)
+            ->get()
+            ->contains(fn (self $cred) => filled($cred->key));
+    }
+
+    public static function hasKeyForItem(int $orderItemId): bool
+    {
+        $credential = static::forOrderItem($orderItemId);
 
         return $credential !== null && filled($credential->key);
     }

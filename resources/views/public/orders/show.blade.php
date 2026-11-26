@@ -39,12 +39,22 @@
         <div class="card p-4">
             <p class="public-label">Product</p>
             <p class="public-value">{{ $order->product_name_snapshot ?? $order->product_name ?? 'Manual / Custom' }}</p>
-            <p class="public-muted">Duration: {{ $durationLabel }}</p>
+            @if ($order->items->count() > 1)
+                <p class="public-muted">{{ $order->items->count() }} products · {{ $order->items->sum('quantity') }} units</p>
+            @else
+                <p class="public-muted">Duration: {{ $durationLabel }}</p>
+            @endif
         </div>
 
         <div class="card p-4">
             <p class="public-label">Subscription</p>
-            @if ($subscription && $subscription->status)
+            @if ($order->subscriptions->count() > 1)
+                @php
+                    $activeSubCount = $order->subscriptions->where('status', 'active')->count();
+                @endphp
+                <p class="public-value">{{ $activeSubCount > 0 ? 'Active' : ucfirst($order->subscriptions->first()->status ?? 'Pending') }}</p>
+                <p class="public-muted">{{ $activeSubCount }} of {{ $order->subscriptions->count() }} active</p>
+            @elseif ($subscription && $subscription->status)
                 <p class="public-value">{{ ucfirst($subscription->status) }}</p>
                 @if ($subscription->started_at)
                     <p class="public-muted">Active since {{ $subscription->started_at->toDateString() }}</p>
@@ -78,6 +88,13 @@
             @endif
         </div>
     </div>
+
+    @if ($order->items->isNotEmpty())
+        <div class="card p-4" style="margin-top: 1rem;">
+            <p class="public-label" style="margin-bottom: 0.5rem;">Order Items</p>
+            @include('partials.order-items-table', ['order' => $order, 'currencySymbol' => $currency, 'showSubscriptionCol' => true])
+        </div>
+    @endif
 
     {{-- Customer's delivered API key (only when the share opted in). --}}
     @if ($keyIncluded ?? false)

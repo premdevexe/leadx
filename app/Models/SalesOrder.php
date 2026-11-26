@@ -219,11 +219,27 @@ class SalesOrder extends Model
     }
 
     /**
+     * All line items in this order.
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(SalesOrderItem::class, 'order_id', 'id')->orderBy('id');
+    }
+
+    /**
      * The subscription tied to this order, if one exists.
      */
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class, 'order_id', 'id');
+    }
+
+    /**
+     * All per-line subscriptions tied to this order.
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class, 'order_id', 'id')->orderBy('id');
     }
 
     /**
@@ -242,6 +258,14 @@ class SalesOrder extends Model
     public function apiCredential(): HasOne
     {
         return $this->hasOne(OrderApiCredential::class, 'order_id', 'id');
+    }
+
+    /**
+     * All per-line API credentials delivered for this order.
+     */
+    public function apiCredentials(): HasMany
+    {
+        return $this->hasMany(OrderApiCredential::class, 'order_id', 'id')->orderBy('id');
     }
 
     /**

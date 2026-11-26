@@ -90,7 +90,7 @@ class OrdersController extends Controller
             abort(403, 'Unauthorized access to this order.');
         }
 
-        $order->loadMissing(['product', 'subscription', 'payments', 'team']);
+        $order->loadMissing(['product', 'items.product', 'items.subscription', 'subscription', 'subscriptions.orderItem', 'payments', 'team']);
         $apiKeyStatus = app(\App\Services\OrderCredentialService::class)->status($order);
         $whatsappShare = app(\App\Services\WhatsappShareService::class)->prepare($order, $employee->hasPermission('orders.view_api_key'));
 

@@ -65,49 +65,25 @@
                 @error('customer_email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Product</label>
-                <select id="product-select" name="product_id"
-                        class="form-input">
-                    <option value="">— none (enter manually) —</option>
-                    @foreach ($products as $product)
-                        <option value="{{ $product->id }}"
-                                data-price="{{ $product->price }}"
-                                data-duration="{{ $product->duration }}"
-                                @selected(old('product_id') === (string) $product->id)>
-                            {{ $product->name }} ({{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $product->price, 2) }} — {{ \App\Models\SalesOrder::DURATIONS[$product->duration] ?? '1 year' }})
-                        </option>
-                    @endforeach
-                </select>
-                @error('product_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            <div style="grid-column: 1 / -1;">
+                @include('partials.order-items-builder', [
+                    'instanceId' => 'employee-create-oib',
+                    'products' => $products,
+                    'existingItems' => old('items', []),
+                    'legacyProductId' => old('product_id'),
+                    'locked' => false,
+                    'canBypassFloor' => false,
+                    'renderClosingControl' => true,
+                    'initialClosingValue' => old('closing_value', 0),
+                ])
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Product name</label>
-                <input type="text" id="product-name" name="product_name" value="{{ old('product_name') }}"
-                       class="form-input">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Subscription duration</label>
-                <select name="duration" class="form-input">
-                    @foreach (\App\Models\SalesOrder::DURATIONS as $code => $label)
-                        <option value="{{ $code }}" @selected(old('duration', '1y') === $code)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Closing value ({{ \App\Models\Setting::currencySymbol() }}) <span class="text-red-500">*</span></label>
-                <input type="number" step="0.01" min="0" id="closing-value" name="closing_value" value="{{ old('closing_value', 0) }}" required
-                       class="form-input">
-                @error('closing_value') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div class="form-group">
+            {{-- Order Information --}}
+            <div style="grid-column: 1 / -1;" class="form-group">
                 <label class="form-label">Order notes</label>
                 <textarea name="order_notes" rows="3"
-                          class="form-textarea">{{ old('order_notes') }}</textarea>
+                          placeholder="Optional internal notes or customer delivery instructions..."
+                          class="form-textarea w-full">{{ old('order_notes') }}</textarea>
             </div>
         </div>
 
@@ -116,22 +92,4 @@
             <a href="{{ route('employee.orders') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
-
-    <script>
-        (function () {
-            const select = document.getElementById('product-select');
-            if (!select) return;
-            const nameInput = document.getElementById('product-name');
-            const closingInput = document.getElementById('closing-value');
-
-            select.addEventListener('change', function () {
-                const opt = select.options[select.selectedIndex];
-                if (opt.value === '') return;
-                nameInput.value = opt.textContent.split(' (')[0];
-                const durationSelect = document.querySelector('select[name="duration"]');
-                if (durationSelect && opt.dataset.duration) durationSelect.value = opt.dataset.duration;
-                if (closingInput.value === '') closingInput.value = opt.dataset.price;
-            });
-        })();
-    </script>
 @endsection

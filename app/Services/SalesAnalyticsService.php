@@ -75,7 +75,11 @@ class SalesAnalyticsService
         }
 
         if (! empty($filters['product_id'])) {
-            $query->where('product_id', (int) $filters['product_id']);
+            $pid = (int) $filters['product_id'];
+            $query->where(function (Builder $q) use ($pid) {
+                $q->where('product_id', $pid)
+                    ->orWhereHas('items', fn (Builder $iq) => $iq->where('product_id', $pid));
+            });
         }
 
         if (! empty($filters['employee_id'])) {
@@ -124,8 +128,8 @@ class SalesAnalyticsService
 
         foreach ($orders as $order) {
             $orderIds[] = $order->id;
-            $snapshot = (float) ($order->product_price_snapshot ?? 0);
-            $productVal = $snapshot > 0 ? $snapshot : (float) ($order->product_value ?? 0);
+            $val = (float) ($order->product_value ?? 0);
+            $productVal = $val > 0 ? $val : (float) ($order->product_price_snapshot ?? 0);
             $totalProductCents += Money::toCents($productVal);
             $totalClosingCents += Money::toCents($order->closing_value);
             $collectedRevenueCents += Money::toCents($order->verifiedPaymentTotal());
@@ -192,8 +196,8 @@ class SalesAnalyticsService
         $byMethodCents = [];
 
         foreach ($orders as $order) {
-            $snapshot = (float) ($order->product_price_snapshot ?? 0);
-            $productVal = $snapshot > 0 ? $snapshot : (float) ($order->product_value ?? 0);
+            $val = (float) ($order->product_value ?? 0);
+            $productVal = $val > 0 ? $val : (float) ($order->product_price_snapshot ?? 0);
             $productValueCents += Money::toCents($productVal);
             $closingValueCents += Money::toCents($order->closing_value);
             $amountReceivedCents += Money::toCents($order->verifiedPaymentTotal());
@@ -244,7 +248,7 @@ class SalesAnalyticsService
             return (array) Cache::get($cacheKey);
         }
 
-        $orderQuery = SalesOrder::query()->with(['payments', 'subscription']);
+        $orderQuery = SalesOrder::query()->with(['payments', 'subscription', 'items']);
         $this->applyFilters($orderQuery, $filters);
         $orders = $orderQuery->get();
 
@@ -252,11 +256,23 @@ class SalesAnalyticsService
         $products = Product::orderBy('name')->get();
 
         foreach ($products as $product) {
-            $productOrders = $orders->where('product_id', $product->id);
+            $productOrders = $orders->filter(function (SalesOrder $order) use ($product) {
+                if ($order->items->isNotEmpty()) {
+                    return $order->items->contains('product_id', $product->id);
+                }
+
+                return (int) $order->product_id === (int) $product->id;
+            });
             $rows[$product->name] = $this->rowFor((string) $product->name, $productOrders, $product->id);
         }
 
-        $uncataloged = $orders->whereNull('product_id')->filter(fn (SalesOrder $o) => filled($o->product_name));
+        $uncataloged = $orders->filter(function (SalesOrder $order) {
+            if ($order->items->isNotEmpty()) {
+                return $order->items->contains(fn ($i) => $i->product_id === null && filled($i->product_name_snapshot));
+            }
+
+            return $order->product_id === null && filled($order->product_name);
+        });
         if ($uncataloged->isNotEmpty()) {
             $rows['Uncataloged'] = $this->rowFor('Uncataloged', $uncataloged, null);
         }
@@ -632,7 +648,11 @@ class SalesAnalyticsService
         }
 
         if (! empty($filters['product_id'])) {
-            $query->where('product_id', (int) $filters['product_id']);
+            $pid = (int) $filters['product_id'];
+            $query->where(function (Builder $q) use ($pid) {
+                $q->where('product_id', $pid)
+                    ->orWhereHas('items', fn (Builder $iq) => $iq->where('product_id', $pid));
+            });
         }
 
         $range = $filters['range'] ?? null;
@@ -745,6 +765,7 @@ class SalesAnalyticsService
         $activeSubscriptions = empty($orderIds) ? collect() : Subscription::where('status', 'active')
             ->whereNotNull('order_id')
             ->whereIn('order_id', $orderIds)
+            ->when($productId !== null, fn ($q) => $q->where('product_id', $productId))
             ->get();
 
         $activeCustomers = $activeSubscriptions

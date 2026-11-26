@@ -139,46 +139,56 @@
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Product & Pricing</h3>
             </div>
 
-            <div>
-                <label class="form-label">Catalog Product</label>
-                <select id="product-select" name="product_id"
-                        class="form-select mt-1 w-full">
-                    <option value="">— none (enter custom package) —</option>
-                    @foreach ($products as $product)
-                        <option value="{{ $product->id }}"
-                                data-price="{{ $product->price }}"
-                                data-duration="{{ $product->duration }}"
-                                @selected((string) old('product_id', $order->product_id) === (string) $product->id)>
-                            {{ $product->name }} ({{ $cur }}{{ number_format((float) $product->price, 2) }} — {{ \App\Models\SalesOrder::DURATIONS[$product->duration] ?? '1 year' }}){{ $product->status !== 'active' ? ' [Inactive]' : '' }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('product_id') <p class="form-error">{{ $message }}</p> @enderror
-                <p class="form-hint">Selecting a product auto-fills the name, value and duration below.</p>
+            @php
+                $editItems = old('items');
+                if ($editItems === null) {
+                    $editItems = $order->items->map(fn ($item) => [
+                        'product_id' => $item->product_id,
+                        'name' => $item->product_name_snapshot,
+                        'unit_price' => (float) $item->unit_price_snapshot,
+                        'floor' => (float) ($item->minimum_closing_price_snapshot ?? 0),
+                        'duration_code' => $item->product_duration_snapshot,
+                        'quantity' => $item->quantity,
+                    ])->values()->all();
+                }
+            @endphp
+
+            <div class="sm:col-span-2">
+                @include('partials.order-items-builder', [
+                    'instanceId' => 'admin-edit-oib',
+                    'products' => $products,
+                    'existingItems' => $editItems,
+                    'legacyProductId' => old('product_id', $order->product_id),
+                    'locked' => $itemsLocked ?? false,
+                    'canBypassFloor' => true,
+                    'currencySymbol' => $cur,
+                ])
             </div>
 
-            <div>
-                <label class="form-label">Product name</label>
-                <input type="text" id="product-name" name="product_name" value="{{ old('product_name', $order->product_name ?? $order->product_name_snapshot) }}"
-                       class="form-input mt-1 w-full">
-                @error('product_name') <p class="form-error">{{ $message }}</p> @enderror
-            </div>
+            <div class="sm:col-span-2 grid gap-5 sm:grid-cols-2 {{ (!empty($editItems) && ($itemsLocked ?? false)) ? 'hidden' : '' }}" data-oib-manual-fallback>
+                <div>
+                    <label class="form-label">Product name (Manual / Custom)</label>
+                    <input type="text" id="product-name" name="product_name" value="{{ old('product_name', $order->product_name ?? $order->product_name_snapshot) }}"
+                           class="form-input mt-1 w-full">
+                    @error('product_name') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
 
-            <div>
-                <label class="form-label">Subscription duration <span class="text-red-600">*</span></label>
-                <select id="duration-select" name="duration" class="form-select mt-1 w-full">
-                    @foreach (\App\Models\SalesOrder::DURATIONS as $code => $label)
-                        <option value="{{ $code }}" @selected(old('duration', $order->duration ?? $order->product_duration_snapshot ?? '1y') === $code)>{{ $label }}</option>
-                    @endforeach
-                </select>
-                @error('duration') <p class="form-error">{{ $message }}</p> @enderror
-            </div>
+                <div>
+                    <label class="form-label">Subscription duration <span class="text-red-600">*</span></label>
+                    <select id="duration-select" name="duration" class="form-select mt-1 w-full">
+                        @foreach (\App\Models\SalesOrder::DURATIONS as $code => $label)
+                            <option value="{{ $code }}" @selected(old('duration', $order->duration ?? $order->product_duration_snapshot ?? '1y') === $code)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('duration') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
 
-            <div>
-                <label class="form-label">Product value ({{ $cur }})</label>
-                <input type="number" step="0.01" min="0" id="product-value" name="product_value" value="{{ old('product_value', $order->product_value ?? $order->product_price_snapshot ?? 0) }}"
-                       class="form-input mt-1 w-full">
-                @error('product_value') <p class="form-error">{{ $message }}</p> @enderror
+                <div>
+                    <label class="form-label">Product value ({{ $cur }})</label>
+                    <input type="number" step="0.01" min="0" id="product-value" name="product_value" value="{{ old('product_value', $order->product_value ?? $order->product_price_snapshot ?? 0) }}"
+                           class="form-input mt-1 w-full">
+                    @error('product_value') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
             </div>
 
             <div>
@@ -242,13 +252,10 @@
 
     <script>
         (function () {
-            const select = document.getElementById('product-select');
-            if (!select) return;
-            const nameInput = document.getElementById('product-name');
             const priceInput = document.getElementById('product-value');
-            const durationSelect = document.getElementById('duration-select');
             const discountInput = document.getElementById('discount-amount');
             const closingInput = document.getElementById('closing-value');
+            if (!priceInput || !discountInput || !closingInput) return;
 
             function updateDiscount() {
                 const price = parseFloat(priceInput.value) || 0;
@@ -256,19 +263,10 @@
                 discountInput.value = Math.max(0, price - closing).toFixed(2);
             }
 
-            select.addEventListener('change', function () {
-                const opt = select.options[select.selectedIndex];
-                if (!opt || opt.value === '') return;
-
-                nameInput.value = opt.textContent.split(' (')[0].trim();
-                if (priceInput && opt.dataset.price) priceInput.value = opt.dataset.price;
-                if (durationSelect && opt.dataset.duration) durationSelect.value = opt.dataset.duration;
-
-                updateDiscount();
-            });
-
             closingInput.addEventListener('input', updateDiscount);
             priceInput.addEventListener('input', updateDiscount);
+            document.addEventListener('order-items:changed', updateDiscount);
+            updateDiscount();
         })();
     </script>
 @endsection

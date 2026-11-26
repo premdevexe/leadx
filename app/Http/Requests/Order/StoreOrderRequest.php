@@ -2,15 +2,12 @@
 
 namespace App\Http\Requests\Order;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Models\Product;
 use App\Models\SalesOrder;
+use Illuminate\Foundation\Http\FormRequest;
 
 class StoreOrderRequest extends FormRequest
 {
-    /**
-     * The concrete role-scoping happens in the controller; here we only
-     * validate the payload the actor is allowed to submit.
-     */
     public function authorize(): bool
     {
         $actor = $this->user('sanctum');
@@ -38,16 +35,16 @@ class StoreOrderRequest extends FormRequest
             'payment_method' => ['sometimes', 'nullable', 'in:'.implode(',', \App\Models\Setting::enabledPaymentMethods())],
             'payment_status' => ['sometimes', 'in:'.implode(',', SalesOrder::PAYMENT_STATUSES)],
             'order_status' => ['sometimes', 'in:'.implode(',', SalesOrder::STATUSES)],
-            // The catalog product reference. Only the id is accepted from
-            // the client: price, duration and name are re-read from the
-            // database (OrderService::resolveProduct) and any submitted
-            // values for those fields are ignored when a product is chosen.
-            // Unknown or inactive products are rejected with a 422.
+            // Multi-product basket support
+            'items' => ['sometimes', 'array', 'min:1'],
+            'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
+            'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+            'items.*.duration' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_keys(SalesOrder::DURATIONS))],
+            // Legacy single-product fields (Flutter app & older integrations)
             'product_id' => ['sometimes', 'nullable', 'integer', 'exists:products,id'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
         ];
 
-        // Admins create orders on behalf of a specific team; teams and
-        // employees act within their own (scope-checked in the controller).
         if ($this->user('sanctum') instanceof \App\Models\Admin) {
             $rules['team_id'] = ['required', 'integer', 'exists:teams,id'];
         } else {
@@ -60,24 +57,43 @@ class StoreOrderRequest extends FormRequest
     }
 
     /**
-     * Configure the validator instance.
+     * Enforce the basket minimum closing price floor when closing_value is provided.
      */
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $productId = $this->input('product_id');
             $closingValue = $this->input('closing_value');
+            if ($closingValue === null || $closingValue === '') {
+                return;
+            }
 
-            if ($productId && $closingValue !== null && $closingValue !== '') {
-                $product = \App\Models\Product::find($productId);
-                if ($product && (float) ($product->minimum_closing_price ?? 0) > 0) {
-                    if ((float) $closingValue < (float) $product->minimum_closing_price) {
-                        $validator->errors()->add(
-                            'closing_value',
-                            'The closing value cannot be less than the product minimum closing price of ' . number_format((float) $product->minimum_closing_price, 2)
-                        );
+            if ($this->user('sanctum') instanceof \App\Models\Admin) {
+                return;
+            }
+
+            $items = $this->input('items');
+            $minFloor = 0.0;
+
+            if (is_array($items) && ! empty($items)) {
+                foreach ($items as $row) {
+                    $pid = $row['product_id'] ?? null;
+                    $qty = max(1, (int) ($row['quantity'] ?? 1));
+                    if ($pid && ($product = Product::find($pid))) {
+                        $minFloor += (float) ($product->minimum_closing_price ?? 0) * $qty;
                     }
                 }
+            } elseif ($productId = $this->input('product_id')) {
+                $qty = max(1, (int) ($this->input('quantity', 1)));
+                if ($product = Product::find($productId)) {
+                    $minFloor = (float) ($product->minimum_closing_price ?? 0) * $qty;
+                }
+            }
+
+            if ($minFloor > 0 && (float) $closingValue < $minFloor) {
+                $validator->errors()->add(
+                    'closing_value',
+                    'The closing value cannot be less than the product minimum closing price of '.number_format($minFloor, 2)
+                );
             }
         });
     }

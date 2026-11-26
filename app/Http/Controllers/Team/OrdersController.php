@@ -33,7 +33,7 @@ class OrdersController extends Controller
 
         abort_if((int) $order->team_id !== (int) $team->id, 403);
 
-        $order->loadMissing(['product', 'subscription', 'payments', 'assignedEmployee', 'apiCredential']);
+        $order->loadMissing(['product', 'items.product', 'items.subscription', 'subscription', 'subscriptions.orderItem', 'payments', 'assignedEmployee', 'apiCredential']);
 
         // The order's live public link, if any (exactly one per order).
         $publicShare = PublicOrderShare::where('order_id', $order->id)->firstWhere('revoked_at', null);

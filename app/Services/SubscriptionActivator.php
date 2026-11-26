@@ -5,10 +5,11 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\Plan;
 use App\Models\SalesOrder;
+use App\Models\SalesOrderItem;
 use App\Models\Subscription;
 use App\Support\Money;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * The activation decision engine.
@@ -19,15 +20,10 @@ use Illuminate\Support\Str;
  *   - `activate_on: partial` - verified total may be below the due, but
  *                              only if it meets `minimum_verified_percent`
  *
- * Pending and failed payments are never counted. The decision is
- * idempotent: re-running against the same order converges on a single
- * subscription row (keyed by order_id, which is unique), so repeated
- * verifies and repeated gateway webhooks can never duplicate an
- * activation.
- *
- * History is preserved on the subscription row: the price/plan snapshots
- * and the billing dates are frozen from the order's stored values at
- * activation time, so later catalog edits never rewrite what was sold.
+ * Multi-product orders create and activate one subscription per line item
+ * (`order_item_id`), each with its own duration snapshot and expiry date.
+ * Legacy orders without `sales_order_items` keep a single order-level
+ * subscription (`order_item_id = null`).
  */
 class SubscriptionActivator
 {
@@ -38,72 +34,91 @@ class SubscriptionActivator
     }
 
     /**
-     * Attempt to activate (or leave pending) the subscription for an order
-     * whose payments have just been verified. Returns the subscription when
-     * it is active, and null when the policy has not been met yet.
+     * Attempt to activate (or leave pending) subscriptions for an order whose
+     * payments have just been verified. Returns the primary (first) active
+     * subscription when the policy is satisfied, or null otherwise.
      */
     public function maybeActivate(SalesOrder $order, ?int $adminId = null, ?Customer $customer = null): ?Subscription
     {
-        // A cancelled or suspended order never activates, no matter the payment state.
         if (in_array($order->order_status, ['cancelled', 'suspended'], true)) {
             return null;
         }
 
-        // A subscription row must carry a team (subscriptions.team_id is a
-        // NOT NULL FK). Legacy or unattributed orders can have a null
-        // team_id; activating one would throw on the insert. Leave it
-        // pending (return null) instead so the payment still verifies and
-        // the subscription activates once the order is attributed to a team.
         if ($order->team_id === null) {
             return null;
         }
 
-        // An order with pending or rejected closing approval never activates.
         if (in_array($order->closing_value_status, ['Requested', 'Rejected'], true)) {
             return null;
         }
 
-        // An order requiring an API key cannot activate without a stored customer key.
-        if ($order->api_key_required_snapshot && ! \App\Services\OrderCredentialService::hasKey($order)) {
+        $requiresApiKey = $order->items()->where('api_key_required_snapshot', true)->exists()
+            || ($order->items()->count() === 0 && (bool) $order->api_key_required_snapshot);
+
+        if ($requiresApiKey && ! OrderCredentialService::hasKey($order)) {
             return null;
         }
 
         $policyMet = $this->policySatisfied($order);
+        $items = $order->items()->get();
 
-        $subscription = DB::transaction(function () use ($order, $policyMet, $customer, $adminId) {
-            $subscription = $this->findOrCreateFor($order);
+        /** @var Collection<int, Subscription> $activated */
+        $activated = DB::transaction(function () use ($order, $items, $policyMet, $customer, $adminId) {
+            $subscriptions = collect();
 
-            if (! $policyMet) {
-                // Not enough verified payment: keep it pending. A failed
-                // payment never flips this to active either.
-                if ($subscription->status !== 'cancelled' && $subscription->status !== 'suspended') {
-                    $subscription->status = 'pending';
+            if ($items->isEmpty()) {
+                // Legacy single-order path (no sales_order_items rows)
+                $subscription = $this->findOrCreateFor($order);
+
+                if (! $policyMet) {
+                    if ($subscription->status !== 'cancelled' && $subscription->status !== 'suspended') {
+                        $subscription->status = 'pending';
+                    }
+                    $subscription->save();
+
+                    return collect();
                 }
-                $subscription->save();
 
-                return null;
+                $this->activate($subscription, $order, $customer, $adminId);
+                $subscriptions->push($subscription->fresh());
+
+                return $subscriptions;
             }
 
-            $this->activate($subscription, $order, $customer, $adminId);
+            foreach ($items as $idx => $item) {
+                $subscription = $this->findOrCreateForItem($order, $item, $idx === 0);
 
-            return $subscription->fresh();
+                if (! $policyMet) {
+                    if ($subscription->status !== 'cancelled' && $subscription->status !== 'suspended') {
+                        $subscription->status = 'pending';
+                    }
+                    $subscription->save();
+                    continue;
+                }
+
+                $this->activateItem($subscription, $order, $item, $customer, $adminId);
+                $subscriptions->push($subscription->fresh());
+            }
+
+            return $subscriptions;
         });
 
-        // Now active: create (or reconcile) the Google Calendar expiry-reminder
-        // event. Done OUTSIDE the activation transaction so a calendar hiccup
-        // never rolls back a valid activation; the sync records a pending
-        // status when no calendar is connected, and is idempotent so a re-run
-        // (e.g. a repeated webhook) never creates a second event.
-        if ($subscription && $subscription->status === 'active') {
-            $this->calendar->syncCreate($subscription);
+        if ($activated->isEmpty()) {
+            return null;
+        }
 
-            try {
-                app(\App\Services\NotificationHubService::class)->notifySubscriptionActivated($subscription);
-            } catch (\Throwable) {
+        foreach ($activated as $sub) {
+            if ($sub->status === 'active') {
+                $this->calendar->syncCreate($sub);
+
+                try {
+                    app(\App\Services\NotificationHubService::class)->notifySubscriptionActivated($sub);
+                } catch (\Throwable) {
+                }
             }
         }
 
-        return $subscription;
+        return $activated->first();
     }
 
     /**
@@ -117,8 +132,6 @@ class SubscriptionActivator
         $dueCents = Money::toCents($order->amountDue());
         $verifiedCents = Money::toCents($order->verifiedPaymentTotal());
 
-        // No amount due (e.g. a free/grant order) is treated as satisfied
-        // the moment any verified payment exists or due is zero.
         if ($dueCents === 0) {
             return true;
         }
@@ -129,13 +142,11 @@ class SubscriptionActivator
             return $verifiedCents >= $required;
         }
 
-        // Default 'paid': verified total must reach the full amount due.
         return $verifiedCents >= $dueCents;
     }
 
     /**
-     * Resolve or create the subscription row for an order. The row is keyed
-     * by the unique order_id, so this can never mint a duplicate.
+     * Legacy order-level subscription lookup/create.
      */
     protected function findOrCreateFor(SalesOrder $order): Subscription
     {
@@ -154,55 +165,127 @@ class SubscriptionActivator
     }
 
     /**
-     * Flip a subscription to active, freezing plan/price snapshots and the
-     * duration-derived dates. Idempotent: re-activating an already active
-     * subscription keeps its start and recomputes nothing destructive.
+     * Line-item subscription lookup/create (attaches an existing legacy null-item
+     * row on the first item when upgrading/backfilling an existing pending order).
      */
+    protected function findOrCreateForItem(SalesOrder $order, SalesOrderItem $item, bool $isPrimary): Subscription
+    {
+        $existing = Subscription::where('order_item_id', $item->id)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        if ($isPrimary) {
+            $legacy = Subscription::where('order_id', $order->id)
+                ->whereNull('order_item_id')
+                ->first();
+            if ($legacy) {
+                $legacy->forceFill(['order_item_id' => $item->id])->save();
+
+                return $legacy;
+            }
+        }
+
+        return Subscription::create([
+            'order_id' => $order->id,
+            'order_item_id' => $item->id,
+            'team_id' => $order->team_id,
+            'status' => 'pending',
+            'product_id' => $item->product_id,
+        ]);
+    }
+
     protected function activate(Subscription $subscription, SalesOrder $order, ?Customer $customer, ?int $adminId): void
     {
-        $plan = $this->resolvePlan($order);
-
-        $cycle = $this->billing->cycleFor($order, $plan);
+        $plan = $this->resolvePlanForProductId($order->product_id);
+        $durationCode = (string) ($order->duration ?: '1y');
+        $cycle = $this->billing->cycleForDuration($durationCode, $plan);
         $start = $subscription->started_at ?? now();
-        // Expiry is derived from the order's stored duration snapshot (or
-        // the plan's explicit duration override) - never from live catalog
-        // values - so historical subscriptions keep their sold horizon.
-        $expiry = $this->billing->expiry($order, $plan, $start);
+        $expiry = $this->billing->expiryForDurationCode($durationCode, $plan, $start);
         $renewal = $this->billing->renewalDate($expiry);
 
-        // Price snapshot: the order's frozen product value when no plan
-        // price applies (falls back to the closing value for manual orders
-        // whose product value is zero).
         $priceSnapshot = $plan?->price ?? $order->product_value;
-
         if ((float) $priceSnapshot <= 0 && (float) $order->closing_value > 0) {
             $priceSnapshot = $order->closing_value;
         }
 
+        $this->persistActiveSubscription(
+            $subscription,
+            $order,
+            $customer,
+            $order->product_id,
+            $plan,
+            $cycle,
+            $priceSnapshot,
+            $start,
+            $expiry,
+            $renewal,
+            $plan?->duration_code ?? $durationCode,
+            $order->product_name_snapshot ?? '—'
+        );
+    }
+
+    protected function activateItem(Subscription $subscription, SalesOrder $order, SalesOrderItem $item, ?Customer $customer, ?int $adminId): void
+    {
+        $plan = $this->resolvePlanForProductId($item->product_id);
+        $durationCode = (string) ($item->product_duration_snapshot ?: $order->duration ?: '1y');
+        $cycle = $this->billing->cycleForDuration($durationCode, $plan);
+        $start = $subscription->started_at ?? now();
+        $expiry = $this->billing->expiryForDurationCode($durationCode, $plan, $start);
+        $renewal = $this->billing->renewalDate($expiry);
+
+        $priceSnapshot = $plan?->price ?? $item->line_total;
+        if ((float) $priceSnapshot <= 0 && (float) $order->closing_value > 0) {
+            $priceSnapshot = $order->closing_value;
+        }
+
+        $this->persistActiveSubscription(
+            $subscription,
+            $order,
+            $customer,
+            $item->product_id,
+            $plan,
+            $cycle,
+            $priceSnapshot,
+            $start,
+            $expiry,
+            $renewal,
+            $plan?->duration_code ?? $durationCode,
+            $item->product_name_snapshot ?? '—'
+        );
+    }
+
+    protected function persistActiveSubscription(
+        Subscription $subscription,
+        SalesOrder $order,
+        ?Customer $customer,
+        ?int $productId,
+        ?Plan $plan,
+        string $cycle,
+        mixed $priceSnapshot,
+        \Illuminate\Support\Carbon $start,
+        \Illuminate\Support\Carbon $expiry,
+        \Illuminate\Support\Carbon $renewal,
+        string $durationSnapshot,
+        string $productName
+    ): void {
         $subscription->forceFill([
             'customer_id' => $customer?->id ?? $subscription->customer_id,
-            'product_id' => $order->product_id,
+            'product_id' => $productId,
             'plan_id' => $plan?->id ?? $subscription->plan_id,
             'billing_cycle' => $cycle,
             'plan_snapshot' => $plan?->name,
             'price_snapshot' => $priceSnapshot,
             'amount_paid' => $order->verifiedPaymentTotal(),
             'status' => 'active',
-            // Activation date: the moment the verified purchase activates the
-            // subscription (kept on re-activation, so a repeated verify does
-            // not move the start or create a second activation).
-            'started_at' => $subscription->started_at ?? now(),
-            // Expiry = activation date + the frozen duration snapshot.
+            'started_at' => $subscription->started_at ?? $start,
             'expires_at' => $expiry,
             'renewal_date' => $renewal,
-            // The duration that governs THIS subscription's horizon, frozen
-            // at activation. Product/plan duration edits later never move it.
-            'duration_snapshot' => $plan?->duration_code ?? (string) ($order->duration ?: '1y'),
+            'duration_snapshot' => $durationSnapshot,
         ])->save();
 
         $order->forceFill(['order_status' => 'active'])->save();
 
-        // Send subscription.activated email to the customer (non-blocking).
         try {
             $customerEmail = $customer?->email ?? $order->customer_email;
 
@@ -214,7 +297,7 @@ class SubscriptionActivator
                 'customer_email'   => $customerEmail,
                 'team_name'        => $subscription->team?->team_name,
                 'order_number'     => $order->order_number,
-                'product_name'     => $order->product_name_snapshot ?? '—',
+                'product_name'     => $productName,
                 'plan_name'        => $plan?->name ?? '—',
                 'activation_date'  => $subscription->started_at?->format('M d, Y') ?? '—',
                 'expiry_date'      => $expiry->format('M d, Y'),
@@ -223,14 +306,12 @@ class SubscriptionActivator
                 'to_email'         => $customerEmail,
             ]);
         } catch (\Throwable) {
-            // Email failure must never break subscription activation.
         }
     }
 
-    protected function resolvePlan(SalesOrder $order): ?Plan
+    protected function resolvePlanForProductId(?int $productId): ?Plan
     {
-        // A plan is resolved by the product the order was created from.
-        if ($order->product_id && $plan = Plan::where('product_id', $order->product_id)->active()->orderByDesc('id')->first()) {
+        if ($productId && $plan = Plan::where('product_id', $productId)->active()->orderByDesc('id')->first()) {
             return $plan;
         }
 
@@ -239,8 +320,5 @@ class SubscriptionActivator
 
     protected function notifyCustomer(Customer $customer, SalesOrder $order): void
     {
-        // Customer notifications are delivered via the configured channel;
-        // here we only ensure the notifiable target is reachable. A
-        // no-op when the customer has no email/phone channel configured.
     }
 }

@@ -175,11 +175,21 @@
                     <div class="flex justify-between gap-4">
                         <dt class="text-neutral-500">Catalog Product</dt>
                         <dd class="text-right">
-                            <span class="font-medium text-neutral-900">{{ $order->product_name_snapshot ?? $order->product_name ?? 'Manual / Custom' }}</span>
-                            <br><span class="text-xs text-neutral-400">Duration: {{ \App\Models\SalesOrder::DURATIONS[$order->product_duration_snapshot ?? $order->duration] ?? ($order->product_duration_snapshot ?? $order->duration ?? '1 year') }}</span>
+                            @if ($order->items->count() > 1)
+                                <span class="font-medium text-neutral-900">{{ $order->items->count() }} products ({{ $order->items->sum('quantity') }} units)</span>
+                                <br><span class="text-xs text-neutral-400">Primary: {{ $order->product_name_snapshot ?? $order->product_name }}</span>
+                            @else
+                                <span class="font-medium text-neutral-900">{{ $order->product_name_snapshot ?? $order->product_name ?? 'Manual / Custom' }}</span>
+                                <br><span class="text-xs text-neutral-400">Duration: {{ \App\Models\SalesOrder::DURATIONS[$order->product_duration_snapshot ?? $order->duration] ?? ($order->product_duration_snapshot ?? $order->duration ?? '1 year') }}</span>
+                            @endif
                         </dd>
                     </div>
                 </dl>
+
+                @if ($order->items->isNotEmpty())
+                    <h2 class="mt-5 text-sm font-semibold text-neutral-500">Order Items</h2>
+                    @include('partials.order-items-table', ['order' => $order, 'showSubscriptionCol' => true])
+                @endif
 
                 <h2 class="mt-5 text-sm font-semibold text-neutral-500">Financial Summary</h2>
                 <dl class="mt-2 space-y-1.5 text-sm">
@@ -380,7 +390,40 @@
             {{-- Subscription + activate --}}
             <div class="rounded-xl border border-neutral-200 bg-white p-5">
                 <h2 class="text-sm font-semibold text-neutral-500">Subscription Status</h2>
-                @if ($order->subscription)
+                @if ($order->subscriptions->count() > 1)
+                    <div class="mt-3 space-y-2.5">
+                        @foreach ($order->subscriptions as $sub)
+                            <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs space-y-1">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-semibold text-neutral-900">{{ $sub->plan_snapshot ?? $sub->orderItem?->product_name_snapshot ?? 'Subscription #' . $sub->id }}</span>
+                                    <span class="rounded-full px-2 py-0.5 text-[11px] font-medium {{ $sub->status === 'active' ? 'badge-success' : 'badge-neutral' }}">
+                                        {{ ucfirst($sub->status) }}
+                                    </span>
+                                </div>
+                                <div class="flex flex-wrap gap-x-4 gap-y-0.5 text-neutral-600">
+                                    @if ($sub->price_snapshot)
+                                        <span>Price: {{ \App\Models\Setting::currencySymbol() }}{{ number_format((float) $sub->price_snapshot, 2) }}</span>
+                                    @endif
+                                    @if ($sub->started_at)
+                                        <span>Started: {{ $sub->started_at->toDateString() }}</span>
+                                    @endif
+                                    @if ($sub->expires_at)
+                                        <span>Expires: <strong class="text-neutral-900">{{ $sub->expires_at->toDateString() }}</strong></span>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-neutral-100 flex flex-wrap items-center gap-2">
+                        <a href="{{ $order->googleCalendarUrl() }}"
+                           target="_blank"
+                           onclick="window.open(this.href, 'google_calendar_popup', 'width=750,height=650,left=200,top=100,scrollbars=yes,resizable=yes'); return false;"
+                           class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 shadow-xs transition">
+                            Add to Google Calendar (Popup)
+                        </a>
+                    </div>
+                @elseif ($order->subscription)
                     <dl class="mt-3 space-y-1.5 text-sm">
                         <div class="flex justify-between">
                             <dt class="text-neutral-500">Status</dt>
@@ -521,8 +564,22 @@
                     <p class="mt-2 text-xs text-neutral-500">No API key has been stored for this order yet.</p>
                 @endif
 
-                <form method="POST" action="{{ route('admin.orders.api-key.store', $order) }}" class="mt-3">
+                <form method="POST" action="{{ route('admin.orders.api-key.store', $order) }}" class="mt-3 space-y-2">
                     @csrf
+                    @php
+                        $apiItems = $order->items->where('api_key_required_snapshot', true);
+                    @endphp
+                    @if ($apiItems->count() > 1)
+                        <div>
+                            <label for="order_item_id_select" class="form-label">Line Item (optional per-product key)</label>
+                            <select id="order_item_id_select" name="order_item_id" class="form-select mt-1 w-full text-xs">
+                                <option value="">Order-level default</option>
+                                @foreach ($apiItems as $apiItem)
+                                    <option value="{{ $apiItem->id }}">{{ $apiItem->product_name_snapshot }} (x{{ $apiItem->quantity }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
                     <label for="api_key_input" class="form-label">Save / replace API key</label>
                     <div class="mt-1 flex gap-2">
                         <input type="text" id="api_key_input" name="api_key" placeholder="Enter customer API key…" required

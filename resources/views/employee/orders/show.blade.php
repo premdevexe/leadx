@@ -70,7 +70,11 @@
         <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Product</p>
             <p class="mt-1 text-sm font-medium">{{ $order->product_name_snapshot ?? $order->product_name }}</p>
-            <p class="text-xs text-neutral-500">Duration: {{ $order->product_duration_snapshot ?? $order->duration }}</p>
+            @if ($order->items->count() > 1)
+                <p class="text-xs text-neutral-500">+ {{ $order->items->count() - 1 }} more item(s) · {{ $order->items->sum('quantity') }} total units</p>
+            @else
+                <p class="text-xs text-neutral-500">Duration: {{ $order->product_duration_snapshot ?? $order->duration }}</p>
+            @endif
         </div>
         <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Financials</p>
@@ -100,6 +104,13 @@
             </div>
         </div>
     </div>
+
+    @if ($order->items->isNotEmpty())
+        <div class="mt-6 card p-5">
+            <h2 class="text-sm font-semibold text-neutral-900">Order Items</h2>
+            @include('partials.order-items-table', ['order' => $order, 'showSubscriptionCol' => true])
+        </div>
+    @endif
 
     {{-- API Credentials & Delivery Section --}}
     <div class="mt-6 card p-5">
@@ -182,7 +193,18 @@
             </span>
         </div>
 
-        @if($order->subscription)
+        @if($order->subscriptions->count() > 1)
+            <div class="mt-3 space-y-2">
+                @foreach($order->subscriptions as $sub)
+                    <div class="rounded-lg border bg-neutral-50 p-3 text-xs space-y-1">
+                        <p class="font-semibold text-neutral-900">{{ $sub->plan_snapshot ?? $sub->orderItem?->product_name_snapshot ?? 'Subscription #' . $sub->id }}</p>
+                        <p><span class="text-neutral-500">Status:</span> <span class="font-medium text-neutral-800">{{ ucfirst($sub->status) }}</span></p>
+                        @if($sub->started_at)<p><span class="text-neutral-500">Started:</span> <span class="font-medium text-neutral-800">{{ $sub->started_at->format('M d, Y') }}</span></p>@endif
+                        @if($sub->expires_at)<p><span class="text-neutral-500">Expires:</span> <span class="font-medium text-neutral-800">{{ $sub->expires_at->format('M d, Y') }}</span></p>@endif
+                    </div>
+                @endforeach
+            </div>
+        @elseif($order->subscription)
             <div class="mt-3 rounded-lg border bg-neutral-50 p-3 text-xs space-y-1">
                 <p><span class="text-neutral-500">Status:</span> <span class="font-medium text-neutral-800">{{ ucfirst($order->subscription->status) }}</span></p>
                 @if($order->subscription->started_at)<p><span class="text-neutral-500">Started:</span> <span class="font-medium text-neutral-800">{{ $order->subscription->started_at->format('M d, Y') }}</span></p>@endif

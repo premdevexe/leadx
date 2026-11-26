@@ -62,10 +62,34 @@ class BillingController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'phone']);
 
+        $selectedOrder = null;
+        $selectedCustomerId = $request->integer('customer_id') ?: null;
+        if ($request->filled('order_id')) {
+            $selectedOrder = SalesOrder::with(['product', 'items'])
+                ->where('assigned_employee_id', $employee->id)
+                ->find($request->integer('order_id'));
+
+            if ($selectedOrder && ! $selectedCustomerId) {
+                $selectedCustomerId = Customer::query()
+                    ->when($employee->team_id, fn ($q) => $q->where('team_id', $employee->team_id))
+                    ->where(function ($q) use ($selectedOrder) {
+                        if ($selectedOrder->customer_email) {
+                            $q->orWhere('email', $selectedOrder->customer_email);
+                        }
+                        if ($selectedOrder->customer_phone) {
+                            $q->orWhere('phone', $selectedOrder->customer_phone);
+                        }
+                    })
+                    ->value('id');
+            }
+        }
+
         return view('employee.billing.create', [
             'customers' => $customers,
             'products' => Product::where('status', 'active')->orderBy('name')->get(),
-            'orders' => SalesOrder::where('assigned_employee_id', $employee->id)->latest('id')->limit(50)->get(),
+            'orders' => SalesOrder::where('assigned_employee_id', $employee->id)->with('items')->latest('id')->limit(50)->get(),
+            'selectedOrder' => $selectedOrder,
+            'selectedCustomerId' => $selectedCustomerId,
             'billing' => Setting::billing(),
         ]);
     }

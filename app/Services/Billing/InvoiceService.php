@@ -35,8 +35,47 @@ class InvoiceService
     {
         return DB::transaction(function () use ($data, $admin, $employee) {
             $customer = Customer::findOrFail((int) $data['customer_id']);
-            $order = ! empty($data['order_id']) ? SalesOrder::find((int) $data['order_id']) : null;
+            $order = ! empty($data['order_id']) ? SalesOrder::with('items')->find((int) $data['order_id']) : null;
             $subscription = ! empty($data['subscription_id']) ? Subscription::find((int) $data['subscription_id']) : null;
+
+            $rawItems = $data['items'] ?? [];
+            $discountType = (string) ($data['discount_type'] ?? 'fixed');
+            $discountValue = (float) ($data['discount_value'] ?? 0);
+
+            if (empty($rawItems) && $order) {
+                if ($order->items->isNotEmpty()) {
+                    $rawItems = $order->items->map(function ($item) {
+                        $durLabel = $item->product_duration_snapshot
+                            ? (SalesOrder::DURATIONS[$item->product_duration_snapshot] ?? $item->product_duration_snapshot)
+                            : null;
+                        $desc = trim((string) ($item->product_name_snapshot ?? 'Order Item'));
+                        if ($durLabel) {
+                            $desc .= ' ('.$durLabel.')';
+                        }
+
+                        return [
+                            'product_id' => $item->product_id,
+                            'description' => $desc,
+                            'duration' => $durLabel ?? $item->product_duration_snapshot,
+                            'quantity' => (int) $item->quantity,
+                            'unit_price' => (float) $item->unit_price,
+                        ];
+                    })->values()->all();
+
+                    if (! array_key_exists('discount_value', $data) && (float) $order->discount_amount > 0) {
+                        $discountType = 'fixed';
+                        $discountValue = (float) $order->discount_amount;
+                    }
+                } else {
+                    $rawItems = [[
+                        'product_id' => $order->product_id,
+                        'description' => $order->product_name_snapshot ?? $order->product_name ?? 'Order Item',
+                        'duration' => $order->duration,
+                        'quantity' => 1,
+                        'unit_price' => (float) $order->closing_value,
+                    ]];
+                }
+            }
 
             $billing = Setting::billing();
             $currency = strtoupper((string) ($data['currency'] ?? $billing['default_currency'] ?? Setting::currency()));
@@ -49,9 +88,9 @@ class InvoiceService
                 : $issueDate->copy()->addDays((int) ($billing['default_due_days'] ?? 14));
 
             $computed = $this->computeTotals(
-                $data['items'] ?? [],
-                (string) ($data['discount_type'] ?? 'fixed'),
-                (float) ($data['discount_value'] ?? 0),
+                $rawItems,
+                $discountType,
+                $discountValue,
                 (float) ($data['tax_rate'] ?? ($billing['default_tax_rate'] ?? 0))
             );
 

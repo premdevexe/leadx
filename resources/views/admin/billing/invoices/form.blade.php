@@ -12,13 +12,28 @@
         'quantity' => (float) $i->quantity,
         'unit_price' => (float) $i->unit_price,
     ])->values()->all() : (
-        $selectedOrder ? [[
-            'product_id' => $selectedOrder->product_id,
-            'description' => $selectedOrder->product_name_snapshot ?? $selectedOrder->product_name ?? 'Order Item',
-            'duration' => $selectedOrder->duration,
-            'quantity' => 1,
-            'unit_price' => (float) $selectedOrder->closing_value,
-        ]] : [[
+        $selectedOrder ? ($selectedOrder->items->isNotEmpty()
+            ? $selectedOrder->items->map(function ($i) {
+                $dur = $i->product_duration_snapshot
+                    ? (\App\Models\SalesOrder::DURATIONS[$i->product_duration_snapshot] ?? $i->product_duration_snapshot)
+                    : null;
+
+                return [
+                    'product_id' => $i->product_id,
+                    'description' => trim(($i->product_name_snapshot ?? 'Order Item').($dur ? ' ('.$dur.')' : '')),
+                    'duration' => $dur ?? $i->product_duration_snapshot,
+                    'quantity' => (float) $i->quantity,
+                    'unit_price' => (float) $i->unit_price,
+                ];
+            })->values()->all()
+            : [[
+                'product_id' => $selectedOrder->product_id,
+                'description' => $selectedOrder->product_name_snapshot ?? $selectedOrder->product_name ?? 'Order Item',
+                'duration' => $selectedOrder->duration,
+                'quantity' => 1,
+                'unit_price' => (float) $selectedOrder->closing_value,
+            ]]
+        ) : [[
             'product_id' => '',
             'description' => '',
             'duration' => '',
@@ -171,7 +186,7 @@
                         </div>
                         <div>
                             <label class="form-label text-xs">Discount Value</label>
-                            <input type="number" step="0.01" min="0" name="discount_value" id="discount-value" value="{{ old('discount_value', $invoice?->discount_value ?? 0) }}" class="form-input text-xs text-right">
+                            <input type="number" step="0.01" min="0" name="discount_value" id="discount-value" value="{{ old('discount_value', $invoice?->discount_value ?? ($selectedOrder?->items->isNotEmpty() ? $selectedOrder->discount_amount : 0)) }}" class="form-input text-xs text-right">
                         </div>
                     </div>
                     <div>

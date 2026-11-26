@@ -38,7 +38,8 @@ class OrderCredentialController extends Controller
             $order,
             $request->validated('api_key'),
             $actor,
-            $request->ip()
+            $request->ip(),
+            $request->validated('order_item_id') ? (int) $request->validated('order_item_id') : null
         );
 
         // API key delivery email: only fires on the explicitly authorized

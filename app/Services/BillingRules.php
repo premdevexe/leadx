@@ -28,6 +28,11 @@ class BillingRules
      */
     public function cycleFor(SalesOrder $order, ?Plan $plan = null): string
     {
+        return $this->cycleForDuration((string) ($order->duration ?: '1y'), $plan);
+    }
+
+    public function cycleForDuration(string $durationCode, ?Plan $plan = null): string
+    {
         $planCycle = $plan?->billing_cycle;
 
         if (in_array($planCycle, Plan::CYCLES, true)) {
@@ -35,7 +40,7 @@ class BillingRules
         }
 
         $map = config('leadx.billing.duration_map', []);
-        $duration = (string) ($order->duration ?: '1y');
+        $duration = (string) ($durationCode ?: '1y');
 
         return $map[$duration] ?? 'yearly';
     }
@@ -51,6 +56,11 @@ class BillingRules
      */
     public function expiry(SalesOrder $order, ?Plan $plan, ?Carbon $from = null): Carbon
     {
+        return $this->expiryForDurationCode((string) ($order->duration ?: '1y'), $plan, $from);
+    }
+
+    public function expiryForDurationCode(string $durationCode, ?Plan $plan = null, ?Carbon $from = null): Carbon
+    {
         $from ??= now();
         $planDuration = $plan?->duration_code;
 
@@ -59,13 +69,13 @@ class BillingRules
             || ! in_array($plan?->billing_cycle, Plan::CYCLES, true);
 
         if ($durationDriven) {
-            $duration = $planDuration !== null ? $planDuration : (string) ($order->duration ?: '1y');
+            $duration = $planDuration !== null ? $planDuration : (string) ($durationCode ?: '1y');
 
             return $this->expiryForDuration($duration, $from);
         }
 
         // Legacy: a recognized plan cycle with no duration override.
-        $duration = (string) ($order->duration ?: '1y');
+        $duration = (string) ($durationCode ?: '1y');
 
         return match ($plan->billing_cycle) {
             'monthly' => $this->monthly($duration, $from),

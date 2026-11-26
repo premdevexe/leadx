@@ -23,7 +23,11 @@
         <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Product</p>
             <p class="mt-1 text-sm font-medium">{{ $order->product_name_snapshot ?? $order->product_name }}</p>
-            <p class="text-xs text-neutral-500">Duration: {{ $order->product_duration_snapshot ?? $order->duration }}</p>
+            @if ($order->items->count() > 1)
+                <p class="text-xs text-neutral-500">+ {{ $order->items->count() - 1 }} more item(s) · {{ $order->items->sum('quantity') }} total units</p>
+            @else
+                <p class="text-xs text-neutral-500">Duration: {{ $order->product_duration_snapshot ?? $order->duration }}</p>
+            @endif
         </div>
         <div class="card p-5">
             <p class="text-xs font-medium text-neutral-500">Financials</p>
@@ -38,6 +42,13 @@
         </div>
     </div>
 
+    @if ($order->items->isNotEmpty())
+        <div class="mt-6 card p-5">
+            <h2 class="text-sm font-semibold text-neutral-900">Order Items</h2>
+            @include('partials.order-items-table', ['order' => $order, 'showSubscriptionCol' => true])
+        </div>
+    @endif
+
     <div class="mt-6">
         <h2 class="text-sm font-semibold text-neutral-700">Payments</h2>
         @forelse($order->payments as $payment)
@@ -51,7 +62,17 @@
 
     <div class="mt-6">
         <h2 class="text-sm font-semibold text-neutral-700">Subscription</h2>
-        @if($order->subscription)
+        @if ($order->subscriptions->count() > 1)
+            <div class="mt-2 space-y-2">
+                @foreach ($order->subscriptions as $sub)
+                    <div class="rounded-lg border border-neutral-200 bg-white p-3 text-sm">
+                        <p class="font-medium">{{ $sub->plan_snapshot ?? 'Subscription #' . $sub->id }} &middot; {{ ucfirst($sub->status) }}</p>
+                        @if ($sub->started_at)<p class="text-xs text-neutral-500">Started: {{ $sub->started_at }}</p>@endif
+                        @if ($sub->expires_at)<p class="text-xs text-neutral-500">Expires: {{ $sub->expires_at }}</p>@endif
+                    </div>
+                @endforeach
+            </div>
+        @elseif($order->subscription)
             <div class="mt-2 rounded-lg border border-neutral-200 bg-white p-3 text-sm">
                 <p>Status: {{ ucfirst($order->subscription->status) }}</p>
                 @if($order->subscription->started_at)<p>Started: {{ $order->subscription->started_at }}</p>@endif

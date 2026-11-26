@@ -48,7 +48,7 @@ class OrdersController extends Controller
 
         $resolved = $this->resolveView($employee, $request->input('view'));
         $orders = $this->scopedOrders($employee, $resolved['view'], $resolved['grant'])
-            ->with(['product', 'assignedEmployee', 'subscription', 'team'])
+            ->with(['product', 'items', 'assignedEmployee', 'subscription', 'team'])
             ->orderByDesc('id')
             ->paginate(min(max((int) $request->input('per_page', 20), 1), 100));
 
@@ -92,7 +92,7 @@ class OrdersController extends Controller
 
         $order = $this->orders->createForTeam($team, $employee, $validated);
 
-        return (new OrderResource($order->loadMissing(['team', 'subscription', 'product'])))->response()->setStatusCode(201);
+        return (new OrderResource($order->loadMissing(['team', 'subscription', 'product', 'items'])))->response()->setStatusCode(201);
     }
 
     /**
@@ -103,7 +103,7 @@ class OrdersController extends Controller
         /** @var User $employee */
         $employee = $this->currentEmployee($request);
 
-        $order = SalesOrder::with(['product', 'subscription', 'payments', 'team', 'assignedEmployee'])->findOrFail($id);
+        $order = SalesOrder::with(['product', 'items', 'subscription', 'payments', 'team', 'assignedEmployee'])->findOrFail($id);
         $isOwned = $this->assertOrderAccess($employee, $order);
 
         $whatsappShare = $this->whatsapp->prepare(

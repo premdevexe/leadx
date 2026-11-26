@@ -41,7 +41,7 @@ class OrderCredentialService
      *
      * @return array{credential: ?OrderApiCredential, saved: bool, message: string}
      */
-    public function store(SalesOrder $order, string $plainKey, mixed $actor, ?string $ip = null): array
+    public function store(SalesOrder $order, string $plainKey, mixed $actor, ?string $ip = null, ?int $orderItemId = null): array
     {
         if (! ($actor instanceof \App\Models\Admin)) {
             return ['credential' => null, 'saved' => false, 'message' => 'Only Super Admin can manually enter or update customer API keys.'];
@@ -53,7 +53,18 @@ class OrderCredentialService
             return ['credential' => null, 'saved' => false, 'message' => 'The API key may not be blank.'];
         }
 
-        $credential = OrderApiCredential::firstOrNew(['order_id' => $order->id]);
+        if ($orderItemId !== null) {
+            $item = $order->items()->whereKey($orderItemId)->first();
+            if (! $item) {
+                return ['credential' => null, 'saved' => false, 'message' => 'The selected order line item does not belong to this order.'];
+            }
+            $credential = OrderApiCredential::firstOrNew(['order_item_id' => $item->id]);
+            $credential->order_id = $order->id;
+        } else {
+            $credential = OrderApiCredential::where('order_id', $order->id)->whereNull('order_item_id')->first()
+                ?? new OrderApiCredential(['order_id' => $order->id]);
+        }
+
         $credential->key = $plainKey; // the encrypted cast handles the cipher
         $credential->updated_by_id = $actor?->getKey();
         $credential->updated_by_type = $actor ? $actor::class : null;
@@ -110,7 +121,25 @@ class OrderCredentialService
      */
     public static function hasKey(SalesOrder $order): bool
     {
-        return OrderApiCredential::hasKeyFor($order->id);
+        $requiredItems = $order->items()->where('api_key_required_snapshot', true)->get();
+
+        if ($requiredItems->isEmpty()) {
+            return OrderApiCredential::hasKeyFor($order->id);
+        }
+
+        if ($requiredItems->count() === 1) {
+            return OrderApiCredential::hasKeyForItem($requiredItems[0]->id)
+                || OrderApiCredential::hasKeyFor($order->id);
+        }
+
+        // Multi-line order with multiple API-key products: every required line must have its own key.
+        foreach ($requiredItems as $item) {
+            if (! OrderApiCredential::hasKeyForItem($item->id)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

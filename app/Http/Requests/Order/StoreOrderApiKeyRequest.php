@@ -44,6 +44,7 @@ class StoreOrderApiKeyRequest extends FormRequest
                 // value is trimmed before storage and re-checked there.
                 'regex:/^\S/u',
             ],
+            'order_item_id' => ['sometimes', 'nullable', 'integer', 'exists:sales_order_items,id'],
         ];
     }
 

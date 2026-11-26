@@ -89,9 +89,9 @@ class OrdersController extends Controller
             default => null,
         };
 
-        $order = $this->orders->createForTeam($team, $employee, $validated);
+        $order = $this->orders->createForTeam($team, $employee, $validated + ($actor instanceof Admin ? ['is_admin' => true] : []));
 
-        return (new OrderResource($order->loadMissing(['team', 'subscription'])))->response()->setStatusCode(201);
+        return (new OrderResource($order->loadMissing(['team', 'subscription', 'items'])))->response()->setStatusCode(201);
     }
 
     /**

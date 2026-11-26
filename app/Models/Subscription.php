@@ -32,6 +32,7 @@ class Subscription extends Model
      */
     protected $fillable = [
         'order_id',
+        'order_item_id',
         'team_id',
         'customer_id',
         'product_id',
@@ -73,6 +74,11 @@ class Subscription extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(SalesOrder::class, 'order_id', 'id');
+    }
+
+    public function orderItem(): BelongsTo
+    {
+        return $this->belongsTo(SalesOrderItem::class, 'order_item_id', 'id');
     }
 
     public function team(): BelongsTo

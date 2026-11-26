@@ -92,43 +92,39 @@
                 @error('customer_country_code') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
-            <div>
-                <label class="form-label">Product</label>
-                <select id="product-select" name="product_id"
-                        class="form-select mt-1 w-full">
-                    <option value="">— none (enter manually) —</option>
-                    @foreach ($products as $product)
-                        <option value="{{ $product->id }}"
-                                data-price="{{ $product->price }}"
-                                data-duration="{{ $product->duration }}"
-                                @selected(old('product_id') === (string) $product->id)>
-                            {{ $product->name }} ({{ $cur }}{{ number_format((float) $product->price, 2) }} — {{ \App\Models\SalesOrder::DURATIONS[$product->duration] ?? '1 year' }})
-                        </option>
-                    @endforeach
-                </select>
-                @error('product_id') <p class="form-error">{{ $message }}</p> @enderror
-                <p class="form-hint">Selecting a product auto-fills the name, value and duration below.</p>
+            <div class="sm:col-span-2">
+                @include('partials.order-items-builder', [
+                    'instanceId' => 'admin-create-oib',
+                    'products' => $products,
+                    'existingItems' => old('items', []),
+                    'legacyProductId' => old('product_id'),
+                    'locked' => false,
+                    'canBypassFloor' => true,
+                    'currencySymbol' => $cur,
+                ])
             </div>
 
-            <div>
-                <label class="form-label">Product name</label>
-                <input type="text" id="product-name" name="product_name" value="{{ old('product_name') }}"
-                       class="form-input mt-1 w-full">
-            </div>
+            <div class="sm:col-span-2 grid gap-5 sm:grid-cols-2" data-oib-manual-fallback>
+                <div>
+                    <label class="form-label">Product name (Manual / Custom)</label>
+                    <input type="text" id="product-name" name="product_name" value="{{ old('product_name') }}"
+                           class="form-input mt-1 w-full">
+                </div>
 
-            <div>
-                <label class="form-label">Subscription duration</label>
-                <select name="duration" class="form-select mt-1 w-full">
-                    @foreach (\App\Models\SalesOrder::DURATIONS as $code => $label)
-                        <option value="{{ $code }}" @selected(old('duration', '1y') === $code)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
+                <div>
+                    <label class="form-label">Subscription duration</label>
+                    <select name="duration" class="form-select mt-1 w-full">
+                        @foreach (\App\Models\SalesOrder::DURATIONS as $code => $label)
+                            <option value="{{ $code }}" @selected(old('duration', '1y') === $code)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div>
-                <label class="form-label">Product value ({{ $cur }})</label>
-                <input type="number" step="0.01" min="0" name="product_value" value="{{ old('product_value', 0) }}"
-                       class="form-input mt-1 w-full">
+                <div>
+                    <label class="form-label">Product value ({{ $cur }})</label>
+                    <input type="number" step="0.01" min="0" name="product_value" value="{{ old('product_value', 0) }}"
+                           class="form-input mt-1 w-full">
+                </div>
             </div>
 
             <div>
@@ -194,9 +190,6 @@
 
     <script>
         (function () {
-            const select = document.getElementById('product-select');
-            if (!select) return;
-            const nameInput = document.getElementById('product-name');
             const priceInput = document.querySelector('[name="product_value"]');
             const closingInput = document.getElementById('closing-value');
             const discountInput = document.getElementById('discount-amount');
@@ -208,26 +201,9 @@
                 discountInput.value = Math.max(0, price - closing).toFixed(2);
             }
 
-            select.addEventListener('change', function () {
-                const opt = select.options[select.selectedIndex];
-                if (opt.value === '') return;
-
-                nameInput.value = opt.textContent.split(' (')[0];
-
-                if (priceInput) priceInput.value = opt.dataset.price;
-
-                const durationSelect = document.querySelector('select[name="duration"]');
-                if (durationSelect && opt.dataset.duration) durationSelect.value = opt.dataset.duration;
-
-                if (closingInput.value === '') {
-                    closingInput.value = opt.dataset.price;
-                }
-
-                updateDiscount();
-            });
-
             if (closingInput) closingInput.addEventListener('input', updateDiscount);
             if (priceInput) priceInput.addEventListener('input', updateDiscount);
+            document.addEventListener('order-items:changed', updateDiscount);
 
             updateDiscount();
         })();

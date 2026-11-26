@@ -17,13 +17,45 @@
 
     <form method="POST" action="{{ route('employee.billing.store') }}" class="mt-5 space-y-5">
         @csrf
+        @php
+            $prefilledItems = [];
+            if (isset($selectedOrder) && $selectedOrder) {
+                if ($selectedOrder->items->isNotEmpty()) {
+                    $prefilledItems = $selectedOrder->items->map(fn ($item) => [
+                        'product_id' => $item->product_id ?? '',
+                        'description' => $item->product_name_snapshot,
+                        'duration' => \App\Models\SalesOrder::DURATIONS[$item->product_duration_snapshot] ?? ($item->product_duration_snapshot ?? ''),
+                        'quantity' => $item->quantity,
+                        'unit_price' => (float) $item->unit_price_snapshot,
+                    ])->values()->all();
+                } else {
+                    $prefilledItems = [[
+                        'product_id' => $selectedOrder->product_id ?? '',
+                        'description' => $selectedOrder->product_name_snapshot ?: ($selectedOrder->product_name ?? ''),
+                        'duration' => \App\Models\SalesOrder::DURATIONS[$selectedOrder->product_duration_snapshot ?? ''] ?? ($selectedOrder->duration ?? ''),
+                        'quantity' => 1,
+                        'unit_price' => (float) ($selectedOrder->product_price_snapshot ?? $selectedOrder->product_value ?? 0),
+                    ]];
+                }
+            }
+            $oldItems = old('items', ! empty($prefilledItems) ? $prefilledItems : [[
+                'product_id' => '',
+                'description' => '',
+                'duration' => '',
+                'quantity' => 1,
+                'unit_price' => 0,
+            ]]);
+            $prefillDiscount = isset($selectedOrder) && $selectedOrder
+                ? max(0, (float) $selectedOrder->product_value - (float) $selectedOrder->closing_value)
+                : 0;
+        @endphp
         <div class="rounded-xl border border-neutral-200 bg-white p-5 grid gap-4 sm:grid-cols-2">
             <div>
                 <label class="form-label">Customer *</label>
                 <select name="customer_id" class="form-input" required>
                     <option value="">Select customer...</option>
                     @foreach ($customers as $c)
-                        <option value="{{ $c->id }}" @selected(old('customer_id') == $c->id)>{{ $c->name }} {{ $c->phone ? '('.$c->phone.')' : '' }}</option>
+                        <option value="{{ $c->id }}" @selected(old('customer_id', $selectedCustomerId ?? null) == $c->id)>{{ $c->name }} {{ $c->phone ? '('.$c->phone.')' : '' }}</option>
                     @endforeach
                 </select>
             </div>
@@ -32,7 +64,7 @@
                 <select name="order_id" class="form-input">
                     <option value="">None</option>
                     @foreach ($orders as $o)
-                        <option value="{{ $o->id }}" @selected(old('order_id') == $o->id)>{{ $o->order_number }} — {{ $o->customer_name }}</option>
+                        <option value="{{ $o->id }}" @selected(old('order_id', $selectedOrder?->id) == $o->id)>{{ $o->order_number }} — {{ $o->customer_name }}</option>
                     @endforeach
                 </select>
             </div>
